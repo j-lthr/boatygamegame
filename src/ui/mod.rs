@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 pub mod healthbar;
 
+pub (crate) use healthbar::HealthBarPlugin;
 
 pub fn compute_3d_cursor_pos(
     windows: Query<&Window>,

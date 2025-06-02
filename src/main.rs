@@ -67,6 +67,9 @@ fn main() {
             global_volume: Volume::Linear(2.0).into(),
             ..default()
         }))
+        .add_plugins(
+            ui::HealthBarPlugin
+        )
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
         .init_resource::<state::GameScore>()
@@ -89,9 +92,6 @@ fn main() {
                 fx::blood::blood_particle_rendering,
                 fx::blood::cleanup_blood_particles,
                 fx::blood::fade_blood_splatters,
-                ui::healthbar::spawn,
-                ui::healthbar::update,
-                ui::healthbar::clean_up,
                 player::camera_follow_player,
                 enemy::enemy_slam_attack,
                 enemy::animate_fade_effects,

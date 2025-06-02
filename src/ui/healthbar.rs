@@ -8,6 +8,21 @@ pub struct HealthBar {
     pub entity: Entity,
 }
 
+pub(crate) struct HealthBarPlugin;
+
+impl Plugin for HealthBarPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                spawn,
+                update,
+                clean_up,
+            )
+        );
+    }
+}
+
 pub fn spawn(
     mut commands: Commands,
     mut spawn_event_reader: EventReader<event::SpawnEvent>,
