@@ -4,6 +4,7 @@ use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::bullet;
+use crate::common::Inertia;
 use crate::fx;
 use crate::ui;
 
@@ -23,18 +24,19 @@ pub fn move_player(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut player_query: Query<(&mut Transform, &mut DashTimer), With<Player>>,
+    mut camera_query: Query<&GlobalTransform, With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
-    if let Ok((mut player_transform, mut dash_timer)) = player_query.single_mut() {
+    if let (Ok((mut player_transform, mut dash_timer)), Ok(camera_transform)) = (player_query.single_mut(), camera_query.single()) {
         let mut velocity = Vec3::ZERO;
         let speed = 4.0;
 
         dash_timer.timer.tick(time.delta());
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
-        let forward = Vec3::Z; // camera_transform.forward();
-        let right = Vec3::X; //camera_transform.right();
+        let forward = camera_transform.forward();
+        let right = -camera_transform.right();
 
         // Project forward and right vectors onto the horizontal plane (y=0)
         let forward_horizontal = Vec3::new(forward.x, 0.0, forward.z).normalize_or_zero();
@@ -74,15 +76,19 @@ pub fn move_player(
 
 /// System to make camera follow player with smooth interpolation
 pub fn camera_follow_player(
-    player_query: Query<&Transform, (With<Player>, Without<Camera3d>)>,
+    player_query: Query<(&Transform, &Inertia), (With<Player>, Without<Camera3d>)>,
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     time: Res<Time>,
 ) {
-    if let (Ok(player_transform), Ok(mut camera_transform)) =
+    if let (Ok((player_transform, player_inertia)), Ok(mut camera_transform)) =
         (player_query.single(), camera_query.single_mut())
-    {
+
+        {
+
+        let player_velocity_direction = (player_transform.translation - player_inertia.prev_pos).normalize_or_zero();
+        
         // Define the offset from player to camera (above and behind)
-        let camera_offset = Vec3::new(0.0, 10.0, -10.0);
+        let camera_offset = (-10.0 * player_velocity_direction).with_y(10.0);
 
         // Calculate desired camera position
         let target_position = player_transform.translation + camera_offset;

@@ -12,14 +12,7 @@ pub(crate) struct HealthBarPlugin;
 
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                spawn,
-                update,
-                clean_up,
-            )
-        );
+        app.add_systems(Update, (spawn, update, clean_up));
     }
 }
 
@@ -35,14 +28,18 @@ pub fn spawn(
         let layout = TextureAtlasLayout::from_grid(UVec2::new(64, 4), 1, 8, None, None);
         let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
+        let mut sprite = Sprite::from_atlas_image(
+            texture,
+            TextureAtlas {
+                layout: texture_atlas_layout,
+                index: 7,
+            },
+        );
+
+        sprite.color.set_alpha(0.0); // Start invisible
+
         commands.spawn((
-            Sprite::from_atlas_image(
-                texture,
-                TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: 7,
-                },
-            ),
+            sprite,
             Transform::from_xyz(0.0, 0.0, 0.0),
             HealthBar {
                 entity: event.entity,
@@ -50,7 +47,6 @@ pub fn spawn(
         ));
     }
 }
-
 
 pub fn update(
     mut health_bar_query: Query<(&HealthBar, &mut Sprite, &mut Transform)>,
@@ -91,7 +87,6 @@ pub fn update(
         }
     }
 }
-
 
 pub fn clean_up(
     mut commands: Commands,

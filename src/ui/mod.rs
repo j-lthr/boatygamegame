@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
 pub mod healthbar;
+pub mod hud;
+pub mod menu;
 
 pub (crate) use healthbar::HealthBarPlugin;
 
