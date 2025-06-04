@@ -19,12 +19,9 @@ pub struct DashTimer {
 
 
 /// System to handle player movement with WASD keys (camera-relative)
-pub fn move_player(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+pub fn handle_movement(
     mut player_query: Query<(&mut Transform, &mut DashTimer), With<Player>>,
-    mut camera_query: Query<&GlobalTransform, With<Camera3d>>,
+    camera_query: Query<&GlobalTransform, With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -75,7 +72,7 @@ pub fn move_player(
 }
 
 /// System to make camera follow player with smooth interpolation
-pub fn camera_follow_player(
+pub fn handle_camera(
     player_query: Query<(&Transform, &Inertia), (With<Player>, Without<Camera3d>)>,
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     time: Res<Time>,
@@ -111,16 +108,9 @@ pub fn camera_follow_player(
 
 
 #[derive(Component)]
-pub(crate) struct GunOwner {
-    pub bullet_timer: Timer,
+pub(crate) struct WeaponCooldown {
+    pub timer: Timer,
 }
-
-// Component for the gun
-#[derive(Component)]
-struct Gun;
-
-
-
 
 /// System to handle shooting
 pub fn shoot_gun(
@@ -131,17 +121,17 @@ pub fn shoot_gun(
     time: Res<Time>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
-    mut player_query: Query<&mut Transform, With<Player>>,
-    mut camera_query: Query<(&GlobalTransform, &mut GunOwner, &Camera)>,
+    mut player_query: Query<(&mut Transform, &mut WeaponCooldown), With<Player>>,
+    mut camera_query: Query<(&GlobalTransform,  &Camera)>,
 ) {
-    if let (Ok((camera_transform, mut gun_owner, camera)), Ok(mut player_transform)) =
+    if let (Ok((camera_transform, camera)), Ok((mut player_transform, mut gun))) =
         (camera_query.single_mut(), player_query.single_mut())
     {
-        gun_owner.bullet_timer.tick(time.delta());
+        gun.timer.tick(time.delta());
 
         // Check if the gun's bullet timer allows shooting
-        if mouse_input.pressed(MouseButton::Left) && gun_owner.bullet_timer.finished() {
-            gun_owner.bullet_timer.reset(); // Reset timer for next shot
+        if mouse_input.pressed(MouseButton::Left) && gun.timer.finished() {
+            gun.timer.reset(); // Reset timer for next shot
 
             // Play shooting sound (FM synthesis)
             let shoot_sound_handle = shoot_sounds.add(fx::fm::FMSound {
@@ -158,7 +148,7 @@ pub fn shoot_gun(
             });
 
             if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, &camera_transform) {
-                for i in 0..5 {
+                for _ in 0..5 {
                     // Calculate bullet direction based on camera forward vector
                     let direction = (cursor_pos - player_transform.translation)
                         .normalize()

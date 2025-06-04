@@ -2,16 +2,8 @@ use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::motion_blur::MotionBlur;
 use bevy::core_pipeline::post_process::ChromaticAberration;
 use bevy::core_pipeline::tonemapping::Tonemapping;
-use bevy::input::mouse::{AccumulatedMouseMotion, MouseMotion};
-use bevy::picking::window;
 use bevy::prelude::*;
-use bevy::render::camera::{self, CameraOutputMode};
-use bevy::window::{CursorGrabMode, PrimaryWindow};
-use bevy::winit::cursor;
-use procedural::generate_rock_mesh;
 
-use std::f32::consts::PI;
-use std::time::Duration;
 
 use bevy::audio::{AddAudioSource, AudioPlugin, Volume};
 
@@ -25,9 +17,9 @@ mod common;
 mod state;
 mod bullet;
 mod powerup;
+mod ability;
 
 use state::GameState;
-use state::GameScore;
 
 fn main() {
     App::new()
@@ -49,9 +41,9 @@ fn main() {
         .add_systems(
             Update,
             (
-                player::move_player,
+                player::handle_movement,
                 player::shoot_gun,
-                player::camera_follow_player,
+                player::handle_camera,
                 bullet::handle_movement,
                 bullet::collide::<enemy::Enemy>,
                 bullet::cleanup,
@@ -106,6 +98,9 @@ fn setup(
                 prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
                 damping: 0.1,         // Damping factor for Verlet integration
             },
+            player::WeaponCooldown {
+                timer: Timer::from_seconds(1.0, TimerMode::Once), // 2 shots per second
+            },
         ))
         .id();
 
@@ -130,9 +125,6 @@ fn setup(
             }),
             Transform::from_xyz(0.0, 10.0, -10.0).looking_at(Vec3::ZERO, Vec3::Y),
             // FirstPersonCamera::default(),
-            player::GunOwner {
-                bullet_timer: Timer::from_seconds(1.0, TimerMode::Once), // 2 shots per second
-            },
             SpatialListener::default(), // Spatial audio listener
             Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
             Bloom::ANAMORPHIC,
