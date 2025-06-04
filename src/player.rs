@@ -17,6 +17,9 @@ pub struct DashTimer {
     pub timer: Timer,
 }
 
+#[derive(Component)]
+pub struct PlayerCamera;
+
 
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
@@ -122,12 +125,15 @@ pub fn shoot_gun(
     mouse_input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
     mut player_query: Query<(&mut Transform, &mut WeaponCooldown), With<Player>>,
-    mut camera_query: Query<(&GlobalTransform,  &Camera)>,
+    mut camera_query: Query<(&GlobalTransform,  &Camera), With<PlayerCamera>>,
 ) {
+
+ 
     if let (Ok((camera_transform, camera)), Ok((mut player_transform, mut gun))) =
         (camera_query.single_mut(), player_query.single_mut())
     {
         gun.timer.tick(time.delta());
+
 
         // Check if the gun's bullet timer allows shooting
         if mouse_input.pressed(MouseButton::Left) && gun.timer.finished() {

@@ -44,10 +44,6 @@ pub struct ProjectileAbility<TF: TargetFilter> {
     marker: std::marker::PhantomData<TF>,
 }
 
-impl<TF: TargetFilter> Ability for ProjectileAbility<TF> {
-
-}
-
 
 
 

@@ -21,6 +21,8 @@ mod ability;
 
 use state::GameState;
 
+use crate::player::PlayerCamera;
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(AudioPlugin {
@@ -41,9 +43,9 @@ fn main() {
         .add_systems(
             Update,
             (
-                player::handle_movement,
                 player::shoot_gun,
                 player::handle_camera,
+                player::handle_movement,
                 bullet::handle_movement,
                 bullet::collide::<enemy::Enemy>,
                 bullet::cleanup,
@@ -133,6 +135,7 @@ fn setup(
                 samples: 2,
             },
             ChromaticAberration::default(),
+            PlayerCamera,
         ));
 
     commands.spawn((

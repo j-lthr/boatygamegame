@@ -15,3 +15,18 @@
 ## Technical Details
 
 - generic system for easy enemy AI
+
+AbilitySlot<Ability>
+
+AttemptCastEvent<Ability>
+
+CastEvent<Ability>
+
+HitEvent<Ability>
+
+systems:
+
+spawn<Ability>
+update<Ability>
+handle_hit<Ability>
+
