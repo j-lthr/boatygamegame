@@ -3,8 +3,10 @@ use bevy::prelude::*;
 pub mod healthbar;
 pub mod hud;
 pub mod menu;
+pub mod damage_numbers;
 
 pub (crate) use healthbar::HealthBarPlugin;
+pub (crate) use damage_numbers::DamageNumbersPlugin;
 
 pub fn compute_3d_cursor_pos(
     windows: Query<&Window>,
