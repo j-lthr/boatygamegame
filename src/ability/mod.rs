@@ -9,6 +9,8 @@ use bevy::{
 };
 
 pub mod dash;
+pub mod shotgun;
+pub mod slam;
 
 pub trait Ability: Clone + Send + Sync + 'static {
     type CastParams: Clone + Send + Sync + 'static;

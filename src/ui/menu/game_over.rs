@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::state::{GameState, GameScore};
-use crate::{enemy, bullet, player, common};
+use crate::{enemy, projectile, player, common};
 
 const FONT_PATH: &str = "fonts/Jersey15-Regular.ttf";
 
@@ -127,7 +127,7 @@ pub fn cleanup_game_over_screen(
     mut enemy_spawn_timer: ResMut<enemy::EnemySpawnTimer>,
     // Reset all game entities
     enemy_query: Query<Entity, With<enemy::Enemy>>,
-    bullet_query: Query<Entity, With<bullet::Bullet>>,
+    projectile_query: Query<Entity, With<projectile::Projectile>>,
     mut player_query: Query<(&mut Transform, &mut common::Living), With<player::Player>>,
 ) {
     // Remove game over UI
@@ -145,7 +145,7 @@ pub fn cleanup_game_over_screen(
     for entity in &enemy_query {
         commands.entity(entity).despawn();
     }
-    for entity in &bullet_query {
+    for entity in &projectile_query {
         commands.entity(entity).despawn();
     }
 

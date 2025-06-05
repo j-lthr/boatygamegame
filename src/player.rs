@@ -1,16 +1,11 @@
-use std::marker;
 use std::marker::PhantomData;
-use std::time::Duration;
-
-use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
+use crate::ability::shotgun::{Shotgun, ShotgunParams};
 use crate::ability::AttemptCastEvent;
-use crate::bullet;
 use crate::common::Inertia;
-use crate::fx;
 use crate::ui;
 
 // Component to mark the player
@@ -113,74 +108,26 @@ pub(crate) struct WeaponCooldown {
     pub timer: Timer,
 }
 
-/// System to handle shooting
+/// System to handle shooting using ability system
 pub fn shoot_gun(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
-    time: Res<Time>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
-    mut player_query: Query<(&mut Transform, &mut WeaponCooldown), With<Player>>,
-    mut camera_query: Query<(&GlobalTransform,  &Camera), With<PlayerCamera>>,
+    player_query: Query<Entity, With<Player>>,
+    camera_query: Query<(&GlobalTransform, &Camera), With<PlayerCamera>>,
+    mut shotgun_action: EventWriter<AttemptCastEvent<Shotgun>>,
 ) {
-
- 
-    if let (Ok((camera_transform, camera)), Ok((mut player_transform, mut gun))) =
-        (camera_query.single_mut(), player_query.single_mut())
+    if let (Ok(player), Ok((camera_transform, camera))) =
+        (player_query.single(), camera_query.single())
     {
-        gun.timer.tick(time.delta());
-
-
-        // Check if the gun's bullet timer allows shooting
-        if mouse_input.pressed(MouseButton::Left) && gun.timer.finished() {
-            gun.timer.reset(); // Reset timer for next shot
-
-            // Play shooting sound (FM synthesis)
-            let shoot_sound_handle = shoot_sounds.add(fx::fm::FMSound {
-                config: fx::fm::GUN_SOUND,             // How much the frequency varies
-                duration: Duration::from_millis(1000), // Short punchy sound
-            });
-
-            let bullet_mat = materials.add(StandardMaterial {
-                base_color: Color::srgb(0.2, 0.2, 0.2),
-                metallic: 0.5,
-                perceptual_roughness: 0.5,
-                emissive: Color::srgb(5.0, 5.0, 5.0).into(), // Slightly glowing
-                ..default()
-            });
-
-            let n_bullets = 10;
-
+        if mouse_input.pressed(MouseButton::Left) {
             if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, &camera_transform) {
-                for _ in 0..n_bullets {
-                    // Calculate bullet direction based on camera forward vector
-                    let direction = (cursor_pos - player_transform.translation)
-                        .normalize()
-                        .with_y(0.0)
-                        + Vec3::new(fastrand::f32() - 0.5, 0.0, fastrand::f32() - 0.5) * 0.5; // Add slight random jitter
-
-                    // Spawn bullet at camera position
-                    commands.spawn((
-                        Mesh3d(meshes.add(Sphere::new(0.05 + 0.05 * fastrand::f32()))),
-                        MeshMaterial3d(bullet_mat.clone()), // Red color
-                        Transform::from_translation(player_transform.translation),
-                        bullet::Bullet {
-                            direction,
-                            speed: 30.0,
-                            lifetime: 1.0, // 5 seconds before cleanup
-                        },
-                        AudioPlayer(shoot_sound_handle.clone()),
-                        PlaybackSettings::ONCE
-                            .with_spatial(true)
-                            .with_volume(Volume::Decibels(24.0)), // Play sound once with spatial audio
-                    ));
-
-                    player_transform.translation -= 0.1 * direction / n_bullets as f32; 
-                }
-
-                // Move player back slightly with each shot
+                shotgun_action.write(AttemptCastEvent {
+                    caster: player,
+                    params: ShotgunParams {
+                        target_position: cursor_pos,
+                    },
+                    _marker: PhantomData::default(),
+                });
             }
         }
     }

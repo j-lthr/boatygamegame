@@ -15,13 +15,15 @@ mod event;
 mod player;
 mod common;
 mod state;
-mod bullet;
+mod projectile;
 mod powerup;
 mod ability;
 
 use state::GameState;
 
 use crate::ability::dash::Dash;
+use crate::ability::shotgun::Shotgun;
+use crate::ability::slam::Slam;
 use crate::ability::AbilitySlot;
 use crate::player::PlayerCamera;
 
@@ -33,7 +35,10 @@ fn main() {
         }))
         .add_plugins((
             ui::HealthBarPlugin,
-            ability::AbilityPlugin::<Dash>::new()
+            ui::DamageNumbersPlugin,
+            ability::AbilityPlugin::<Dash>::new(),
+            ability::AbilityPlugin::<Shotgun>::new(),
+            ability::AbilityPlugin::<Slam>::new()
         )
         )
         .add_audio_source::<fx::fm::FMSound>()
@@ -43,6 +48,7 @@ fn main() {
             timer: Timer::from_seconds(2.0, TimerMode::Repeating),
         })
         .add_event::<event::SpawnEvent>()
+        .add_event::<event::DamageEvent>()
         .add_systems(Startup, (setup, fx::blood::setup_blood_materials, ui::hud::score::setup_score_ui))
         .add_systems(
             Update,
@@ -50,20 +56,22 @@ fn main() {
                 player::shoot_gun,
                 player::handle_camera,
                 player::handle_movement,
-                bullet::handle_movement,
-                bullet::collide::<enemy::Enemy>,
-                bullet::cleanup,
+                projectile::handle_movement,
+                projectile::collide,
+                projectile::cleanup,
                 enemy::spawn_enemies,
                 enemy::move_enemies,
                 fx::blood::blood_particle_physics,
                 fx::blood::blood_particle_rendering,
                 fx::blood::cleanup_blood_particles,
                 fx::blood::fade_blood_splatters,
-                enemy::enemy_slam_attack,
-                enemy::animate_fade_effects,
+                enemy::enemy_combat_ai,
                 ui::hud::score::update_score_display,
                 ui::hud::score::update_combo_system,
-                common::handle_inertia
+                common::handle_inertia,
+                common::handle_damage_events,
+                common::check_player_death,
+                common::handle_enemy_deaths
             )
                 .run_if(in_state(GameState::Playing)),
         )
@@ -108,8 +116,16 @@ fn setup(
                 prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
                 damping: 0.1,         // Damping factor for Verlet integration
             },
-            player::WeaponCooldown {
-                timer: Timer::from_seconds(1.0, TimerMode::Once), // 2 shots per second
+            AbilitySlot {
+                cooldown: Timer::from_seconds(0.5, TimerMode::Once),
+                name: "Shotgun",
+                ability: Shotgun {
+                    bullet_count: 10,
+                    spread: 0.5,
+                    speed: 30.0,
+                    lifetime: 1.0,
+                    damage: 1,
+                }
             },
         ))
         .id();
