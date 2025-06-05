@@ -7,6 +7,7 @@ use crate::procedural;
 use crate::common;
 use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::shotgun::{Shotgun, ShotgunParams};
+use crate::ability::dash::{Dash, DashParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 
 // Component for enemies
@@ -81,6 +82,13 @@ pub fn spawn_enemies(
                             damage: 5,
                         }
                     },
+                    AbilitySlot {
+                        cooldown: Timer::from_seconds(3.0, TimerMode::Once),
+                        name: "Dash",
+                        ability: Dash {
+                            range: 4.0,
+                        }
+                    },
                     common::Living {
                         health: 8,
                         max_health: 8,
@@ -139,17 +147,30 @@ pub fn move_enemies(
 
 
 pub fn enemy_combat_ai(
-    enemy_query: Query<(Entity, &Transform, &AbilitySlot<Slam>, &AbilitySlot<Shotgun>), With<Enemy>>,
+    enemy_query: Query<(Entity, &Transform, &AbilitySlot<Slam>, &AbilitySlot<Shotgun>, &AbilitySlot<Dash>), With<Enemy>>,
     player_query: Query<&Transform, (With<player::Player>, Without<Enemy>)>,
     mut slam_action: EventWriter<AttemptCastEvent<Slam>>,
     mut shotgun_action: EventWriter<AttemptCastEvent<Shotgun>>,
+    mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
 ) {
     if let Ok(player_transform) = player_query.single() {
-        for (enemy_entity, enemy_transform, slam_ability, shotgun_ability) in &enemy_query {
+        for (enemy_entity, enemy_transform, slam_ability, _shotgun_ability, dash_ability) in &enemy_query {
             let distance = enemy_transform.translation.distance(player_transform.translation);
             
+            // Use dash to close distance if far away (aggressive pursuit)
+            if distance > 8.0 && distance <= dash_ability.ability.range + 8.0 {
+                let direction = (player_transform.translation - enemy_transform.translation)
+                    .normalize_or_zero()
+                    .with_y(0.0);
+                    
+                dash_action.write(AttemptCastEvent {
+                    caster: enemy_entity,
+                    params: DashParams::Directional(direction),
+                    _marker: std::marker::PhantomData::default(),
+                });
+            }
             // Use slam if in range
-            if distance <= slam_ability.ability.range {
+            else if distance <= slam_ability.ability.range {
                 slam_action.write(AttemptCastEvent {
                     caster: enemy_entity,
                     params: SlamParams {
