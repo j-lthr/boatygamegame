@@ -206,3 +206,16 @@ pub const SLAM: FMSoundConfig = FMSoundConfig {
     noise_level: 0.05, // White noise level
     noise_decay: 0.1, // Decay for noise
 };
+
+pub const DASH_SOUND: FMSoundConfig = FMSoundConfig {
+    carrier_freq: 660.0, // Higher pitch for speed feeling
+    modulator_freq: 220.0, // Lower modulator
+    modulation_depth: 2.0, // Some FM for texture
+    attack: 0.0, // Instant attack
+    decay: 0.15, // Quick decay
+    unison_voices: 2, // Slight chorus
+    detune: 0.1, // Light detune
+    fm_level: 0.8,
+    noise_level: 0.1, // More noise for "whoosh" effect
+    noise_decay: 0.12, // Noise fades slightly slower
+};
