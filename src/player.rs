@@ -153,8 +153,10 @@ pub fn shoot_gun(
                 ..default()
             });
 
+            let n_bullets = 10;
+
             if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, &camera_transform) {
-                for _ in 0..5 {
+                for _ in 0..n_bullets {
                     // Calculate bullet direction based on camera forward vector
                     let direction = (cursor_pos - player_transform.translation)
                         .normalize()
@@ -163,7 +165,7 @@ pub fn shoot_gun(
 
                     // Spawn bullet at camera position
                     commands.spawn((
-                        Mesh3d(meshes.add(Sphere::new(0.1))),
+                        Mesh3d(meshes.add(Sphere::new(0.05 + 0.05 * fastrand::f32()))),
                         MeshMaterial3d(bullet_mat.clone()), // Red color
                         Transform::from_translation(player_transform.translation),
                         bullet::Bullet {
@@ -177,8 +179,10 @@ pub fn shoot_gun(
                             .with_volume(Volume::Decibels(24.0)), // Play sound once with spatial audio
                     ));
 
-                    player_transform.translation -= direction * 0.1; // Move player back slightly with each shot
+                    player_transform.translation -= 0.1 * direction / n_bullets as f32; 
                 }
+
+                // Move player back slightly with each shot
             }
         }
     }

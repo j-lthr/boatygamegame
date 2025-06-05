@@ -1,50 +1,71 @@
-use std::any::Any;
+use std::{any::Any, marker::PhantomData};
 
-use bevy::prelude::*;
+use bevy::{ecs::{query::QueryData, system::{StaticSystemParam, SystemParam}}, prelude::*};
 
-pub trait TargetFilter: Send + Sync {
-    fn is_valid_target(world: &World, target: Entity) -> bool;
+pub trait Ability : Clone + Send + Sync + 'static {
+    type TargetType : Clone + Send + Sync + 'static;
+    
+    fn add_systems(app: &mut App);
 }
 
-pub struct MarkerTargetFilter<Marker : Component + Sync + Send> {
-    _marker: std::marker::PhantomData<Marker>,
-}
-
-impl<Marker : Component + Sync + Send> TargetFilter for MarkerTargetFilter<Marker> {
-    fn is_valid_target(world: &World, target: Entity) -> bool {
-        world.get::<Marker>(target).is_some()
-    }
-}
-
-#[derive(Clone, Copy)]
-pub struct Target {
-    pub target_position: Vec3,
-}
-
-pub struct Damage {}
-
-pub struct CastEvent<T: Send + Sync> {
+#[derive(Event)]
+pub struct AttemptCastEvent<T: Ability> {
+    pub ability: T,
     pub caster: Entity,
-    pub target: Target,
-    _marker: std::marker::PhantomData<T>,
+    pub target: T::TargetType,
+    pub _marker: std::marker::PhantomData<T>,
 }
 
-impl<T: Send + Sync> CastEvent<T> {
-    pub fn new(caster: Entity, target: Target) -> Self {
-        Self {
-            target,
-            caster,
-            _marker: std::marker::PhantomData,
+#[derive(Event)]
+pub struct CastEvent<T: Ability> {
+    pub ability: T,
+    pub caster: Entity,
+    pub target: T::TargetType,
+    pub _marker: std::marker::PhantomData<T>,
+}
+
+#[derive(Component)]
+pub struct AbilitySlot<T: Ability> {
+    pub cooldown: Timer,
+    pub name: &'static str,
+    pub _ability: std::marker::PhantomData<T>,
+}
+
+pub fn handle_cast_attempts<T: Ability>(mut commands: Commands, mut cast_attempts: EventReader<AttemptCastEvent<T>>, mut cast_events: EventWriter<CastEvent<T>>, mut query: Query<&mut AbilitySlot<T>>) {
+    for cast_attempt in cast_attempts.read() {
+        if let Ok(mut ability_slot) = query.get_mut(cast_attempt.caster) {
+            if ability_slot.cooldown.finished() {
+                cast_events.write(
+                    CastEvent {
+                        ability: cast_attempt.ability.clone(),
+                            caster: cast_attempt.caster,
+                            target: cast_attempt.target.clone(),
+                            _marker: PhantomData
+                    }
+                );
+                ability_slot.cooldown.reset();
+            }
+        } else {
+            warn!("Entity {} attempted to cast an ability it doesn't own.", cast_attempt.caster);
         }
     }
 }
 
+
 #[derive(Default)]
-pub struct ProjectileAbility<TF: TargetFilter> {
-    marker: std::marker::PhantomData<TF>,
+pub struct AbilityPlugin<T: Ability> {
+    _marker: PhantomData<T>
 }
 
-
-
-
+impl<T: Ability> Plugin for AbilityPlugin<T> {
+    fn build(&self, app: &mut App) {
+        app.add_event::<AttemptCastEvent<T>>();       
+        app.add_event::<CastEvent<T>>();
+        app.add_systems(
+            Update,
+            handle_cast_attempts::<T>
+        );
+        T::add_systems(app);
+    }
+}
 
