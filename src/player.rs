@@ -1,8 +1,13 @@
+use std::marker;
+use std::marker::PhantomData;
 use std::time::Duration;
 
 use bevy::audio::Volume;
 use bevy::prelude::*;
 
+use crate::ability::dash::Dash;
+use crate::ability::dash::DashParams;
+use crate::ability::AttemptCastEvent;
 use crate::bullet;
 use crate::common::Inertia;
 use crate::fx;
@@ -23,16 +28,15 @@ pub struct PlayerCamera;
 
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
-    mut player_query: Query<(&mut Transform, &mut DashTimer), With<Player>>,
+    mut player_query: Query<(Entity, &mut Transform), With<Player>>,
     camera_query: Query<&GlobalTransform, With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    if let (Ok((mut player_transform, mut dash_timer)), Ok(camera_transform)) = (player_query.single_mut(), camera_query.single()) {
+    if let (Ok((player, mut player_transform)), Ok(camera_transform)) = (player_query.single_mut(), camera_query.single()) {
         let mut velocity = Vec3::ZERO;
         let speed = 4.0;
-
-        dash_timer.timer.tick(time.delta());
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
         let forward = camera_transform.forward();
@@ -57,13 +61,7 @@ pub fn handle_movement(
         }
 
         if keyboard_input.pressed(KeyCode::Space) {
-            if dash_timer.timer.finished() {
-                // Dash forward in the direction the player is facing
-                let dash_distance = 2.5; // Distance to dash
-
-                player_transform.translation += velocity * dash_distance;
-                dash_timer.timer.reset(); // Reset dash timer
-            }
+            dash_action.write(AttemptCastEvent { caster: player, params: DashParams::Directional(velocity), _marker: PhantomData::default()});
         }
 
         // Normalize diagonal movement and apply

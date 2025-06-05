@@ -21,6 +21,8 @@ mod ability;
 
 use state::GameState;
 
+use crate::ability::dash::Dash;
+use crate::ability::AbilitySlot;
 use crate::player::PlayerCamera;
 
 fn main() {
@@ -29,8 +31,10 @@ fn main() {
             global_volume: Volume::Linear(2.0).into(),
             ..default()
         }))
-        .add_plugins(
-            ui::HealthBarPlugin
+        .add_plugins((
+            ui::HealthBarPlugin,
+            ability::AbilityPlugin::<Dash>::new()
+        )
         )
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
@@ -89,8 +93,12 @@ fn setup(
                 base_color: Color::srgb(10.0, 10.0, 10.0),
                 ..default()
             })),
-            player::DashTimer {
-                timer: Timer::from_seconds(2.0, TimerMode::Once), // Dash cooldown
+            AbilitySlot {
+                cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+                name: "Dash",
+                ability: Dash {
+                    range: 2.0
+                }
             },
             common::Living {
                 health: 100,
