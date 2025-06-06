@@ -98,7 +98,7 @@ fn setup(
             player::Player,
             Mesh3d(meshes.add(Sphere::new(0.5))),
             MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(10.0, 10.0, 10.0),
+                base_color: Color::srgb(10.0, 0.0, 0.0),
                 ..default()
             })),
             AbilitySlot {
@@ -146,10 +146,10 @@ fn setup(
                 ..default()
             },
             Projection::from(PerspectiveProjection {
-                fov: 70.0_f32.to_radians(),
+                fov: 90.0_f32.to_radians(),
                 ..default()
             }),
-            Transform::from_xyz(0.0, 10.0, -10.0).looking_at(Vec3::ZERO, Vec3::Y),
+            Transform::from_xyz(0.0, 10.0, -5.77).looking_at(Vec3::ZERO, Vec3::Y),
             // FirstPersonCamera::default(),
             SpatialListener::default(), // Spatial audio listener
             Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended

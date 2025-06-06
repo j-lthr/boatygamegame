@@ -20,7 +20,6 @@ pub struct DashTimer {
 #[derive(Component)]
 pub struct PlayerCamera;
 
-
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
     mut player_query: Query<(Entity, &mut Transform), With<Player>>,
@@ -69,25 +68,19 @@ pub fn handle_movement(
 
 /// System to make camera follow player with smooth interpolation
 pub fn handle_camera(
-    player_query: Query<(&Transform, &Inertia), (With<Player>, Without<Camera3d>)>,
+    player_query: Query<&Transform, (With<Player>, Without<Camera3d>)>,
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_transform, player_inertia)), Ok(mut camera_transform)) =
+    if let (Ok(player_transform), Ok(mut camera_transform)) =
         (player_query.single(), camera_query.single_mut())
-
-        {
-
-        let player_velocity_direction = (player_transform.translation - player_inertia.prev_pos).normalize_or_zero();
-        
-        // Define the offset from player to camera (above and behind)
-        let camera_offset = (-10.0 * player_velocity_direction).with_y(10.0);
-
-        // Calculate desired camera position
+    {
+        // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
+        let camera_offset = Vec3::new(0.0, 10.0, -5.77);
         let target_position = player_transform.translation + camera_offset;
 
         // Lerp factor - higher values = faster following, lower = smoother
-        let lerp_factor = 1.0 * time.delta_secs();
+        let lerp_factor = 10.0 * time.delta_secs();
 
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform

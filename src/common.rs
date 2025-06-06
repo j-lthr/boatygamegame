@@ -32,7 +32,7 @@ pub fn check_player_death(
 ) {
     for living in &player_query {
         if living.health <= 0 {
-            println!("Game Over! Player health: {}", living.health);
+            info!("Game Over! Player health: {}", living.health);
             next_state.set(state::GameState::GameOver);
             break; // Only need to trigger game over once
         }
@@ -55,7 +55,7 @@ pub fn handle_damage_events(
     for damage_event in damage_events.read() {
         if let Ok((mut living, target_transform)) = living_query.get_mut(damage_event.target) {
             living.health -= damage_event.damage;
-            println!("Entity {:?} took {} damage! Health: {}", 
+            info!("Entity {:?} took {} damage! Health: {}", 
                 damage_event.target, damage_event.damage, living.health);
                 
             // Check if entity died
@@ -113,7 +113,7 @@ pub fn handle_enemy_deaths(
 ) {
     for (entity, living) in &enemy_query {
         if living.health <= 0 {
-            println!("Enemy died! Despawning entity {:?}", entity);
+            info!("Enemy died! Despawning entity {:?}", entity);
             commands.entity(entity).despawn();
         }
     }
