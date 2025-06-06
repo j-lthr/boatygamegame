@@ -114,7 +114,7 @@ pub fn handle_damage_events(
 
 pub fn handle_enemy_deaths(
     mut commands: Commands,
-    enemy_query: Query<(Entity, &Living), With<enemy::Enemy>>,
+    enemy_query: Query<(Entity, &Living), With<enemy::Boulder>>,
 ) {
     for (entity, living) in &enemy_query {
         if living.health <= 0 {

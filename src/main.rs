@@ -39,15 +39,13 @@ fn main() {
             ui::DamageNumbersPlugin,
             ability::AbilityPlugin::<Dash>::new(),
             ability::AbilityPlugin::<Shotgun>::new(),
-            ability::AbilityPlugin::<Slam>::new()
+            ability::AbilityPlugin::<Slam>::new(),
+            enemy::EnemyPlugin::<enemy::Boulder>::new()
         )
         )
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
         .init_resource::<state::GameScore>()
-        .insert_resource(enemy::EnemySpawnTimer {
-            timer: Timer::from_seconds(2.0, TimerMode::Repeating),
-        })
         .add_event::<event::SpawnEvent>()
         .add_event::<event::DamageEvent>()
         .add_systems(Startup, (setup, fx::blood::setup_blood_materials, ui::hud::score::setup_score_ui))
@@ -60,7 +58,6 @@ fn main() {
                 projectile::handle_movement,
                 projectile::collide,
                 projectile::cleanup,
-                enemy::spawn_enemies,
                 enemy::move_enemies,
                 fx::blood::blood_particle_physics,
                 fx::blood::blood_particle_rendering,

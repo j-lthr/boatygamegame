@@ -124,9 +124,8 @@ pub fn cleanup_game_over_screen(
     mut commands: Commands,
     game_over_query: Query<Entity, With<GameOverScreen>>,
     mut score: ResMut<GameScore>,
-    mut enemy_spawn_timer: ResMut<enemy::EnemySpawnTimer>,
     // Reset all game entities
-    enemy_query: Query<Entity, With<enemy::Enemy>>,
+    enemy_query: Query<Entity, With<enemy::Boulder>>,
     projectile_query: Query<Entity, With<projectile::Projectile>>,
     mut player_query: Query<(&mut Transform, &mut common::Living), With<player::Player>>,
 ) {
@@ -138,8 +137,6 @@ pub fn cleanup_game_over_screen(
     // Reset score
     *score = GameScore::default();
 
-    // Reset enemy spawn timer
-    enemy_spawn_timer.timer.reset();
 
     // Clean up all game entities
     for entity in &enemy_query {
