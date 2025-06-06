@@ -10,6 +10,11 @@ pub struct Living {
     pub health: i32,
     pub max_health: i32,
 }
+impl Living {
+    pub(crate) fn health_fraction(&self) -> f32 {
+        self.health as f32 / self.max_health as f32
+    }
+}
 
 
 #[derive(Component)]

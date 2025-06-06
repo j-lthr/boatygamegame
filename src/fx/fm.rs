@@ -209,7 +209,7 @@ pub const SLAM: FMSoundConfig = FMSoundConfig {
 
 pub const DASH_SOUND: FMSoundConfig = FMSoundConfig {
     carrier_freq: 660.0, // Higher pitch for speed feeling
-    modulator_freq: 220.0, // Lower modulator
+    modulator_freq: 1320.0, // Lower modulator
     modulation_depth: 2.0, // Some FM for texture
     attack: 0.0, // Instant attack
     decay: 0.15, // Quick decay

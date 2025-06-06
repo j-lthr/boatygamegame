@@ -18,6 +18,7 @@ mod state;
 mod projectile;
 mod powerup;
 mod ability;
+mod utils;
 
 use state::GameState;
 
@@ -98,7 +99,7 @@ fn setup(
             player::Player,
             Mesh3d(meshes.add(Sphere::new(0.5))),
             MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(10.0, 0.0, 0.0),
+                base_color: Color::srgb(10.0, 10.0, 10.0),
                 ..default()
             })),
             AbilitySlot {

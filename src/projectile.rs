@@ -23,7 +23,7 @@ pub fn collide(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     projectile_query: Query<(Entity, &Transform, &Projectile)>,
-    mut target_query: Query<(Entity, &mut Transform, Option<&common::Living>), Without<Projectile>>,
+    mut target_query: Query<(Entity, &mut Transform, &common::Living), Without<Projectile>>,
     mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     blood_materials: Res<fx::blood::BloodMaterials>,
     mut damage_events: EventWriter<event::DamageEvent>,
@@ -44,43 +44,43 @@ pub fn collide(
                 commands.entity(projectile_entity).despawn();
 
                 // Apply damage if target has Living component
-                if living_opt.is_some() {
-                    // Emit damage event instead of directly modifying health
-                    damage_events.write(event::DamageEvent {
-                        target: entity,
-                        source: Some(projectile.source),
-                        damage: projectile.damage,
-                        position: target_transform.translation,
-                    });
+            
+                // Emit damage event instead of directly modifying health
+                damage_events.write(event::DamageEvent {
+                    target: entity,
+                    source: Some(projectile.source),
+                    damage: projectile.damage,
+                    position: target_transform.translation,
+                });
 
-                    let projectile_velocity = projectile.direction * projectile.speed;
+                let projectile_velocity = projectile.direction * projectile.speed;
 
-                    fx::blood::spawn_blood_explosion(
-                        &mut commands,
-                        &mut meshes,
-                        projectile_transform.translation,
-                        &blood_materials,
-                        15,
-                        2.5,
-                        -projectile_velocity * 0.1,
-                        Vec3::new(1.0, 0.5, 0.0),
-                    );
+                fx::blood::spawn_blood_explosion(
+                    &mut commands,
+                    &mut meshes,
+                    projectile_transform.translation,
+                    &blood_materials,
+                    15,
+                    2.5,
+                    -projectile_velocity * 0.1,
+                    Vec3::new(1.0, 0.5, 0.0),
+                );
 
-                    let shoot_sound_handle = shoot_sounds.add(fx::fm::FMSound {
-                        config: fx::fm::HIT_SOUND,
-                        duration: Duration::from_millis(100),
-                    });
+                let shoot_sound_handle = shoot_sounds.add(fx::fm::FMSound {
+                    config: fx::fm::HIT_SOUND,
+                    duration: Duration::from_millis(100),
+                });
 
-                    commands.spawn((
-                        AudioPlayer(shoot_sound_handle),
-                        PlaybackSettings::DESPAWN
-                            .with_spatial(true)
-                            .with_volume(Volume::Decibels(12.0)),
-                        Transform::from_translation(target_transform.translation),
-                    ));
+                commands.spawn((
+                    AudioPlayer(shoot_sound_handle),
+                    PlaybackSettings::DESPAWN
+                        .with_spatial(true)
+                        .with_volume(Volume::Decibels(12.0)),
+                    Transform::from_translation(target_transform.translation),
+                ));
 
-                    target_transform.translation += projectile_velocity.with_y(0.0) * 0.01;
-                }
+                target_transform.translation += projectile_velocity.with_y(0.0) * 0.01;
+                
                 break;
             }
         }

@@ -1,6 +1,8 @@
+use std::f32;
 use std::f32::consts::PI;
 use bevy::prelude::*;
 
+use crate::common::Living;
 use crate::event;
 use crate::player;
 use crate::procedural;
@@ -9,6 +11,7 @@ use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::shotgun::{Shotgun, ShotgunParams};
 use crate::ability::dash::{Dash, DashParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
+use crate::utils::normal_dist_1d;
 
 // Component for enemies
 #[derive(Component)]
@@ -48,16 +51,22 @@ pub fn spawn_enemies(
             );
 
             let mesh = meshes.add(procedural::rock::generate_rock_mesh(&procedural::rock::RockConfig::default()));
+            
+            let pack_size = fastrand::i32(2..4);
+
+            for i in 0..pack_size {
+
+            let offset_angle = i as f32 / pack_size as f32 * f32::consts::PI * 2.0;
 
             let enemy = commands
                 .spawn((
-                    Mesh3d(mesh),
+                    Mesh3d(mesh.clone()),
                     MeshMaterial3d(materials.add(StandardMaterial {
                         base_color: Color::srgb(10.0, 5.0, 0.0),
                         emissive: Color::srgb(4.0, 2.0, 0.0).into(), // Slightly glowing
                         ..default()
                     })),
-                    Transform::from_translation(spawn_pos),
+                    Transform::from_translation(spawn_pos + vec3(f32::cos(offset_angle),0.0, f32::sin(offset_angle))),
                     Enemy {
                         speed: 5.0 + fastrand::f32() * 0.2,
                         jitter: 0.1, //0.1 + fastrand::f32() * 0.2, // Random jitter between 0.1 and 0.3
@@ -66,27 +75,27 @@ pub fn spawn_enemies(
                         cooldown: Timer::from_seconds(0.25, TimerMode::Once),
                         name: "Slam",
                         ability: Slam {
-                            range: 3.0,
+                            range: normal_dist_1d(3.0, 0.5),
                             damage: 33,
                             knockback_force: 3.0,
                         }
                     },
                     AbilitySlot {
-                        cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+                        cooldown: Timer::from_seconds(normal_dist_1d(3.0, 0.5).abs(), TimerMode::Once),
                         name: "Shotgun",
                         ability: Shotgun {
-                            bullet_count: 3,
-                            spread: 0.8,
-                            speed: 25.0,
-                            lifetime: 2.0,
-                            damage: 5,
+                            bullet_count: 10,
+                            spread: 2.0,
+                            speed: 30.0,
+                            lifetime: 1.0,
+                            damage: 1,
                         }
                     },
                     AbilitySlot {
                         cooldown: Timer::from_seconds(3.0, TimerMode::Once),
                         name: "Dash",
                         ability: Dash {
-                            range: 4.0,
+                            range: 6.0,
                         }
                     },
                     common::Living {
@@ -96,7 +105,8 @@ pub fn spawn_enemies(
                 ))
                 .id();
 
-            spawn_event_writer.write(event::SpawnEvent { entity: enemy });
+                spawn_event_writer.write(event::SpawnEvent { entity: enemy });
+            }
         }
     }
 }
@@ -147,18 +157,25 @@ pub fn move_enemies(
 
 
 pub fn enemy_combat_ai(
-    enemy_query: Query<(Entity, &Transform, &AbilitySlot<Slam>, &AbilitySlot<Shotgun>, &AbilitySlot<Dash>), With<Enemy>>,
+    mut enemy_query: Query<(Entity, &Transform, &AbilitySlot<Slam>, &AbilitySlot<Shotgun>, &AbilitySlot<Dash>, &Living, &mut Enemy)>,
     player_query: Query<&Transform, (With<player::Player>, Without<Enemy>)>,
     mut slam_action: EventWriter<AttemptCastEvent<Slam>>,
     mut shotgun_action: EventWriter<AttemptCastEvent<Shotgun>>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
 ) {
     if let Ok(player_transform) = player_query.single() {
-        for (enemy_entity, enemy_transform, slam_ability, _shotgun_ability, dash_ability) in &enemy_query {
+        for (enemy_entity, enemy_transform, slam_ability, _shotgun_ability, dash_ability, living, mut enemy) in &mut enemy_query {
             let distance = enemy_transform.translation.distance(player_transform.translation);
+
+            let enraged = living.health_fraction() < 0.5;
+
+            if enraged {
+                enemy.speed = 7.0;
+                enemy.jitter = 0.3;
+            }
             
             // Use dash to close distance if far away (aggressive pursuit)
-            if distance > 8.0 && distance <= dash_ability.ability.range + 8.0 {
+            if distance > 8.0 && enraged  {
                 let direction = (player_transform.translation - enemy_transform.translation)
                     .normalize_or_zero()
                     .with_y(0.0);
@@ -169,8 +186,9 @@ pub fn enemy_combat_ai(
                     _marker: std::marker::PhantomData::default(),
                 });
             }
+
             // Use slam if in range
-            else if distance <= slam_ability.ability.range {
+            if distance <= slam_ability.ability.range {
                 slam_action.write(AttemptCastEvent {
                     caster: enemy_entity,
                     params: SlamParams {
@@ -179,8 +197,9 @@ pub fn enemy_combat_ai(
                     _marker: std::marker::PhantomData::default(),
                 });
             }
-            // Use shotgun if out of slam range but within shooting range
-            else if distance <= 15.0 { // Shooting range
+
+            /*// Use shotgun if out of slam range but within shooting range
+            if distance <= 30.0 { // Shooting range
                 shotgun_action.write(AttemptCastEvent {
                     caster: enemy_entity,
                     params: ShotgunParams {
@@ -188,7 +207,7 @@ pub fn enemy_combat_ai(
                     },
                     _marker: std::marker::PhantomData::default(),
                 });
-            }
+            }*/
         }
     }
 }

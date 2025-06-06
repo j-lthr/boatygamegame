@@ -76,11 +76,11 @@ pub fn handle_camera(
         (player_query.single(), camera_query.single_mut())
     {
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = Vec3::new(0.0, 10.0, -5.77);
+        let camera_offset = Vec3::new(0.0, 10.0, -6.0);
         let target_position = player_transform.translation + camera_offset;
 
         // Lerp factor - higher values = faster following, lower = smoother
-        let lerp_factor = 10.0 * time.delta_secs();
+        let lerp_factor = 1.0 * time.delta_secs();
 
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
