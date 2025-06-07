@@ -12,6 +12,7 @@ pub struct Shotgun {
     pub speed: f32,
     pub lifetime: f32,
     pub damage: i32,
+    pub color: Color,
 }
 
 #[derive(Copy, Clone)]
@@ -39,7 +40,7 @@ pub fn cast_shotgun(
                 base_color: Color::srgb(0.2, 0.2, 0.2),
                 metallic: 0.5,
                 perceptual_roughness: 0.5,
-                emissive: Color::srgb(5.0, 5.0, 5.0).into(),
+                emissive: cast_event.ability.color.into(),
                 ..default()
             });
 

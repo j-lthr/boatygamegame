@@ -4,6 +4,7 @@ use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::common;
+use crate::common::Faction;
 use crate::event;
 use crate::fx;
 use crate::state::GameScore;
@@ -27,12 +28,19 @@ pub fn collide(
     mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     blood_materials: Res<fx::blood::BloodMaterials>,
     mut damage_events: EventWriter<event::DamageEvent>,
+    faction_query: Query<&Faction>
 ) {
     for (projectile_entity, projectile_transform, projectile) in &projectile_query {
         for (entity, mut target_transform, living_opt) in &mut target_query {
             // Skip self-damage
             if entity == projectile.source {
                 continue;
+            }
+
+            if let (Ok(source_faction), Ok(target_faction)) = (faction_query.get(projectile.source), faction_query.get(entity)) {
+                if source_faction == target_faction {
+                    continue;
+                }
             }
 
             let distance = projectile_transform

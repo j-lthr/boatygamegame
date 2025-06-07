@@ -2,6 +2,8 @@ use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::motion_blur::MotionBlur;
 use bevy::core_pipeline::post_process::ChromaticAberration;
 use bevy::core_pipeline::tonemapping::Tonemapping;
+use bevy::ecs::schedule::graph::Direction;
+use bevy::pbr::{Atmosphere, AtmosphereSettings};
 use bevy::prelude::*;
 
 
@@ -26,6 +28,8 @@ use crate::ability::dash::Dash;
 use crate::ability::shotgun::Shotgun;
 use crate::ability::slam::Slam;
 use crate::ability::AbilitySlot;
+use crate::common::Faction;
+use crate::enemy::spawn::SpawnerTarget;
 use crate::player::PlayerCamera;
 
 fn main() {
@@ -40,7 +44,8 @@ fn main() {
             ability::AbilityPlugin::<Dash>::new(),
             ability::AbilityPlugin::<Shotgun>::new(),
             ability::AbilityPlugin::<Slam>::new(),
-            enemy::EnemyPlugin::<enemy::Boulder>::new()
+            enemy::EnemyPlugin::<enemy::Boulder>::new(),
+            enemy::spawn::register
         )
         )
         .add_audio_source::<fx::fm::FMSound>()
@@ -89,6 +94,8 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: ResMut<AssetServer>,
 ) {
+
+    let player_color = Color::srgb(10.0, 10.0, 10.0);
     // Player spawn point (invisible, camera will follow this)
     let player = commands
         .spawn((
@@ -96,14 +103,14 @@ fn setup(
             player::Player,
             Mesh3d(meshes.add(Sphere::new(0.5))),
             MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(10.0, 10.0, 10.0),
+                base_color: player_color,
                 ..default()
             })),
             AbilitySlot {
                 cooldown: Timer::from_seconds(1.0, TimerMode::Once),
                 name: "Dash",
                 ability: Dash {
-                    range: 2.0
+                    range: 10.0
                 }
             },
             common::Living {
@@ -123,16 +130,25 @@ fn setup(
                     speed: 30.0,
                     lifetime: 1.0,
                     damage: 1,
+                    color: player_color,
                 }
             },
+            SpawnerTarget,
+            Faction::Friendly
         ))
         .id();
 
-    let ground_plane = asset_server.load(GltfAssetLabel::Scene(0).from_asset("models/ground.glb"));
-
-    commands.spawn(SceneRoot(ground_plane));
-
     commands.send_event(event::SpawnEvent { entity: player });
+
+    /*commands.spawn((
+        DirectionalLight {
+            color: Color::linear_rgb(1.0,1.0,1.0),
+            illuminance: 100000.0,
+            ..Default::default()
+        },
+        Transform::from_xyz(1.0, -0.4, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+        )
+    );*/
 
     // First-person camera
     commands
@@ -144,7 +160,7 @@ fn setup(
                 ..default()
             },
             Projection::from(PerspectiveProjection {
-                fov: 90.0_f32.to_radians(),
+                fov: 120.0_f32.to_radians(),
                 ..default()
             }),
             Transform::from_xyz(0.0, 10.0, -5.77).looking_at(Vec3::ZERO, Vec3::Y),
@@ -158,6 +174,12 @@ fn setup(
             },
             ChromaticAberration::default(),
             PlayerCamera,
+            //Atmosphere::EARTH,
+            /*AtmosphereSettings {
+                aerial_view_lut_max_distance: 3.2e5,
+                scene_units_to_m: 1e+4,
+                ..Default::default()
+            },*/
         ));
 
     commands.spawn((
@@ -167,5 +189,14 @@ fn setup(
             clear_color: ClearColorConfig::Custom(Color::NONE),
             ..default()
         },
+    ));
+
+    commands.spawn((
+        AudioPlayer(asset_server.load::<AudioSource>("audio/orch_game.wav")),
+        PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            volume: Volume::Decibels(-24.0),
+            ..default()
+        }
     ));
 }

@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 
 pub mod boulder;
+pub mod spawn;
 
 pub trait Enemy: Component + Clone + Send + Sync + 'static {
     type SpawnParams: Clone + Send + Sync + 'static;
@@ -13,6 +14,11 @@ pub trait Enemy: Component + Clone + Send + Sync + 'static {
 pub struct AttemptSpawnEvent<T: Enemy> {
     pub params: T::SpawnParams,
     pub _marker: PhantomData<T>,
+}
+impl<T: Enemy> AttemptSpawnEvent<T> {
+    fn new(params: T::SpawnParams) -> Self {
+        Self { params, _marker: PhantomData }
+    }
 }
 
 pub struct EnemyPlugin<T: Enemy> {

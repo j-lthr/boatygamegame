@@ -2,6 +2,7 @@ use std::f32;
 use std::f32::consts::PI;
 use bevy::prelude::*;
 
+use crate::common::Faction;
 use crate::common::Living;
 use crate::event;
 use crate::player;
@@ -13,6 +14,8 @@ use crate::ability::dash::{Dash, DashParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 use crate::utils::normal_dist_1d;
 use super::{Enemy, AttemptSpawnEvent};
+
+pub const BOULDER_COLOR: Color = Color::srgb(4.0, 2.0, 4.0);
 
 // Component for boulder enemies
 #[derive(Component, Clone)]
@@ -45,8 +48,8 @@ pub fn handle_boulder_spawn(
                 .spawn((
                     Mesh3d(mesh.clone()),
                     MeshMaterial3d(materials.add(StandardMaterial {
-                        base_color: Color::srgb(10.0, 5.0, 0.0),
-                        emissive: Color::srgb(4.0, 2.0, 0.0).into(), // Slightly glowing
+                        base_color: Color::srgb(10.0, 5.0, 10.0),
+                        emissive: BOULDER_COLOR.into(), // Slightly glowing
                         ..default()
                     })),
                     Transform::from_translation(spawn_attempt.params.position + vec3(f32::cos(offset_angle),0.0, f32::sin(offset_angle))),
@@ -64,14 +67,15 @@ pub fn handle_boulder_spawn(
                         }
                     },
                     AbilitySlot {
-                        cooldown: Timer::from_seconds(normal_dist_1d(3.0, 0.5).abs(), TimerMode::Once),
+                        cooldown: Timer::from_seconds(0.25, TimerMode::Once),
                         name: "Shotgun",
                         ability: Shotgun {
-                            bullet_count: 10,
-                            spread: 2.0,
+                            bullet_count: 1,
+                            spread: 0.0,
                             speed: 30.0,
                             lifetime: 1.0,
                             damage: 1,
+                            color: BOULDER_COLOR,
                         }
                     },
                     AbilitySlot {
@@ -85,6 +89,7 @@ pub fn handle_boulder_spawn(
                         health: 8,
                         max_health: 8,
                     },
+                    Faction::Enemy
                 ))
                 .id();
 
@@ -152,8 +157,8 @@ pub fn boulder_combat_ai(
             let enraged = living.health_fraction() < 0.5;
 
             if enraged {
-                boulder.speed = 7.0;
-                boulder.jitter = 0.3;
+                boulder.speed = 15.0;
+                boulder.jitter = 1.0;
             }
             
             // Use dash to close distance if far away (aggressive pursuit)
@@ -180,8 +185,8 @@ pub fn boulder_combat_ai(
                 });
             }
 
-            /*// Use shotgun if out of slam range but within shooting range
-            if distance <= 30.0 { // Shooting range
+            // Use shotgun if out of slam range but within shooting range
+            if distance >= 10.0 { // Shooting range
                 shotgun_action.write(AttemptCastEvent {
                     caster: boulder_entity,
                     params: ShotgunParams {
@@ -189,7 +194,7 @@ pub fn boulder_combat_ai(
                     },
                     _marker: std::marker::PhantomData::default(),
                 });
-            }*/
+            }
         }
     }
 }

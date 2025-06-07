@@ -30,7 +30,7 @@ pub fn handle_movement(
 ) {
     if let (Ok((player, mut player_transform)), Ok(camera_transform)) = (player_query.single_mut(), camera_query.single()) {
         let mut velocity = Vec3::ZERO;
-        let speed = 4.0;
+        let speed = 10.0;
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
         let forward = camera_transform.forward();
@@ -54,7 +54,7 @@ pub fn handle_movement(
             velocity -= right_horizontal;
         }
 
-        if keyboard_input.pressed(KeyCode::Space) {
+        if keyboard_input.pressed(KeyCode::Space) && velocity.length() > 1e-6 {
             dash_action.write(AttemptCastEvent { caster: player, params: DashParams::Directional(velocity), _marker: PhantomData::default()});
         }
 
@@ -80,7 +80,7 @@ pub fn handle_camera(
         let target_position = player_transform.translation + camera_offset;
 
         // Lerp factor - higher values = faster following, lower = smoother
-        let lerp_factor = 1.0 * time.delta_secs();
+        let lerp_factor = 10.0 * time.delta_secs();
 
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
@@ -89,7 +89,7 @@ pub fn handle_camera(
 
         // Make camera look at the player
         let look_target = player_transform.translation + Vec3::new(0.0, 0.5, 0.0); // Look slightly above player center
-        camera_transform.look_at(look_target, Vec3::Y);
+        //camera_transform.look_at(look_target, Vec3::Y);
     }
 }
 

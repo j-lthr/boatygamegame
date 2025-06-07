@@ -27,7 +27,7 @@ pub fn spawn_damage_numbers(
         
         // Different colors for different damage sources
         let color = match damage_event.source {
-            Some(_) => Color::srgb(1.0, 0.3, 0.3), // Red for player/enemy damage
+            Some(_) => Color::srgba(1.0, 1.0, 1.0, 0.0), // Red for player/enemy damage
             None => Color::srgb(1.0, 1.0, 0.3),    // Yellow for environmental damage
         };
 

@@ -16,6 +16,12 @@ impl Living {
     }
 }
 
+#[derive(Component, PartialEq, Eq)]
+pub enum Faction {
+    Friendly,
+    Enemy
+}
+
 
 #[derive(Component)]
 pub struct Inertia {

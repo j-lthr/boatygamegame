@@ -2,6 +2,8 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
+use crate::enemy::boulder::BOULDER_COLOR;
+
 // Enhanced blood particle component with realistic properties
 #[derive(Component)]
 pub struct BloodParticle {
@@ -46,7 +48,7 @@ pub fn setup_blood_materials(
         metallic: 0.0,
         alpha_mode: AlphaMode::Blend,
         unlit: false, // Keep lighting for realism
-        emissive: Color::srgb(10.0, 5.0, 0.0).into(), // Slight glow
+        emissive: BOULDER_COLOR.into(), // Slight glow
         ..default()
     });
 
@@ -55,7 +57,7 @@ pub fn setup_blood_materials(
         metallic: 0.0,
         alpha_mode: AlphaMode::Blend,
         unlit: false,
-        emissive: Color::srgb(4.0, 1.0, 0.01).into(),
+        emissive: BOULDER_COLOR.into(),
         ..default()
     });
 
@@ -64,7 +66,7 @@ pub fn setup_blood_materials(
         metallic: 0.0,
         alpha_mode: AlphaMode::Blend,
         unlit: false,
-        emissive: Color::srgb(2.0, 0.5, 0.001).into(),
+        emissive: BOULDER_COLOR.into(),
         ..default()
     });
 
