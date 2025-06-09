@@ -1,202 +1,119 @@
-use bevy::core_pipeline::bloom::Bloom;
-use bevy::core_pipeline::motion_blur::MotionBlur;
-use bevy::core_pipeline::post_process::ChromaticAberration;
-use bevy::core_pipeline::tonemapping::Tonemapping;
-use bevy::ecs::schedule::graph::Direction;
-use bevy::pbr::{Atmosphere, AtmosphereSettings};
 use bevy::prelude::*;
-
 
 use bevy::audio::{AddAudioSource, AudioPlugin, Volume};
 
-mod fx;
-mod procedural;
-mod ui;
+mod ability;
+mod common;
 mod enemy;
 mod event;
+mod fx;
+mod init;
+mod loot;
 mod player;
-mod common;
-mod state;
+mod procedural;
 mod projectile;
-mod powerup;
-mod ability;
+mod rune;
+mod state;
+mod ui;
 mod utils;
 
+use bevy::window::WindowMode;
 use state::GameState;
 
-use crate::ability::dash::Dash;
-use crate::ability::shotgun::Shotgun;
-use crate::ability::slam::Slam;
-use crate::ability::AbilitySlot;
-use crate::common::Faction;
-use crate::enemy::spawn::SpawnerTarget;
-use crate::player::PlayerCamera;
+use crate::init::{DespawnOnReset, GameInit};
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(AudioPlugin {
-            global_volume: Volume::Linear(2.0).into(),
-            ..default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(AudioPlugin {
+                    global_volume: Volume::Linear(1.0).into(),
+                    ..default()
+                })
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resizable: false,
+                        mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+                        ..default()
+                    }),
+                    ..Default::default()
+                }),
+        )
         .add_plugins((
+            player::plugin,
             ui::HealthBarPlugin,
             ui::DamageNumbersPlugin,
-            ability::AbilityPlugin::<Dash>::new(),
-            ability::AbilityPlugin::<Shotgun>::new(),
-            ability::AbilityPlugin::<Slam>::new(),
-            enemy::EnemyPlugin::<enemy::Boulder>::new(),
-            enemy::spawn::register
-        )
-        )
+            ui::hud::plugin,
+            ability::plugin,
+            enemy::plugin,
+            rune::plugin,
+            loot::plugin,
+            event::plugin,
+            init::plugin,
+        ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
         .init_resource::<state::GameScore>()
-        .add_event::<event::SpawnEvent>()
-        .add_event::<event::DamageEvent>()
-        .add_systems(Startup, (setup, fx::blood::setup_blood_materials, ui::hud::score::setup_score_ui))
+        .add_systems(
+            Startup,
+            (
+                spawn_music,
+                ui::hud::score::setup_score_ui,
+            ),
+        )
         .add_systems(
             Update,
             (
                 player::shoot_gun,
-                player::handle_camera,
                 player::handle_movement,
-                projectile::handle_movement,
-                projectile::collide,
-                projectile::cleanup,
-                enemy::move_enemies,
                 fx::blood::blood_particle_physics,
                 fx::blood::blood_particle_rendering,
                 fx::blood::cleanup_blood_particles,
-                fx::blood::fade_blood_splatters,
-                enemy::enemy_combat_ai,
-                ui::hud::score::update_score_display,
-                ui::hud::score::update_combo_system,
-                common::handle_inertia,
+                fx::blood::spawn_blood_explosion,
                 common::handle_damage_events,
-                common::check_player_death,
-                common::handle_enemy_deaths
+                common::handle_player_death,
+                common::emit_death_events,
+                common::handle_npc_death,
             )
                 .run_if(in_state(GameState::Playing)),
         )
         .add_systems(
             Update,
-            (ui::menu::game_over::handle_game_over_input, ui::menu::game_over::update_game_over_screen).run_if(in_state(GameState::GameOver)),
+            (
+                player::handle_camera,
+                common::handle_inertia,
+                projectile::handle_movement,
+                projectile::collide,
+                projectile::cleanup,
+            ),
         )
-        .add_systems(OnEnter(GameState::GameOver), ui::menu::game_over::setup_game_over_screen)
-        .add_systems(OnExit(GameState::GameOver), ui::menu::game_over::cleanup_game_over_screen)
+        .add_systems(
+            Update,
+            (
+                ui::menu::game_over::handle_game_over_input,
+                ui::menu::game_over::update_game_over_screen,
+            )
+                .run_if(in_state(GameState::GameOver)),
+        )
+        .add_systems(
+            OnEnter(GameState::GameOver),
+            ui::menu::game_over::setup_game_over_screen,
+        )
+        .add_systems(
+            OnExit(GameState::GameOver),
+            ui::menu::game_over::cleanup_game_over_screen,
+        )
         .run();
 }
 
 /// set up a simple 3D scene
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: ResMut<AssetServer>,
-) {
-
-    let player_color = Color::srgb(10.0, 10.0, 10.0);
-    // Player spawn point (invisible, camera will follow this)
-    let player = commands
-        .spawn((
-            Transform::from_xyz(0.0, 0.5, 0.0), // Eye level height
-            player::Player,
-            Mesh3d(meshes.add(Sphere::new(0.5))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: player_color,
-                ..default()
-            })),
-            AbilitySlot {
-                cooldown: Timer::from_seconds(1.0, TimerMode::Once),
-                name: "Dash",
-                ability: Dash {
-                    range: 10.0
-                }
-            },
-            common::Living {
-                health: 100,
-                max_health: 100,
-            },
-            common::Inertia {
-                prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
-                damping: 0.1,         // Damping factor for Verlet integration
-            },
-            AbilitySlot {
-                cooldown: Timer::from_seconds(0.5, TimerMode::Once),
-                name: "Shotgun",
-                ability: Shotgun {
-                    bullet_count: 10,
-                    spread: 0.5,
-                    speed: 30.0,
-                    lifetime: 1.0,
-                    damage: 1,
-                    color: player_color,
-                }
-            },
-            SpawnerTarget,
-            Faction::Friendly
-        ))
-        .id();
-
-    commands.send_event(event::SpawnEvent { entity: player });
-
-    /*commands.spawn((
-        DirectionalLight {
-            color: Color::linear_rgb(1.0,1.0,1.0),
-            illuminance: 100000.0,
-            ..Default::default()
-        },
-        Transform::from_xyz(1.0, -0.4, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
-        )
-    );*/
-
-    // First-person camera
-    commands
-        .spawn((
-            Camera3d::default(),
-            Camera {
-                hdr: true, // Enable HDR for better lighting
-                clear_color: ClearColorConfig::Custom(Color::BLACK),
-                ..default()
-            },
-            Projection::from(PerspectiveProjection {
-                fov: 120.0_f32.to_radians(),
-                ..default()
-            }),
-            Transform::from_xyz(0.0, 10.0, -5.77).looking_at(Vec3::ZERO, Vec3::Y),
-            // FirstPersonCamera::default(),
-            SpatialListener::default(), // Spatial audio listener
-            Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
-            Bloom::ANAMORPHIC,
-            MotionBlur {
-                shutter_angle: 1.0,
-                samples: 2,
-            },
-            ChromaticAberration::default(),
-            PlayerCamera,
-            //Atmosphere::EARTH,
-            /*AtmosphereSettings {
-                aerial_view_lut_max_distance: 3.2e5,
-                scene_units_to_m: 1e+4,
-                ..Default::default()
-            },*/
-        ));
-
-    commands.spawn((
-        Camera2d::default(),
-        Camera {
-            order: 1,
-            clear_color: ClearColorConfig::Custom(Color::NONE),
-            ..default()
-        },
-    ));
-
+fn spawn_music(mut commands: Commands, asset_server: ResMut<AssetServer>) {
     commands.spawn((
         AudioPlayer(asset_server.load::<AudioSource>("audio/orch_game.wav")),
         PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
             volume: Volume::Decibels(-24.0),
             ..default()
-        }
+        },
     ));
 }

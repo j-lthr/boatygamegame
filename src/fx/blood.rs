@@ -2,7 +2,8 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use crate::enemy::boulder::BOULDER_COLOR;
+use crate::{common::Living, enemy::boulder::BOULDER_COLOR, event::{DamageEvent, DeathEvent}, init::DespawnOnReset};
+
 
 // Enhanced blood particle component with realistic properties
 #[derive(Component)]
@@ -20,154 +21,100 @@ pub struct BloodParticle {
     stick_surface: Vec3, // Normal of the surface it's stuck to
 }
 
-// Component for blood splatter decals
-#[derive(Component)]
-pub struct BloodSplatter {
-    fade_timer: f32,
-    max_fade_time: f32,
-}
-
-
-// Resource to hold shared blood materials for performance
-#[derive(Resource)]
-pub struct BloodMaterials {
-    fresh_blood: Handle<StandardMaterial>,
-    medium_blood: Handle<StandardMaterial>,
-    old_blood: Handle<StandardMaterial>,
-    splatter_material: Handle<StandardMaterial>,
-}
-
-
-/// Setup blood materials with realistic properties
-pub fn setup_blood_materials(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let fresh_blood = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.8, 0.1, 0.1, 0.9), // Bright red, slightly transparent
-        metallic: 0.0,
-        alpha_mode: AlphaMode::Blend,
-        unlit: false, // Keep lighting for realism
-        emissive: BOULDER_COLOR.into(), // Slight glow
-        ..default()
-    });
-
-    let medium_blood = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.6, 0.08, 0.08, 0.8), // Darker red
-        metallic: 0.0,
-        alpha_mode: AlphaMode::Blend,
-        unlit: false,
-        emissive: BOULDER_COLOR.into(),
-        ..default()
-    });
-
-    let old_blood = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.4, 0.05, 0.02, 0.7), // Dark brown-red
-        metallic: 0.0,
-        alpha_mode: AlphaMode::Blend,
-        unlit: false,
-        emissive: BOULDER_COLOR.into(),
-        ..default()
-    });
-
-    let splatter_material = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.5, 0.05, 0.05, 0.6),
-        metallic: 0.0,
-        alpha_mode: AlphaMode::Blend,
-        unlit: true, // Splatters don't need complex lighting
-        ..default()
-    });
-
-    commands.insert_resource(BloodMaterials {
-        fresh_blood,
-        medium_blood,
-        old_blood,
-        splatter_material,
-    });
-}
-
-
 /// Enhanced function to spawn realistic blood explosion particles
 pub fn spawn_blood_explosion(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    position: Vec3,
-    blood_materials: &BloodMaterials,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials_: ResMut<Assets<StandardMaterial>>,
+    mut damage_events: EventReader<DamageEvent>,
+    mut death_events: EventReader<DeathEvent>,
+    transform_query: Query<(&Transform, &MeshMaterial3d<StandardMaterial>, &Living)>,
+    
+) {
+
+    let mut spawn_particles = |position: Vec3,
     particle_count: usize,
     explosion_force_base: f32,
     base_velocity: Vec3,
-    blood_color: Vec3,
-) {
+    blood_color: Color, materials: &mut ResMut<Assets<StandardMaterial>>| {
 
-    // Create varied particle meshes for realism
-    let small_sphere = meshes.add(Sphere::new(0.02));
-    let medium_sphere = meshes.add(Sphere::new(0.04));
-    let large_sphere = meshes.add(Sphere::new(0.07));
-    let particle_meshes = [small_sphere, medium_sphere, large_sphere];
-    
-    for _ in 0..particle_count {
-        // Random direction with bias toward horizontal spread
-        let angle_y = fastrand::f32() * 2.0 * PI;
-        let angle_x = (fastrand::f32() - 0.5) * PI * 0.4; // Biased toward horizontal
+        // Create varied particle meshes for realism
+        let small_sphere = meshes.add(Sphere::new(0.02));
+        let medium_sphere = meshes.add(Sphere::new(0.04));
+        let large_sphere = meshes.add(Sphere::new(0.07));
+        let particle_meshes = [small_sphere, medium_sphere, large_sphere];
         
-        let direction = Vec3::new(
-            angle_y.cos() * angle_x.cos(),
-            0.3 + fastrand::f32() * 0.4, // Upward but not too high
-            angle_y.sin() * angle_x.cos(),
-        ).normalize();
-        
-        // Varied explosion force for realistic spread
-        let force_multiplier = 0.5 + fastrand::f32() * 1.5;
-        let initial_velocity = direction * explosion_force_base * force_multiplier + base_velocity;
-        
-        // Small random offset from explosion center
-        let offset = Vec3::new(
-            (fastrand::f32() - 0.5) * 0.3,
-            0.1 + fastrand::f32() * 0.1,
-            (fastrand::f32() - 0.5) * 0.3,
-        );
-        
-        // Choose random particle size and corresponding material
-        let size_type = fastrand::usize(0..3);
-        let particle_mesh = particle_meshes[size_type].clone();
-        
-        // Determine initial blood properties
-        let size_factor = match size_type {
-            0 => 0.7 + fastrand::f32() * 0.3, // Small particles
-            1 => 1.0 + fastrand::f32() * 0.3, // Medium particles  
-            _ => 1.3 + fastrand::f32() * 0.4, // Large particles
-        };
-        
-        let viscosity_factor = 0.8 + fastrand::f32() * 0.4;
-        let max_lifetime = 5.0 + fastrand::f32() * 3.0;
-        
-        // Vary initial blood color slightly
-        let color_variation = 0.9 + fastrand::f32() * 0.2;
-        let initial_color = Color::srgba(
-            blood_color.x * color_variation,
-            blood_color.y * color_variation,
-            blood_color.z * color_variation,
-            0.9
-        );
-        
-        commands.spawn((
-            Mesh3d(particle_mesh),
-            MeshMaterial3d(blood_materials.fresh_blood.clone()),
-            Transform::from_translation(position + offset),
-            BloodParticle {
-                velocity: initial_velocity,
-                initial_velocity,
-                density: 1200.0,
-                pressure: 0.0,
-                lifetime: 0.0,
-                max_lifetime,
-                size_factor,
-                viscosity_factor,
-                initial_color,
-                is_stuck: false,
-                stick_surface: Vec3::ZERO,
-            },
-        ));
+        for _ in 0..particle_count {
+            // Random direction with bias toward horizontal spread
+            let angle_y = fastrand::f32() * 2.0 * PI;
+            let angle_x = (fastrand::f32() - 0.5) * PI * 0.4; // Biased toward horizontal
+            
+            let direction = Vec3::new(
+                angle_y.cos() * angle_x.cos(),
+                0.3 + fastrand::f32() * 0.4, // Upward but not too high
+                angle_y.sin() * angle_x.cos(),
+            ).normalize();
+            
+            // Varied explosion force for realistic spread
+            let force_multiplier = 0.5 + fastrand::f32() * 1.5;
+            let initial_velocity = direction * explosion_force_base * force_multiplier + base_velocity;
+            
+            // Small random offset from explosion center
+            let offset = Vec3::new(
+                (fastrand::f32() - 0.5) * 0.3,
+                0.1 + fastrand::f32() * 0.1,
+                (fastrand::f32() - 0.5) * 0.3,
+            );
+            
+            // Choose random particle size and corresponding material
+            let size_type = fastrand::usize(0..3);
+            let particle_mesh = particle_meshes[size_type].clone();
+            
+            // Determine initial blood properties
+            let size_factor = match size_type {
+                0 => 0.7 + fastrand::f32() * 0.3, // Small particles
+                1 => 1.0 + fastrand::f32() * 0.3, // Medium particles  
+                _ => 1.3 + fastrand::f32() * 0.4, // Large particles
+            };
+            
+            let viscosity_factor = 0.8 + fastrand::f32() * 0.4;
+            let max_lifetime = 5.0 + fastrand::f32() * 3.0;
+            
+            
+            commands.spawn((
+                Mesh3d(particle_mesh),
+                MeshMaterial3d(materials.add(
+                    StandardMaterial {
+                        base_color: Color::srgba(1.0,1.0,1.0,1.0),
+                        emissive: blood_color.into(),
+                        .. Default::default()
+                    }
+                )),
+                Transform::from_translation(position + offset),
+                BloodParticle {
+                    velocity: initial_velocity,
+                    initial_velocity,
+                    density: 1200.0,
+                    pressure: 0.0,
+                    lifetime: 0.0,
+                    max_lifetime,
+                    size_factor,
+                    viscosity_factor,
+                    initial_color: blood_color,
+                    is_stuck: false,
+                    stick_surface: Vec3::ZERO,
+                },
+                DespawnOnReset
+            ));
+        }
+    };
+
+    for death_event in death_events.read() {
+        if let Ok((transform, material, living)) = transform_query.get(death_event.entity) {
+            let color: Color = materials_.get(material.id()).unwrap().emissive.into();
+            spawn_particles(transform.translation, living.max_health as usize * 4, 4.0, Vec3::ZERO, color, &mut materials_);
+            info!("Spawning particles at {}", transform.translation);
+        }
     }
 }
 
@@ -256,23 +203,10 @@ pub fn blood_particle_physics(
 /// System to update blood particle rendering based on age and state
 pub fn blood_particle_rendering(
     mut particle_query: Query<(&mut MeshMaterial3d<StandardMaterial>, &mut Transform, &BloodParticle)>,
-    blood_materials: Res<BloodMaterials>,
 ) {
     for (mut material, mut transform, particle) in &mut particle_query {
         let age_ratio = (particle.lifetime / particle.max_lifetime).clamp(0.0, 1.0);
         
-        // Change material based on blood age
-        let new_material = if age_ratio < 0.3 {
-            blood_materials.fresh_blood.clone()
-        } else if age_ratio < 0.7 {
-            blood_materials.medium_blood.clone()
-        } else {
-            blood_materials.old_blood.clone()
-        };
-        
-        if material.0 != new_material {
-            material.0 = new_material;
-        }
         
         // Scale particles slightly based on size factor and age
         let age_scale = 1.0 + age_ratio * 0.2; // Slight expansion as blood coagulates
@@ -306,20 +240,6 @@ pub fn cleanup_blood_particles(
 ) {
     for (entity, particle) in &particle_query {
         if particle.lifetime > particle.max_lifetime {
-            commands.entity(entity).despawn();
-        }
-    }
-}
-
-/// System to handle blood splatter fading (placeholder for now)
-pub fn fade_blood_splatters(
-    mut commands: Commands,
-    mut splatter_query: Query<(Entity, &mut BloodSplatter)>,
-    time: Res<Time>,
-) {
-    for (entity, mut splatter) in &mut splatter_query {
-        splatter.fade_timer += time.delta_secs();
-        if splatter.fade_timer > splatter.max_fade_time {
             commands.entity(entity).despawn();
         }
     }

@@ -23,7 +23,7 @@ pub fn spawn_damage_numbers(
 ) {
     for damage_event in damage_events.read() {
         // Spawn floating damage number
-        let font = asset_server.load("fonts/PixelifySans-VariableFont_wght.ttf");
+        let font = asset_server.load("fonts/Jersey15-Regular.ttf");
         
         // Different colors for different damage sources
         let color = match damage_event.source {
@@ -43,7 +43,7 @@ pub fn spawn_damage_numbers(
             DamageNumber {
                 lifetime: Timer::from_seconds(1.5, TimerMode::Once),
                 initial_position: damage_event.position,
-                rise_speed: 2.0,
+                rise_speed: 20.0,
             },
         ));
     }
@@ -75,6 +75,7 @@ pub fn update_damage_numbers(
             if let Ok(viewport_position) = camera_3d.world_to_viewport(camera_3d_transform, world_pos) {
                 if let Ok(world_pos_2d) = camera_2d.viewport_to_world_2d(camera_2d_transform, viewport_position) {
                     transform.translation = Vec3::new(world_pos_2d.x, world_pos_2d.y, 0.0);
+                    transform.scale = Vec3::splat(1.0 / (1.0 - progress))
                 }
             }
         }

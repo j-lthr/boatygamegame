@@ -1,4 +1,8 @@
 use bevy::prelude::*;
+use crate::common::Living;
+use crate::enemy::spawn::SpawnerState;
+use crate::init::{DespawnOnReset, GameInit};
+use crate::player::Player;
 use crate::state::{GameState, GameScore};
 use crate::{enemy, projectile, player, common};
 
@@ -118,37 +122,26 @@ pub fn update_game_over_screen(
         score_text.0 = format!("Final Score: {}", score.current);
     }
 }
-
 // Cleanup game over screen
 pub fn cleanup_game_over_screen(
     mut commands: Commands,
+    despawn_query: Query<Entity, With<DespawnOnReset>>,
     game_over_query: Query<Entity, With<GameOverScreen>>,
-    mut score: ResMut<GameScore>,
-    // Reset all game entities
-    enemy_query: Query<Entity, With<enemy::Boulder>>,
-    projectile_query: Query<Entity, With<projectile::Projectile>>,
-    mut player_query: Query<(&mut Transform, &mut common::Living), With<player::Player>>,
+
 ) {
-    // Remove game over UI
+    
+    commands.remove_resource::<GameScore>();
+    commands.remove_resource::<SpawnerState>();
+    commands.init_resource::<GameScore>();
+    commands.init_resource::<SpawnerState>();
+ 
     for entity in &game_over_query {
-        commands.entity(entity).despawn_recursive();
-    }
-
-    // Reset score
-    *score = GameScore::default();
-
-
-    // Clean up all game entities
-    for entity in &enemy_query {
-        commands.entity(entity).despawn();
-    }
-    for entity in &projectile_query {
         commands.entity(entity).despawn();
     }
 
-    // Reset player
-    if let Ok((mut player_transform, mut player_living)) = player_query.single_mut() {
-        player_transform.translation = Vec3::new(0.0, 0.5, 0.0);
-        player_living.health = player_living.max_health;
+    for entity in &despawn_query {
+        commands.entity(entity).despawn();
     }
+
+    commands.run_schedule(GameInit);
 }

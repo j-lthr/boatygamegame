@@ -1,15 +1,11 @@
-use std::{any::Any, marker::PhantomData};
+use std::marker::PhantomData;
 
-use bevy::{
-    ecs::{
-        query::QueryData,
-        system::{StaticSystemParam, SystemParam},
-    },
-    prelude::*,
-};
+use bevy::prelude::*;
 
+pub mod common;
 pub mod dash;
-pub mod shotgun;
+pub mod missile_launcher;
+pub mod basic_projectile_attack;
 pub mod slam;
 
 pub trait Ability: Clone + Send + Sync + 'static {
@@ -51,10 +47,8 @@ pub fn handle_cast_attempts<T: Ability>(
     }
     for cast_attempt in cast_attempts.read() {
         if let Ok(mut ability_slot) = query.get_mut(cast_attempt.caster) {
-            
-            
             if ability_slot.cooldown.finished() {
-                 info!(
+                info!(
                     "Entity {} used ability '{}'.",
                     cast_attempt.caster, ability_slot.name
                 );
@@ -75,23 +69,18 @@ pub fn handle_cast_attempts<T: Ability>(
     }
 }
 
-pub struct AbilityPlugin<T: Ability> {
-    _marker: PhantomData<T>,
+fn register_ability<T: Ability>(app: &mut App) {
+    app.add_event::<AttemptCastEvent<T>>();
+    app.add_event::<CastEvent<T>>();
+    app.add_systems(Update, handle_cast_attempts::<T>);
+    T::add_systems(app);
 }
 
-impl<T: Ability> AbilityPlugin<T> {
-    pub fn new() -> Self {
-        Self {
-            _marker: PhantomData,
-        }
-    }
-}
-
-impl<T: Ability> Plugin for AbilityPlugin<T> {
-    fn build(&self, app: &mut App) {
-        app.add_event::<AttemptCastEvent<T>>();
-        app.add_event::<CastEvent<T>>();
-        app.add_systems(Update, handle_cast_attempts::<T>);
-        T::add_systems(app);
-    }
+pub fn plugin(app: &mut App) {
+    app.add_plugins((
+        register_ability::<dash::Dash>,
+        register_ability::<basic_projectile_attack::BasicProjectileAttack>,
+        register_ability::<slam::Slam>,
+        register_ability::<missile_launcher::MissileLauncher>
+    ));
 }

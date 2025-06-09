@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::state::GameScore;
+use crate::{enemy::spawn::SpawnerState, state::GameScore};
 
 const FONT_PATH: &str = "fonts/Jersey15-Regular.ttf";
 
@@ -8,6 +8,9 @@ pub struct ScoreText;
 
 #[derive(Component)]
 pub struct ComboText;
+
+#[derive(Component)]
+pub struct WaveNumberText;
 
 // Setup the score UI
 pub fn setup_score_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -29,7 +32,9 @@ pub fn setup_score_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         ScoreText,
     ));
 
-    // Combo display (initially hidden)
+  
+
+        // Combo display (initially hidden)
     commands.spawn((
         Text::new(""),
         TextFont {
@@ -42,22 +47,48 @@ pub fn setup_score_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             position_type: PositionType::Absolute,
             top: Val::Px(60.0),
             left: Val::Px(20.0),
+
             ..default()
         },
         ComboText,
+    ));
+
+    commands.spawn((
+        Text::new(""),
+        TextFont {
+            font: asset_server.load(FONT_PATH),
+            font_size: 32.0,
+            ..default()
+        },
+        TextColor(Color::srgb(1.0, 1.0, 1.0)),
+        TextLayout::new_with_justify(JustifyText::Center),
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(20.0),
+            left: Val::Percent(0.0),
+            width: Val::Percent(100.0),
+            justify_content: JustifyContent::Center,
+            ..default()
+        },
+        WaveNumberText,
     ));
 }
 
 // Update score display system
 pub fn update_score_display(
-    mut score_query: Query<&mut Text, (With<ScoreText>, Without<ComboText>)>,
-    mut combo_query: Query<&mut Text, (With<ComboText>, Without<ScoreText>)>,
+    mut score_query: Query<&mut Text, With<ScoreText>>,
     score: Res<GameScore>,
 ) {
     // Update main score
     if let Ok(mut score_text) = score_query.single_mut() {
         score_text.0 = format!("{}", score.current);
     }
+}
+
+pub fn update_combo_display(
+    mut combo_query: Query<&mut Text, With<ComboText>>,
+    score: Res<GameScore>,
+) {
 
     // Update combo display
     if let Ok(mut combo_text) = combo_query.single_mut() {
@@ -69,6 +100,15 @@ pub fn update_score_display(
     }
 }
 
+pub fn update_wave_number_display(
+    mut wave_number_query: Query<&mut Text, With<WaveNumberText>>,
+    spawner_state: Res<SpawnerState>,
+) {
+    if let Ok(mut wave_number_text) = wave_number_query.single_mut() {
+        wave_number_text.0 = format!("Wave {}", spawner_state.wave_index);
+    }
+}
+
 pub fn update_combo_system(mut score: ResMut<GameScore>, time: Res<Time>) {
     score.combo_timer.tick(time.delta());
 
@@ -77,3 +117,15 @@ pub fn update_combo_system(mut score: ResMut<GameScore>, time: Res<Time>) {
         score.combo = 0;
     }
 }
+
+pub fn plugin(app: &mut App) {
+    app.add_systems(Update, 
+        (
+            update_score_display,
+            update_combo_display,
+            update_wave_number_display,
+            update_combo_system
+        )
+    );
+}
+

@@ -1,40 +1,154 @@
-use std::marker::PhantomData;
 use bevy::prelude::*;
+use std::marker::PhantomData;
 
+use crate::ability::AttemptCastEvent;
+use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
-use crate::ability::shotgun::{Shotgun, ShotgunParams};
-use crate::ability::AttemptCastEvent;
 use crate::common::Inertia;
+use crate::common::Living;
+use crate::event::SpawnEvent;
+use crate::init::DespawnOnReset;
+use crate::init::GameInit;
+use crate::rune::Collector;
 use crate::ui;
+
+use bevy::core_pipeline::bloom::Bloom;
+use bevy::core_pipeline::motion_blur::MotionBlur;
+use bevy::core_pipeline::post_process::ChromaticAberration;
+use bevy::core_pipeline::tonemapping::Tonemapping;
+
+use crate::state::GameState;
+
+use crate::ability::AbilitySlot;
+use crate::common::Faction;
+use crate::enemy::spawn::SpawnerTarget;
 
 // Component to mark the player
 #[derive(Component)]
-pub struct Player;
-
-#[derive(Component)]
-pub struct DashTimer {
-    pub timer: Timer,
+pub struct Player {
+    pub speed: f32,
 }
 
 #[derive(Component)]
-pub struct PlayerCamera;
+pub struct PlayerCamera {
+    pub ground_offset: f32,
+    pub height_offset: f32,
+}
+
+pub fn spawn_player(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: ResMut<AssetServer>,
+) {
+    let player_color = Color::srgb(10.0, 10.0, 10.0);
+    // Player spawn point (invisible, camera will follow this)
+    let player = commands
+        .spawn((
+            Transform::from_xyz(0.0, 0.5, 0.0), // Eye level height
+            Player { speed: 10.0 },
+            Mesh3d(meshes.add(Sphere::new(0.5))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: player_color,
+                ..default()
+            })),
+            AbilitySlot {
+                cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+                name: "Dash",
+                ability: Dash { range: 10.0 },
+            },
+            Living {
+                health: 100,
+                max_health: 100,
+            },
+            Inertia {
+                prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
+                damping: 0.1,                       // Damping factor for Verlet integration
+            },
+            AbilitySlot {
+                cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+                name: "Shotgun",
+                ability: BasicProjectileAttack {
+                    bullet_count: 5,
+                    spread: 0.05,
+                    speed: 100.0,
+                    lifetime: 1.0,
+                    damage: 10,
+                    color: player_color,
+                },
+            },
+            Collector { collect_radius: 1.0 , magnet_radius: 50.0},
+            SpawnerTarget,
+            Faction::Friendly,
+            DespawnOnReset,
+        ))
+        .id();
+
+    commands.send_event(SpawnEvent { entity: player });
+}
+
+pub fn spawn_camera(mut commands: Commands) {
+    commands.spawn((
+        Camera3d::default(),
+        Camera {
+            order: 0,
+            hdr: true, // Enable HDR for better lighting
+            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            ..default()
+        },
+        Projection::from(PerspectiveProjection {
+            fov: 95.0_f32.to_radians(),
+            ..default()
+        }),
+        Transform::from_xyz(0.0, 10.0, -6.0).looking_at(Vec3::ZERO, Vec3::Z),
+        // FirstPersonCamera::default(),
+        SpatialListener::default(), // Spatial audio listener
+        Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
+        Bloom::ANAMORPHIC,
+        MotionBlur {
+            shutter_angle: 1.0,
+            samples: 2,
+        },
+        ChromaticAberration::default(),
+        PlayerCamera {
+            ground_offset: 10.0,
+            height_offset: 15.0,
+        }, //Atmosphere::EARTH,
+           /*AtmosphereSettings {
+               aerial_view_lut_max_distance: 3.2e5,
+               scene_units_to_m: 1e+4,
+               ..Default::default()
+           },*/
+    ));
+
+    commands.spawn((
+        Camera2d::default(),
+        Camera {
+            order: 1,
+            clear_color: ClearColorConfig::Custom(Color::NONE),
+            ..default()
+        },
+    ));
+}
 
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
-    mut player_query: Query<(Entity, &mut Transform), With<Player>>,
+    mut player_query: Query<(Entity, &mut Transform, &Player)>,
     camera_query: Query<&GlobalTransform, With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player, mut player_transform)), Ok(camera_transform)) = (player_query.single_mut(), camera_query.single()) {
+    if let (Ok((player_entity, mut player_transform, player)), Ok(camera_transform)) =
+        (player_query.single_mut(), camera_query.single())
+    {
         let mut velocity = Vec3::ZERO;
-        let speed = 10.0;
+        let speed = player.speed;
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
-        let forward = camera_transform.forward();
-        let right = -camera_transform.right();
+        let forward = Vec3::Z;
+        let right = Vec3::X;
 
         // Project forward and right vectors onto the horizontal plane (y=0)
         let forward_horizontal = Vec3::new(forward.x, 0.0, forward.z).normalize_or_zero();
@@ -55,7 +169,11 @@ pub fn handle_movement(
         }
 
         if keyboard_input.pressed(KeyCode::Space) && velocity.length() > 1e-6 {
-            dash_action.write(AttemptCastEvent { caster: player, params: DashParams::Directional(velocity), _marker: PhantomData::default()});
+            dash_action.write(AttemptCastEvent {
+                caster: player_entity,
+                params: DashParams::Directional(velocity),
+                _marker: PhantomData::default(),
+            });
         }
 
         // Normalize diagonal movement and apply
@@ -66,39 +184,33 @@ pub fn handle_movement(
     }
 }
 
-/// System to make camera follow player with smooth interpolation
 pub fn handle_camera(
-    player_query: Query<&Transform, (With<Player>, Without<Camera3d>)>,
-    mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
+    player_query: Query<(&Transform, &Inertia), With<Player>>,
+    mut camera_query: Query<(&mut Transform, &PlayerCamera), Without<Player>>,
     time: Res<Time>,
 ) {
-    if let (Ok(player_transform), Ok(mut camera_transform)) =
+    if let (Ok((player_transform, player_inertia)), Ok((mut camera_transform, camera))) =
         (player_query.single(), camera_query.single_mut())
     {
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = Vec3::new(0.0, 10.0, -6.0);
-        let target_position = player_transform.translation + camera_offset;
+        let camera_offset = ((-1.0*Vec3::Z + 0.3 * (player_transform.translation - player_inertia.prev_pos).normalize_or_zero()
+            ) * camera.ground_offset)
+            .with_y(camera.height_offset);
 
-        // Lerp factor - higher values = faster following, lower = smoother
-        let lerp_factor = 10.0 * time.delta_secs();
+
+
+
+        let target_position = player_transform.translation + camera_offset;
 
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
             .translation
-            .lerp(target_position, lerp_factor);
+            .lerp(target_position,  10.0 * time.delta_secs());
 
-        // Make camera look at the player
-        let look_target = player_transform.translation + Vec3::new(0.0, 0.5, 0.0); // Look slightly above player center
-        //camera_transform.look_at(look_target, Vec3::Y);
+        let target_transform = camera_transform.looking_at(player_transform.translation, Vec3::Y);
+
+        camera_transform.rotation = camera_transform.rotation.slerp(target_transform.rotation,  5.0 * time.delta_secs());
     }
-}
-
-
-
-
-#[derive(Component)]
-pub(crate) struct WeaponCooldown {
-    pub timer: Timer,
 }
 
 /// System to handle shooting using ability system
@@ -107,16 +219,17 @@ pub fn shoot_gun(
     windows: Query<&Window>,
     player_query: Query<Entity, With<Player>>,
     camera_query: Query<(&GlobalTransform, &Camera), With<PlayerCamera>>,
-    mut shotgun_action: EventWriter<AttemptCastEvent<Shotgun>>,
+    mut shotgun_action: EventWriter<AttemptCastEvent<BasicProjectileAttack>>,
 ) {
     if let (Ok(player), Ok((camera_transform, camera))) =
         (player_query.single(), camera_query.single())
     {
         if mouse_input.pressed(MouseButton::Left) {
-            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, &camera_transform) {
+            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, &camera_transform)
+            {
                 shotgun_action.write(AttemptCastEvent {
                     caster: player,
-                    params: ShotgunParams {
+                    params: BasicProjectileAttackParams {
                         target_position: cursor_pos,
                     },
                     _marker: PhantomData::default(),
@@ -124,4 +237,9 @@ pub fn shoot_gun(
             }
         }
     }
+}
+
+pub fn plugin(app: &mut App) {
+    app.add_systems(GameInit, spawn_player);
+    app.add_systems(Startup, spawn_camera);
 }

@@ -55,6 +55,7 @@ pub fn cast_slam(
                             source: Some(cast_event.caster),
                             damage: cast_event.ability.damage,
                             position: target_transform.translation,
+                            impact_velocity: None,
                         });
                     }
                     

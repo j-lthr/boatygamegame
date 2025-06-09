@@ -3,6 +3,8 @@ use bevy::prelude::*;
 
 pub mod boulder;
 pub mod spawn;
+pub mod common;
+pub mod sniper;
 
 pub trait Enemy: Component + Clone + Send + Sync + 'static {
     type SpawnParams: Clone + Send + Sync + 'static;
@@ -21,25 +23,19 @@ impl<T: Enemy> AttemptSpawnEvent<T> {
     }
 }
 
-pub struct EnemyPlugin<T: Enemy> {
-    _marker: PhantomData<T>,
+fn register_enemy<T: Enemy>(app: &mut App) {
+    app.add_event::<AttemptSpawnEvent<T>>();
+    T::add_systems(app);
 }
 
-impl<T: Enemy> EnemyPlugin<T> {
-    pub fn new() -> Self {
-        Self {
-            _marker: PhantomData,
-        }
-    }
-}
+pub fn plugin(app: &mut App) {
+    app.add_plugins(
+        (
+            register_enemy::<boulder::Boulder>,
+            register_enemy::<sniper::Sniper>,
+            spawn::plugin
+        )
+    );
 
-impl<T: Enemy> Plugin for EnemyPlugin<T> {
-    fn build(&self, app: &mut App) {
-        app.add_event::<AttemptSpawnEvent<T>>();
-        T::add_systems(app);
-    }
+    common::register(app);
 }
-
-// Re-export for backward compatibility
-pub use boulder::{Boulder, BoulderSpawnParams};
-pub use boulder::{move_boulders as move_enemies, boulder_combat_ai as enemy_combat_ai};

@@ -1,9 +1,13 @@
-use bevy::prelude::*;
-use crate::player;
+use crate::event::DeathEvent;
+use crate::player::Player;
+use crate::rune::RunePickup;
+use crate::rune::SpeedRune;
 use crate::enemy;
 use crate::event;
-use crate::state;
 use crate::fx;
+use crate::player;
+use crate::state;
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Living {
@@ -19,9 +23,8 @@ impl Living {
 #[derive(Component, PartialEq, Eq)]
 pub enum Faction {
     Friendly,
-    Enemy
+    Enemy,
 }
-
 
 #[derive(Component)]
 pub struct Inertia {
@@ -37,38 +40,21 @@ pub fn handle_inertia(mut player_query: Query<(&mut Transform, &mut Inertia)>) {
     }
 }
 
-pub fn check_player_death(
-    player_query: Query<&Living, With<player::Player>>,
-    mut next_state: ResMut<NextState<state::GameState>>,
-) {
-    for living in &player_query {
-        if living.health <= 0 {
-            info!("Game Over! Player health: {}", living.health);
-            next_state.set(state::GameState::GameOver);
-            break; // Only need to trigger game over once
-        }
-    }
-}
 
 pub fn handle_damage_events(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
     mut damage_events: EventReader<event::DamageEvent>,
     mut living_query: Query<(&mut Living, &Transform)>,
     mut score: ResMut<state::GameScore>,
     player_query: Query<&player::Player>,
-    mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
-    blood_materials: Res<fx::blood::BloodMaterials>,
 ) {
-    use std::time::Duration;
-    use bevy::audio::Volume;
-    
     for damage_event in damage_events.read() {
         if let Ok((mut living, target_transform)) = living_query.get_mut(damage_event.target) {
             living.health -= damage_event.damage;
-            info!("Entity {:?} took {} damage! Health: {}", 
-                damage_event.target, damage_event.damage, living.health);
-                
+            info!(
+                "Entity {:?} took {} damage! Health: {}",
+                damage_event.target, damage_event.damage, living.health
+            );
+
             // Check if entity died
             if living.health <= 0 {
                 // Check if this was an enemy (not player) and killed by player for scoring
@@ -88,44 +74,48 @@ pub fn handle_damage_events(
                         }
                     }
                 }
-                
-                // Spawn death effects
-                fx::blood::spawn_blood_explosion(
-                    &mut commands,
-                    &mut meshes,
-                    target_transform.translation,
-                    &blood_materials,
-                    100,
-                    5.0,
-                    Vec3::ZERO,
-                    Vec3::new(10.0, 5.0, 0.0),
-                );
-
-                let shoot_sound_handle = shoot_sounds.add(fx::fm::FMSound {
-                    config: fx::fm::DEATH_SOUND,
-                    duration: Duration::from_millis(100),
-                });
-
-                commands.spawn((
-                    AudioPlayer(shoot_sound_handle),
-                    PlaybackSettings::DESPAWN
-                        .with_spatial(true)
-                        .with_volume(Volume::Decibels(36.0)),
-                    Transform::from_translation(target_transform.translation),
-                ));
             }
         }
     }
 }
 
-pub fn handle_enemy_deaths(
+pub fn emit_death_events(
     mut commands: Commands,
-    enemy_query: Query<(Entity, &Living), With<enemy::Boulder>>,
+    enemy_query: Query<(Entity, &Living, &Transform)>,
+    mut death_events: EventWriter<DeathEvent>,
 ) {
-    for (entity, living) in &enemy_query {
+    for (entity, living, transform) in &enemy_query {
         if living.health <= 0 {
-            info!("Enemy died! Despawning entity {:?}", entity);
-            commands.entity(entity).despawn();
+            death_events.write(DeathEvent {
+                entity,
+            });
         }
     }
 }
+
+pub fn handle_player_death(
+    player_query: Query<(), With<player::Player>>,
+    mut next_state: ResMut<NextState<state::GameState>>,
+    mut death_events: EventReader<DeathEvent>,
+) {
+    for death_event in death_events.read() {
+        if let Ok(()) = player_query.get(death_event.entity) {
+            next_state.set(state::GameState::GameOver);
+            break; // Only need to trigger game over once
+        }
+    }
+}
+
+
+pub fn handle_npc_death(
+    mut commands: Commands,
+    npc_query: Query<&Living, Without<player::Player>>,
+    mut death_events: EventReader<DeathEvent>,
+) {
+    for death_event in death_events.read() {
+        if let Ok(_) = npc_query.get(death_event.entity) {
+            commands.entity(death_event.entity).despawn();
+        }
+    }
+}
+
