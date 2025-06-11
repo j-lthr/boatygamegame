@@ -124,7 +124,7 @@ pub fn spawn_camera(mut commands: Commands) {
     ));
 
     commands.spawn((
-        Camera2d::default(),
+        Camera2d,
         Camera {
             order: 1,
             clear_color: ClearColorConfig::Custom(Color::NONE),
@@ -173,7 +173,7 @@ pub fn handle_movement(
             dash_action.write(AttemptCastEvent {
                 caster: player_entity,
                 params: DashParams::Directional(velocity),
-                _marker: PhantomData::default(),
+                _marker: PhantomData,
             });
         }
 
@@ -226,14 +226,14 @@ pub fn shoot_gun(
         (player_query.single(), camera_query.single())
     {
         if mouse_input.pressed(MouseButton::Left) {
-            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, &camera_transform)
+            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, camera_transform)
             {
                 shotgun_action.write(AttemptCastEvent {
                     caster: player,
                     params: BasicProjectileAttackParams {
                         target_position: cursor_pos,
                     },
-                    _marker: PhantomData::default(),
+                    _marker: PhantomData,
                 });
             }
         }

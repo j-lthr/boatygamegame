@@ -133,7 +133,7 @@ pub fn sniper_combat_ai(
                 params: MissileParams {
                     target_entity: player_entity,
                 },
-                _marker: std::marker::PhantomData::default(),
+                _marker: std::marker::PhantomData,
             });
         }
     }

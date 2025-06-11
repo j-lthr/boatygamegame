@@ -216,7 +216,7 @@ pub fn boulder_combat_ai(
                 dash_action.write(AttemptCastEvent {
                     caster: boulder_entity,
                     params: DashParams::Directional(direction),
-                    _marker: std::marker::PhantomData::default(),
+                    _marker: std::marker::PhantomData,
                 });
             }
 
@@ -227,7 +227,7 @@ pub fn boulder_combat_ai(
                     params: SlamParams {
                         target_position: player_transform.translation,
                     },
-                    _marker: std::marker::PhantomData::default(),
+                    _marker: std::marker::PhantomData,
                 });
             }
 

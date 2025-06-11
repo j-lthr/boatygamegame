@@ -100,7 +100,7 @@ impl RockConfig {
 
         self.seed = hash as u32;
         self.noise_strength *= 0.7 + (hash % 60) as f32 / 100.0; // 0.7-1.3x variation
-        self.noise_scale *= 0.8 + (hash >> 16 % 40) as f32 / 100.0; // 0.8-1.2x variation
+        self.noise_scale *= 0.8 + (hash >> 16) as f32 / 100.0; // 0.8-1.2x variation
     }
 }
 

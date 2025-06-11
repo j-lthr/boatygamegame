@@ -1,7 +1,6 @@
 use super::*;
 use crate::fx;
 use bevy::audio::Volume;
-use bevy::prelude::*;
 use std::time::Duration;
 
 #[derive(Clone)]

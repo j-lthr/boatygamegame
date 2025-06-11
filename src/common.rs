@@ -104,7 +104,7 @@ pub fn handle_npc_death(
     mut death_events: EventReader<DeathEvent>,
 ) {
     for death_event in death_events.read() {
-        if let Ok(_) = npc_query.get(death_event.entity) {
+        if npc_query.get(death_event.entity).is_ok() {
             commands.entity(death_event.entity).despawn();
         }
     }
