@@ -91,9 +91,12 @@ pub fn handle_drops(
 ) {
     for death_event in death_events.read() {
         let result = query.get(death_event.entity);
-        if let Ok((transform, drop_table)) =  result {
+        if let Ok((transform, drop_table)) = result {
             let drop_position = transform.translation;
-            info!("Received death event for entity {}, dropping loot.", death_event.entity);
+            info!(
+                "Received death event for entity {}, dropping loot.",
+                death_event.entity
+            );
             drop_table.drop_random(commands.reborrow(), drop_position);
         } else {
             unsafe {

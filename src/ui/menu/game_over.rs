@@ -1,7 +1,7 @@
-use bevy::prelude::*;
 use crate::enemy::spawn::SpawnerState;
 use crate::init::{DespawnOnReset, GameInit};
-use crate::state::{GameState, GameScore};
+use crate::state::{GameScore, GameState};
+use bevy::prelude::*;
 
 const FONT_PATH: &str = "fonts/Jersey15-Regular.ttf";
 
@@ -124,14 +124,12 @@ pub fn cleanup_game_over_screen(
     mut commands: Commands,
     despawn_query: Query<Entity, With<DespawnOnReset>>,
     game_over_query: Query<Entity, With<GameOverScreen>>,
-
 ) {
-    
     commands.remove_resource::<GameScore>();
     commands.remove_resource::<SpawnerState>();
     commands.init_resource::<GameScore>();
     commands.init_resource::<SpawnerState>();
- 
+
     for entity in &game_over_query {
         commands.entity(entity).despawn();
     }

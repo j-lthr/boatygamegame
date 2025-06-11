@@ -25,6 +25,6 @@ pub fn plugin(app: &mut App) {
     app.add_event::<DeathEvent>();
 }
 
-pub trait EventSource<Input> : Send + Sync {
+pub trait EventSource<Input>: Send + Sync {
     fn send_event(&self, commands: Commands, input: Input);
 }

@@ -1,6 +1,5 @@
 use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 
-
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct GameInit;
 

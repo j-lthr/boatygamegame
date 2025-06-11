@@ -1,8 +1,8 @@
-use std::time::Duration;
+use super::*;
+use crate::fx;
 use bevy::audio::Volume;
 use bevy::prelude::*;
-use crate::fx;
-use super::*;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct Dash {
@@ -12,7 +12,7 @@ pub struct Dash {
 #[derive(Copy, Clone)]
 pub enum DashParams {
     Directional(Vec3),
-    ToPosition(Vec3)
+    ToPosition(Vec3),
 }
 
 #[derive(Component)]
@@ -34,19 +34,19 @@ pub fn cast_dash(
     for cast_event in cast_events.read() {
         if let Ok(mut caster_transform) = caster_query.get_mut(cast_event.caster) {
             let start_pos = caster_transform.translation;
-            
+
             let delta = match cast_event.params {
                 DashParams::Directional(direction) => {
                     direction.normalize() * cast_event.ability.range
-                },
-                DashParams::ToPosition(target_position) => {
-                    (target_position - caster_transform.translation).clamp_length_max(cast_event.ability.range)    
-                },
+                }
+                DashParams::ToPosition(target_position) => (target_position
+                    - caster_transform.translation)
+                    .clamp_length_max(cast_event.ability.range),
             };
 
             let end_pos = start_pos + delta;
             caster_transform.translation = end_pos;
-            
+
             // Spawn dash trail effect
             spawn_dash_trail(
                 &mut commands,
@@ -55,13 +55,13 @@ pub fn cast_dash(
                 start_pos,
                 end_pos,
             );
-            
+
             // Play dash sound
             let dash_sound_handle = dash_sounds.add(fx::fm::FMSound {
                 config: fx::fm::DASH_SOUND,
                 duration: Duration::from_millis(200),
             });
-            
+
             commands.spawn((
                 AudioPlayer(dash_sound_handle),
                 PlaybackSettings::DESPAWN
@@ -83,14 +83,14 @@ pub fn spawn_dash_trail(
     // Create a cylinder between start and end positions
     let direction = end_pos - start_pos;
     let distance = direction.length();
-    
+
     if distance > 0.1 {
         let center = (start_pos + end_pos) * 0.5;
         let normalized_dir = direction.normalize();
-        
+
         // Create cylinder mesh
         let cylinder_mesh = meshes.add(Cylinder::new(0.1, distance));
-        
+
         // Create glowing material
         let trail_material = materials.add(StandardMaterial {
             base_color: Color::srgba(0.3, 0.8, 1.0, 0.8),
@@ -98,14 +98,14 @@ pub fn spawn_dash_trail(
             alpha_mode: AlphaMode::Blend,
             ..default()
         });
-        
+
         // Calculate rotation to align cylinder with direction
         let rotation = if normalized_dir.y.abs() < 0.99 {
             Quat::from_rotation_arc(Vec3::Y, normalized_dir)
         } else {
             Quat::IDENTITY
         };
-        
+
         commands.spawn((
             Mesh3d(cylinder_mesh),
             MeshMaterial3d(trail_material),
@@ -130,10 +130,10 @@ pub fn animate_dash_trails(
     for (entity, mut transform, mut trail) in &mut trail_query {
         trail.lifetime.tick(time.delta());
         trail.progress = trail.lifetime.elapsed_secs() / trail.lifetime.duration().as_secs_f32();
-        
+
         // Fade out the trail
         let alpha = 1.0 - trail.progress;
-        
+
         if let Ok(material_handle) = material_query.get(entity) {
             if let Some(material) = materials.get_mut(&material_handle.0) {
                 material.base_color.set_alpha(alpha);
@@ -141,15 +141,16 @@ pub fn animate_dash_trails(
                 material.emissive = Color::srgb(
                     0.3 * emissive_intensity,
                     0.8 * emissive_intensity,
-                    1.0 * emissive_intensity
-                ).into();
+                    1.0 * emissive_intensity,
+                )
+                .into();
             }
         }
-        
+
         // Scale down the trail over time
         let scale = 1.0 - (trail.progress * 0.5);
         transform.scale = Vec3::new(scale, 1.0, scale);
-        
+
         // Remove when finished
         if trail.lifetime.finished() {
             commands.entity(entity).despawn();

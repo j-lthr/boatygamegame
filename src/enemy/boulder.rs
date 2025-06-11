@@ -2,17 +2,17 @@ use bevy::prelude::*;
 use std::f32;
 
 use super::{AttemptSpawnEvent, Enemy};
+use crate::ability::basic_projectile_attack::BasicProjectileAttack;
 use crate::ability::dash::{Dash, DashParams};
 use crate::ability::missile_launcher::MissileLauncher;
-use crate::ability::basic_projectile_attack::BasicProjectileAttack;
 use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
-use crate::common::{self, Inertia};
 use crate::common::Faction;
 use crate::common::Living;
+use crate::common::{self, Inertia};
 use crate::enemy::common::FirstOrderMovement;
-use crate::enemy::common::FollowTarget;
 use crate::enemy::common::FollowMovementMode;
+use crate::enemy::common::FollowTarget;
 use crate::event;
 use crate::init::DespawnOnReset;
 use crate::loot::DropTableBuilder;
@@ -54,7 +54,7 @@ pub fn handle_boulder_spawn(
                     i as f32 / spawn_attempt.params.pack_size as f32 * f32::consts::PI * 2.0;
 
                 let spawn_position = spawn_attempt.params.position
-                                + vec3(f32::cos(offset_angle), 0.0, f32::sin(offset_angle));
+                    + vec3(f32::cos(offset_angle), 0.0, f32::sin(offset_angle));
 
                 let enemy = commands
                     .spawn((
@@ -64,9 +64,7 @@ pub fn handle_boulder_spawn(
                             emissive: BOULDER_COLOR.into(), // Slightly glowing
                             ..default()
                         })),
-                        Transform::from_translation(
-                            spawn_position,
-                        ),
+                        Transform::from_translation(spawn_position),
                         Boulder,
                         FollowTarget {
                             target: player,
@@ -130,7 +128,7 @@ pub fn handle_boulder_spawn(
                             prev_pos: spawn_position,
                             damping: 0.0,
                         },
-                        DespawnOnReset
+                        DespawnOnReset,
                     ))
                     .id();
 
@@ -140,14 +138,12 @@ pub fn handle_boulder_spawn(
     }
 }
 
-
 /// System to move boulder enemies toward player with rolling motion
 pub fn boulder_rotation_effect(
     mut boulder_query: Query<(&mut Transform, &Inertia), With<Boulder>>,
     time: Res<Time>,
 ) {
     for (mut boulder_transform, boulder_inertia) in &mut boulder_query {
-
         let delta = boulder_transform.translation - boulder_inertia.prev_pos;
 
         // Add rolling motion
@@ -266,7 +262,7 @@ impl Enemy for Boulder {
             (
                 handle_boulder_spawn,
                 boulder_combat_ai,
-                boulder_rotation_effect
+                boulder_rotation_effect,
             ),
         );
     }

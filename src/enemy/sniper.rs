@@ -73,7 +73,10 @@ pub fn handle_sniper_spawn(
                             jitter: 0.0,
                         },
                         AbilitySlot {
-                            cooldown: Timer::from_seconds(normal_dist_1d(2.0, 0.01).abs(), TimerMode::Once),
+                            cooldown: Timer::from_seconds(
+                                normal_dist_1d(2.0, 0.01).abs(),
+                                TimerMode::Once,
+                            ),
                             name: "Missile",
                             ability: MissileLauncher {
                                 missile_count: 1,
@@ -101,7 +104,7 @@ pub fn handle_sniper_spawn(
                             prev_pos: spawn_position,
                             damping: 0.0,
                         },
-                        DespawnOnReset
+                        DespawnOnReset,
                     ))
                     .id();
 
@@ -120,8 +123,7 @@ pub fn sniper_combat_ai(
     mut missile_action: EventWriter<AttemptCastEvent<MissileLauncher>>,
 ) {
     if let Ok((player_entity, player_transform)) = player_query.single() {
-        for (boulder_entity, boulder_transform, missile_ability, movement) in &mut sniper_query
-        {
+        for (boulder_entity, boulder_transform, missile_ability, movement) in &mut sniper_query {
             let distance = boulder_transform
                 .translation
                 .distance(player_transform.translation);
@@ -138,17 +140,14 @@ pub fn sniper_combat_ai(
 }
 
 pub fn sniper_cooldown_visual(
-    mut sniper_query: Query<
-        (
-            &mut Transform,
-            &AbilitySlot<MissileLauncher>,
-        ),
-        With<Sniper>,
-    >,
-    time: Res<Time>
+    mut sniper_query: Query<(&mut Transform, &AbilitySlot<MissileLauncher>), With<Sniper>>,
+    time: Res<Time>,
 ) {
     for (mut sniper_transform, missile_ability) in &mut sniper_query {
-        sniper_transform.scale = sniper_transform.scale.lerp(Vec3::splat(missile_ability.cooldown.fraction_remaining() + 0.2), time.delta_secs() * 10.0);
+        sniper_transform.scale = sniper_transform.scale.lerp(
+            Vec3::splat(missile_ability.cooldown.fraction_remaining() + 0.2),
+            time.delta_secs() * 10.0,
+        );
     }
 }
 
@@ -156,6 +155,13 @@ impl Enemy for Sniper {
     type SpawnParams = SniperSpawnParams;
 
     fn add_systems(app: &mut App) {
-        app.add_systems(Update, (handle_sniper_spawn, sniper_combat_ai, sniper_cooldown_visual));
+        app.add_systems(
+            Update,
+            (
+                handle_sniper_spawn,
+                sniper_combat_ai,
+                sniper_cooldown_visual,
+            ),
+        );
     }
 }

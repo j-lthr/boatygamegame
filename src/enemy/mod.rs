@@ -1,10 +1,10 @@
-use std::marker::PhantomData;
 use bevy::prelude::*;
+use std::marker::PhantomData;
 
 pub mod boulder;
-pub mod spawn;
 pub mod common;
 pub mod sniper;
+pub mod spawn;
 
 pub trait Enemy: Component + Clone + Send + Sync + 'static {
     type SpawnParams: Clone + Send + Sync + 'static;
@@ -19,7 +19,10 @@ pub struct AttemptSpawnEvent<T: Enemy> {
 }
 impl<T: Enemy> AttemptSpawnEvent<T> {
     fn new(params: T::SpawnParams) -> Self {
-        Self { params, _marker: PhantomData }
+        Self {
+            params,
+            _marker: PhantomData,
+        }
     }
 }
 
@@ -29,13 +32,11 @@ fn register_enemy<T: Enemy>(app: &mut App) {
 }
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins(
-        (
-            register_enemy::<boulder::Boulder>,
-            register_enemy::<sniper::Sniper>,
-            spawn::plugin
-        )
-    );
+    app.add_plugins((
+        register_enemy::<boulder::Boulder>,
+        register_enemy::<sniper::Sniper>,
+        spawn::plugin,
+    ));
 
     common::register(app);
 }

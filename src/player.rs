@@ -18,7 +18,6 @@ use bevy::core_pipeline::motion_blur::MotionBlur;
 use bevy::core_pipeline::post_process::ChromaticAberration;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 
-
 use crate::ability::AbilitySlot;
 use crate::common::Faction;
 use crate::enemy::spawn::SpawnerTarget;
@@ -77,7 +76,10 @@ pub fn spawn_player(
                     color: player_color,
                 },
             },
-            Collector { collect_radius: 1.0 , magnet_radius: 50.0},
+            Collector {
+                collect_radius: 1.0,
+                magnet_radius: 50.0,
+            },
             SpawnerTarget,
             Faction::Friendly,
             DespawnOnReset,
@@ -192,8 +194,9 @@ pub fn handle_camera(
         (player_query.single(), camera_query.single_mut())
     {
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = ((-1.0*Vec3::Z + 0.3 * (player_transform.translation - player_inertia.prev_pos).normalize_or_zero()
-            ) * camera.ground_offset)
+        let camera_offset = ((-1.0 * Vec3::Z
+            + 0.3 * (player_transform.translation - player_inertia.prev_pos).normalize_or_zero())
+            * camera.ground_offset)
             .with_y(camera.height_offset);
 
         let target_position = player_transform.translation + camera_offset;
@@ -201,11 +204,13 @@ pub fn handle_camera(
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
             .translation
-            .lerp(target_position,  10.0 * time.delta_secs());
+            .lerp(target_position, 10.0 * time.delta_secs());
 
         let target_transform = camera_transform.looking_at(player_transform.translation, Vec3::Y);
 
-        camera_transform.rotation = camera_transform.rotation.slerp(target_transform.rotation,  5.0 * time.delta_secs());
+        camera_transform.rotation = camera_transform
+            .rotation
+            .slerp(target_transform.rotation, 5.0 * time.delta_secs());
     }
 }
 

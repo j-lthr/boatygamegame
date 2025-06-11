@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 
+pub mod basic_projectile_attack;
 pub mod common;
 pub mod dash;
 pub mod missile_launcher;
-pub mod basic_projectile_attack;
 pub mod slam;
 
 pub trait Ability: Clone + Send + Sync + 'static {
@@ -81,6 +81,6 @@ pub fn plugin(app: &mut App) {
         register_ability::<dash::Dash>,
         register_ability::<basic_projectile_attack::BasicProjectileAttack>,
         register_ability::<slam::Slam>,
-        register_ability::<missile_launcher::MissileLauncher>
+        register_ability::<missile_launcher::MissileLauncher>,
     ));
 }

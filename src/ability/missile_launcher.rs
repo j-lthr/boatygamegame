@@ -98,7 +98,9 @@ pub fn cast_missiles(
                     .spawn((
                         Mesh3d(missile_mesh.clone()),
                         MeshMaterial3d(missile_mat.clone()),
-                        Transform::from_translation(caster_transform.translation + Vec3::Y * 0.5 + spread_offset),
+                        Transform::from_translation(
+                            caster_transform.translation + Vec3::Y * 0.5 + spread_offset,
+                        ),
                         Missile {
                             target: target.clone(),
                             tracking_strength: cast_event.ability.tracking_strength,
@@ -141,7 +143,10 @@ pub fn update_missiles(
         if let MissileTarget::Entity(target_entity) = missile.target {
             // Switch from entity tracking to position lock when we've used up the lock_time_ratio
             if let Ok(target_transform) = target_query.get(target_entity) {
-                if target_transform.translation.distance(missile_transform.translation) < missile.lock_distance
+                if target_transform
+                    .translation
+                    .distance(missile_transform.translation)
+                    < missile.lock_distance
                 {
                     // Lock onto the current position of the target
                     missile.target = MissileTarget::Locked(target_transform.translation);
@@ -308,7 +313,12 @@ pub struct ExplosionVisual {
 
 pub fn update_explosion_visuals(
     mut commands: Commands,
-    mut explosion_visual_query: Query<(Entity, &mut Transform, &mut ExplosionVisual, &mut MeshMaterial3d<StandardMaterial>)>,
+    mut explosion_visual_query: Query<(
+        Entity,
+        &mut Transform,
+        &mut ExplosionVisual,
+        &mut MeshMaterial3d<StandardMaterial>,
+    )>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
@@ -333,7 +343,7 @@ pub fn update_explosion_visuals(
 
         let material = materials.get_mut(material.id()).unwrap();
         material.base_color.set_alpha(1.0 - fade_progress);
-        
+
         let emissive_rgb = LinearRgba::from(EXPLOSION_EMISSIVE);
 
         let brightness = 1.0 / (1e3 * progress + 1e-3) * (1.0 - fade_progress);

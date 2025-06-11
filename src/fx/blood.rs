@@ -2,8 +2,11 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use crate::{common::Living, event::{DamageEvent, DeathEvent}, init::DespawnOnReset};
-
+use crate::{
+    common::Living,
+    event::{DamageEvent, DeathEvent},
+    init::DespawnOnReset,
+};
 
 // Enhanced blood particle component with realistic properties
 #[derive(Component)]
@@ -29,90 +32,95 @@ pub fn spawn_blood_explosion(
     damage_events: EventReader<DamageEvent>,
     mut death_events: EventReader<DeathEvent>,
     transform_query: Query<(&Transform, &MeshMaterial3d<StandardMaterial>, &Living)>,
-    
 ) {
+    let mut spawn_particles =
+        |position: Vec3,
+         particle_count: usize,
+         explosion_force_base: f32,
+         base_velocity: Vec3,
+         blood_color: Color,
+         materials: &mut ResMut<Assets<StandardMaterial>>| {
+            // Create varied particle meshes for realism
+            let small_sphere = meshes.add(Sphere::new(0.02));
+            let medium_sphere = meshes.add(Sphere::new(0.04));
+            let large_sphere = meshes.add(Sphere::new(0.07));
+            let particle_meshes = [small_sphere, medium_sphere, large_sphere];
 
-    let mut spawn_particles = |position: Vec3,
-    particle_count: usize,
-    explosion_force_base: f32,
-    base_velocity: Vec3,
-    blood_color: Color, materials: &mut ResMut<Assets<StandardMaterial>>| {
+            for _ in 0..particle_count {
+                // Random direction with bias toward horizontal spread
+                let angle_y = fastrand::f32() * 2.0 * PI;
+                let angle_x = (fastrand::f32() - 0.5) * PI * 0.4; // Biased toward horizontal
 
-        // Create varied particle meshes for realism
-        let small_sphere = meshes.add(Sphere::new(0.02));
-        let medium_sphere = meshes.add(Sphere::new(0.04));
-        let large_sphere = meshes.add(Sphere::new(0.07));
-        let particle_meshes = [small_sphere, medium_sphere, large_sphere];
-        
-        for _ in 0..particle_count {
-            // Random direction with bias toward horizontal spread
-            let angle_y = fastrand::f32() * 2.0 * PI;
-            let angle_x = (fastrand::f32() - 0.5) * PI * 0.4; // Biased toward horizontal
-            
-            let direction = Vec3::new(
-                angle_y.cos() * angle_x.cos(),
-                0.3 + fastrand::f32() * 0.4, // Upward but not too high
-                angle_y.sin() * angle_x.cos(),
-            ).normalize();
-            
-            // Varied explosion force for realistic spread
-            let force_multiplier = 0.5 + fastrand::f32() * 1.5;
-            let initial_velocity = direction * explosion_force_base * force_multiplier + base_velocity;
-            
-            // Small random offset from explosion center
-            let offset = Vec3::new(
-                (fastrand::f32() - 0.5) * 0.3,
-                0.1 + fastrand::f32() * 0.1,
-                (fastrand::f32() - 0.5) * 0.3,
-            );
-            
-            // Choose random particle size and corresponding material
-            let size_type = fastrand::usize(0..3);
-            let particle_mesh = particle_meshes[size_type].clone();
-            
-            // Determine initial blood properties
-            let size_factor = match size_type {
-                0 => 0.7 + fastrand::f32() * 0.3, // Small particles
-                1 => 1.0 + fastrand::f32() * 0.3, // Medium particles  
-                _ => 1.3 + fastrand::f32() * 0.4, // Large particles
-            };
-            
-            let viscosity_factor = 0.8 + fastrand::f32() * 0.4;
-            let max_lifetime = 5.0 + fastrand::f32() * 3.0;
-            
-            
-            commands.spawn((
-                Mesh3d(particle_mesh),
-                MeshMaterial3d(materials.add(
-                    StandardMaterial {
-                        base_color: Color::srgba(1.0,1.0,1.0,1.0),
+                let direction = Vec3::new(
+                    angle_y.cos() * angle_x.cos(),
+                    0.3 + fastrand::f32() * 0.4, // Upward but not too high
+                    angle_y.sin() * angle_x.cos(),
+                )
+                .normalize();
+
+                // Varied explosion force for realistic spread
+                let force_multiplier = 0.5 + fastrand::f32() * 1.5;
+                let initial_velocity =
+                    direction * explosion_force_base * force_multiplier + base_velocity;
+
+                // Small random offset from explosion center
+                let offset = Vec3::new(
+                    (fastrand::f32() - 0.5) * 0.3,
+                    0.1 + fastrand::f32() * 0.1,
+                    (fastrand::f32() - 0.5) * 0.3,
+                );
+
+                // Choose random particle size and corresponding material
+                let size_type = fastrand::usize(0..3);
+                let particle_mesh = particle_meshes[size_type].clone();
+
+                // Determine initial blood properties
+                let size_factor = match size_type {
+                    0 => 0.7 + fastrand::f32() * 0.3, // Small particles
+                    1 => 1.0 + fastrand::f32() * 0.3, // Medium particles
+                    _ => 1.3 + fastrand::f32() * 0.4, // Large particles
+                };
+
+                let viscosity_factor = 0.8 + fastrand::f32() * 0.4;
+                let max_lifetime = 5.0 + fastrand::f32() * 3.0;
+
+                commands.spawn((
+                    Mesh3d(particle_mesh),
+                    MeshMaterial3d(materials.add(StandardMaterial {
+                        base_color: Color::srgba(1.0, 1.0, 1.0, 1.0),
                         emissive: blood_color.into(),
-                        .. Default::default()
-                    }
-                )),
-                Transform::from_translation(position + offset),
-                BloodParticle {
-                    velocity: initial_velocity,
-                    initial_velocity,
-                    density: 1200.0,
-                    pressure: 0.0,
-                    lifetime: 0.0,
-                    max_lifetime,
-                    size_factor,
-                    viscosity_factor,
-                    initial_color: blood_color,
-                    is_stuck: false,
-                    stick_surface: Vec3::ZERO,
-                },
-                DespawnOnReset
-            ));
-        }
-    };
+                        ..Default::default()
+                    })),
+                    Transform::from_translation(position + offset),
+                    BloodParticle {
+                        velocity: initial_velocity,
+                        initial_velocity,
+                        density: 1200.0,
+                        pressure: 0.0,
+                        lifetime: 0.0,
+                        max_lifetime,
+                        size_factor,
+                        viscosity_factor,
+                        initial_color: blood_color,
+                        is_stuck: false,
+                        stick_surface: Vec3::ZERO,
+                    },
+                    DespawnOnReset,
+                ));
+            }
+        };
 
     for death_event in death_events.read() {
         if let Ok((transform, material, living)) = transform_query.get(death_event.entity) {
             let color: Color = materials_.get(material.id()).unwrap().emissive.into();
-            spawn_particles(transform.translation, living.max_health as usize * 4, 4.0, Vec3::ZERO, color, &mut materials_);
+            spawn_particles(
+                transform.translation,
+                living.max_health as usize * 4,
+                4.0,
+                Vec3::ZERO,
+                color,
+                &mut materials_,
+            );
             info!("Spawning particles at {}", transform.translation);
         }
     }
@@ -124,47 +132,44 @@ pub fn blood_particle_physics(
     time: Res<Time>,
 ) {
     //let particles: Vec<_> = particle_query.iter().map(|(t, p)| (t.translation, p.velocity)).collect();
-    
-    for (mut transform, mut particle) in &mut particle_query {
 
+    for (mut transform, mut particle) in &mut particle_query {
         particle.lifetime += time.delta_secs();
-     
-      
-        
+
         // Apply gravity
         let gravity = Vec3::new(0.0, -9.81, 0.0);
         particle.velocity += gravity * time.delta_secs();
-        
+
         // Apply viscosity - blood gets thicker over time
         let age_factor = (particle.lifetime / particle.max_lifetime).clamp(0.0, 1.0);
 
         // Air resistance
-        let air_resistance = particle.velocity * particle.velocity.length() * 0.01 * time.delta_secs();
+        let air_resistance =
+            particle.velocity * particle.velocity.length() * 0.01 * time.delta_secs();
         particle.velocity -= air_resistance;
 
         if particle.is_stuck {
             continue; // Skip physics for stuck particles
         }
-        
-        
+
         // Integrate position
         transform.translation += particle.velocity * time.delta_secs();
-        
+
         // Enhanced collision detection and sticking
         let ground_level = 0.02;
         if transform.translation.y <= ground_level {
             transform.translation.y = ground_level;
-            
+
             // Determine if particle should stick based on velocity and blood properties
             let stick_threshold = 2.0 * (1.0 - age_factor * 0.5); // Older blood sticks easier
             let impact_speed = particle.velocity.length();
-            
+
             if impact_speed < stick_threshold {
                 // Particle sticks to surface
                 particle.is_stuck = true;
                 particle.velocity = Vec3::ZERO;
                 particle.stick_surface = Vec3::Y;
-                
+
                 // Create a small splatter decal for visual effect
                 // (This would be implemented with a separate system)
             } else {
@@ -174,7 +179,7 @@ pub fn blood_particle_physics(
                 particle.velocity.z *= 0.6;
             }
         }
-        
+
         /*// Boundary collision with sticking
         let boundary = 15.0;
         if transform.translation.x.abs() > boundary {
@@ -202,17 +207,20 @@ pub fn blood_particle_physics(
 
 /// System to update blood particle rendering based on age and state
 pub fn blood_particle_rendering(
-    mut particle_query: Query<(&mut MeshMaterial3d<StandardMaterial>, &mut Transform, &BloodParticle)>,
+    mut particle_query: Query<(
+        &mut MeshMaterial3d<StandardMaterial>,
+        &mut Transform,
+        &BloodParticle,
+    )>,
 ) {
     for (material, mut transform, particle) in &mut particle_query {
         let age_ratio = (particle.lifetime / particle.max_lifetime).clamp(0.0, 1.0);
-        
-        
+
         // Scale particles slightly based on size factor and age
         let age_scale = 1.0 + age_ratio * 0.2; // Slight expansion as blood coagulates
         let final_scale = particle.size_factor * age_scale;
         transform.scale = Vec3::splat(final_scale);
-        
+
         // Stuck particles might flatten slightly
         if particle.is_stuck {
             let stick_direction = particle.stick_surface;

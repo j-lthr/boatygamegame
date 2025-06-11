@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 
 #[derive(States, Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -15,7 +14,6 @@ pub struct GameScore {
     pub combo: i32,
     pub combo_timer: Timer,
 }
-
 
 impl Default for GameScore {
     fn default() -> Self {

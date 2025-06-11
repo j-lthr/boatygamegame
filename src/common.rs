@@ -1,5 +1,5 @@
-use crate::event::DeathEvent;
 use crate::event;
+use crate::event::DeathEvent;
 use crate::player;
 use crate::state;
 use bevy::prelude::*;
@@ -34,7 +34,6 @@ pub fn handle_inertia(mut player_query: Query<(&mut Transform, &mut Inertia)>) {
         transform.translation += last_timestep_movement * inertia.damping;
     }
 }
-
 
 pub fn handle_damage_events(
     mut damage_events: EventReader<event::DamageEvent>,
@@ -81,9 +80,7 @@ pub fn emit_death_events(
 ) {
     for (entity, living, transform) in &enemy_query {
         if living.health <= 0 {
-            death_events.write(DeathEvent {
-                entity,
-            });
+            death_events.write(DeathEvent { entity });
         }
     }
 }
@@ -101,7 +98,6 @@ pub fn handle_player_death(
     }
 }
 
-
 pub fn handle_npc_death(
     mut commands: Commands,
     npc_query: Query<&Living, Without<player::Player>>,
@@ -113,4 +109,3 @@ pub fn handle_npc_death(
         }
     }
 }
-

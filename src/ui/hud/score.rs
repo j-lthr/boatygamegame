@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::{enemy::spawn::SpawnerState, state::GameScore};
+use bevy::prelude::*;
 
 const FONT_PATH: &str = "fonts/Jersey15-Regular.ttf";
 
@@ -32,9 +32,7 @@ pub fn setup_score_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         ScoreText,
     ));
 
-  
-
-        // Combo display (initially hidden)
+    // Combo display (initially hidden)
     commands.spawn((
         Text::new(""),
         TextFont {
@@ -89,7 +87,6 @@ pub fn update_combo_display(
     mut combo_query: Query<&mut Text, With<ComboText>>,
     score: Res<GameScore>,
 ) {
-
     // Update combo display
     if let Ok(mut combo_text) = combo_query.single_mut() {
         if score.combo > 1 {
@@ -119,13 +116,13 @@ pub fn update_combo_system(mut score: ResMut<GameScore>, time: Res<Time>) {
 }
 
 pub fn plugin(app: &mut App) {
-    app.add_systems(Update, 
+    app.add_systems(
+        Update,
         (
             update_score_display,
             update_combo_display,
             update_wave_number_display,
-            update_combo_system
-        )
+            update_combo_system,
+        ),
     );
 }
-

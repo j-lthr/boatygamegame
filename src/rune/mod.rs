@@ -63,7 +63,10 @@ pub fn handle_rune_pickup<T: Rune>(
 
                 commands.entity(pickup_entity).despawn()
             } else if distance < collector.magnet_radius {
-                pickup_transform.translation = pickup_transform.translation.lerp(collector_transform.translation, 1000.0 / distance.powi(2) * time.delta_secs() * time.delta_secs());
+                pickup_transform.translation = pickup_transform.translation.lerp(
+                    collector_transform.translation,
+                    1000.0 / distance.powi(2) * time.delta_secs() * time.delta_secs(),
+                );
             }
         }
     }
@@ -118,10 +121,10 @@ pub fn spawn_runes<T: Rune>(
                 speed: 10.0 + fastrand::f32(),
             },
             DespawnOnReset,
-            Inertia{
+            Inertia {
                 prev_pos: spawn_event.position,
-                damping: 0.95
-            }
+                damping: 0.95,
+            },
         ));
     }
 }

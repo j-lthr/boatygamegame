@@ -65,7 +65,7 @@ pub fn cast_basic_prjectile_attack(
                         damage: cast_event.ability.damage,
                         source: cast_event.caster,
                     },
-                    DespawnOnReset
+                    DespawnOnReset,
                 ));
 
                 if i == 0 {

@@ -20,7 +20,6 @@ mod utils;
 use bevy::window::WindowMode;
 use state::GameState;
 
-
 fn main() {
     App::new()
         .add_plugins(
@@ -53,13 +52,7 @@ fn main() {
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
         .init_resource::<state::GameScore>()
-        .add_systems(
-            Startup,
-            (
-                spawn_music,
-                ui::hud::score::setup_score_ui,
-            ),
-        )
+        .add_systems(Startup, (spawn_music, ui::hud::score::setup_score_ui))
         .add_systems(
             Update,
             (

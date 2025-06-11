@@ -24,7 +24,7 @@ pub fn collide(
     target_query: Query<(Entity, &mut Transform, &common::Living), Without<Projectile>>,
     mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     mut damage_events: EventWriter<event::DamageEvent>,
-    faction_query: Query<&Faction>
+    faction_query: Query<&Faction>,
 ) {
     for (projectile_entity, projectile_transform, projectile) in &projectile_query {
         for (entity, target_transform, _living_opt) in &target_query {
@@ -33,7 +33,10 @@ pub fn collide(
                 continue;
             }
 
-            if let (Ok(source_faction), Ok(target_faction)) = (faction_query.get(projectile.source), faction_query.get(entity)) {
+            if let (Ok(source_faction), Ok(target_faction)) = (
+                faction_query.get(projectile.source),
+                faction_query.get(entity),
+            ) {
                 if source_faction == target_faction {
                     continue;
                 }
@@ -51,7 +54,6 @@ pub fn collide(
 
                 let projectile_velocity = projectile.direction * projectile.speed;
 
-            
                 // Emit damage event instead of directly modifying health
                 damage_events.write(event::DamageEvent {
                     target: entity,
@@ -61,7 +63,6 @@ pub fn collide(
                     impact_velocity: Some(projectile_velocity),
                 });
 
-            
                 let shoot_sound_handle = shoot_sounds.add(fx::fm::FMSound {
                     config: fx::fm::HIT_SOUND,
                     duration: Duration::from_millis(100),
@@ -74,7 +75,7 @@ pub fn collide(
                         .with_volume(Volume::Decibels(12.0)),
                     Transform::from_translation(target_transform.translation),
                 ));
-                
+
                 break;
             }
         }
@@ -82,7 +83,10 @@ pub fn collide(
 }
 
 /// System to move projectiles
-pub fn handle_movement(mut projectile_query: Query<(&mut Transform, &Projectile)>, time: Res<Time>) {
+pub fn handle_movement(
+    mut projectile_query: Query<(&mut Transform, &Projectile)>,
+    time: Res<Time>,
+) {
     for (mut transform, projectile) in &mut projectile_query {
         transform.translation += projectile.direction * projectile.speed * time.delta_secs();
     }
@@ -101,5 +105,3 @@ pub fn cleanup(
         }
     }
 }
-
-
