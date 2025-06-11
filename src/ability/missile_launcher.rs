@@ -1,9 +1,5 @@
 use super::*;
 use crate::fx;
-use crate::projectile;
-use bevy::audio::Volume;
-use bevy::prelude::*;
-use std::time::Duration;
 
 // Missile Launcher System
 //
@@ -102,7 +98,7 @@ pub fn cast_missiles(
                     .spawn((
                         Mesh3d(missile_mesh.clone()),
                         MeshMaterial3d(missile_mat.clone()),
-                        Transform::from_translation(caster_transform.translation + Vec3::Y * 0.5),
+                        Transform::from_translation(caster_transform.translation + Vec3::Y * 0.5 + spread_offset),
                         Missile {
                             target: target.clone(),
                             tracking_strength: cast_event.ability.tracking_strength,

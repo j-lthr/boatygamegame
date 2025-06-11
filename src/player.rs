@@ -197,9 +197,6 @@ pub fn handle_camera(
             ) * camera.ground_offset)
             .with_y(camera.height_offset);
 
-
-
-
         let target_position = player_transform.translation + camera_offset;
 
         // Smoothly move camera towards target position

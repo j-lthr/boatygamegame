@@ -1,13 +1,9 @@
-use bevy::ecs::spawn;
 use bevy::prelude::*;
 use std::f32;
 
 use super::{AttemptSpawnEvent, Enemy};
-use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
-use crate::ability::dash::{Dash, DashParams};
 use crate::ability::missile_launcher::MissileLauncher;
 use crate::ability::missile_launcher::MissileParams;
-use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 use crate::common::Faction;
 use crate::common::Living;
@@ -15,13 +11,11 @@ use crate::common::{self, Inertia};
 use crate::enemy::common::FirstOrderMovement;
 use crate::enemy::common::FollowMovementMode;
 use crate::enemy::common::FollowTarget;
-use crate::enemy::common::MoveEvent;
 use crate::event;
 use crate::init::DespawnOnReset;
 use crate::loot::DropTableBuilder;
 use crate::player;
 use crate::player::Player;
-use crate::procedural;
 use crate::rune::*;
 use crate::utils::normal_dist_1d;
 
@@ -79,14 +73,14 @@ pub fn handle_sniper_spawn(
                             jitter: 0.0,
                         },
                         AbilitySlot {
-                            cooldown: Timer::from_seconds(2.0, TimerMode::Once),
+                            cooldown: Timer::from_seconds(normal_dist_1d(2.0, 0.01).abs(), TimerMode::Once),
                             name: "Missile",
                             ability: MissileLauncher {
                                 missile_count: 1,
                                 spread: 0.45,
                                 speed: 50.0,
-                                lifetime: 10.0,
-                                damage: 20,
+                                lifetime: 2.0,
+                                damage: 100,
                                 explosion_radius: 5.0,
                                 color: Color::linear_rgb(50.0, 0.0, 0.0),
                                 tracking_strength: 5.0,

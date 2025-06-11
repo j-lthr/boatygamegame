@@ -1,6 +1,5 @@
 use crate::event::DeathEvent;
 use crate::player::Player;
-use crate::rune::RunePickup;
 use crate::rune::SpeedRune;
 use crate::enemy;
 use crate::event;

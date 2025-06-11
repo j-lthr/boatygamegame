@@ -8,7 +8,6 @@ use crate::common::Faction;
 use crate::event;
 use crate::fx;
 
-
 // Component for projectiles
 #[derive(Component)]
 pub struct Projectile {
@@ -18,7 +17,6 @@ pub struct Projectile {
     pub damage: i32,
     pub source: Entity, // Entity that fired this projectile
 }
-
 
 pub fn collide(
     mut commands: Commands,
@@ -82,8 +80,6 @@ pub fn collide(
         }
     }
 }
-
-
 
 /// System to move projectiles
 pub fn handle_movement(mut projectile_query: Query<(&mut Transform, &Projectile)>, time: Res<Time>) {

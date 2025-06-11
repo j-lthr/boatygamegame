@@ -67,7 +67,7 @@ pub fn handle_multishot_rune(mut player_query: Query<&mut AbilitySlot<BasicProje
     for event in event_reader.read() {
         if let Ok(mut projectile_attack) = player_query.get_mut(event.entity) {
             projectile_attack.ability.bullet_count += event.rune.added_bullets;    
-            projectile_attack.ability.spread += event.rune.added_bullets as f32 * 0.001;
+            projectile_attack.ability.spread += event.rune.added_bullets as f32 * 0.0005;
         }
     }
 }

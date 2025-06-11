@@ -4,7 +4,6 @@ use crate::init::DespawnOnReset;
 use crate::projectile;
 use crate::utils::normal_dist_1d;
 use bevy::audio::Volume;
-use bevy::prelude::*;
 use std::time::Duration;
 
 #[derive(Clone)]
