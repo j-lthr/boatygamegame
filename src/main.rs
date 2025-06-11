@@ -20,7 +20,6 @@ mod utils;
 use bevy::window::WindowMode;
 use state::GameState;
 
-use crate::init::{DespawnOnReset, GameInit};
 
 fn main() {
     App::new()

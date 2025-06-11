@@ -43,7 +43,7 @@ pub fn spawn(
     mut commands: Commands,
     mut state: ResMut<SpawnerState>,
     time: ResMut<Time>,
-    mut target_query: Query<&Transform, With<SpawnerTarget>>,
+    target_query: Query<&Transform, With<SpawnerTarget>>,
 ) {
     state.wave_timer.tick(time.delta());
 

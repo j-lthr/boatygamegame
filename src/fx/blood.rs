@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use crate::{common::Living, enemy::boulder::BOULDER_COLOR, event::{DamageEvent, DeathEvent}, init::DespawnOnReset};
+use crate::{common::Living, event::{DamageEvent, DeathEvent}, init::DespawnOnReset};
 
 
 // Enhanced blood particle component with realistic properties
@@ -26,7 +26,7 @@ pub fn spawn_blood_explosion(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_: ResMut<Assets<StandardMaterial>>,
-    mut damage_events: EventReader<DamageEvent>,
+    damage_events: EventReader<DamageEvent>,
     mut death_events: EventReader<DeathEvent>,
     transform_query: Query<(&Transform, &MeshMaterial3d<StandardMaterial>, &Living)>,
     
@@ -204,7 +204,7 @@ pub fn blood_particle_physics(
 pub fn blood_particle_rendering(
     mut particle_query: Query<(&mut MeshMaterial3d<StandardMaterial>, &mut Transform, &BloodParticle)>,
 ) {
-    for (mut material, mut transform, particle) in &mut particle_query {
+    for (material, mut transform, particle) in &mut particle_query {
         let age_ratio = (particle.lifetime / particle.max_lifetime).clamp(0.0, 1.0);
         
         

@@ -1,8 +1,8 @@
 use std::{f32::consts::PI, time::Duration};
 
-use bevy::{audio, prelude::*};
+use bevy::prelude::*;
 
-use bevy::audio::{AddAudioSource, AudioPlugin, Source, Volume};
+use bevy::audio::Source;
 
 #[derive(Debug, Clone, Copy)]
 pub struct FMSoundConfig {

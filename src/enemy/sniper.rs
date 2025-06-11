@@ -120,7 +120,7 @@ pub fn sniper_combat_ai(
     mut missile_action: EventWriter<AttemptCastEvent<MissileLauncher>>,
 ) {
     if let Ok((player_entity, player_transform)) = player_query.single() {
-        for (boulder_entity, boulder_transform, missile_ability, mut movement) in &mut sniper_query
+        for (boulder_entity, boulder_transform, missile_ability, movement) in &mut sniper_query
         {
             let distance = boulder_transform
                 .translation

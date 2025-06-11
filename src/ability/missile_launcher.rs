@@ -68,7 +68,7 @@ pub fn cast_missiles(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
+    shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     caster_query: Query<&Transform, Without<crate::projectile::Projectile>>,
 ) {
     for cast_event in cast_events.read() {
@@ -226,7 +226,7 @@ pub fn handle_explosions(
     >,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut explosion_sounds: ResMut<Assets<fx::fm::FMSound>>,
+    explosion_sounds: ResMut<Assets<fx::fm::FMSound>>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&common::Faction>,
     time: Res<Time>,
@@ -312,7 +312,7 @@ pub fn update_explosion_visuals(
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
-    for (entity, mut transform, mut visual, mut material) in explosion_visual_query.iter_mut() {
+    for (entity, mut transform, mut visual, material) in explosion_visual_query.iter_mut() {
         visual.lifetime -= time.delta_secs();
 
         if visual.lifetime <= 0.0 {

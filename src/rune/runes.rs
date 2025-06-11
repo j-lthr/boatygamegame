@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{ability::{basic_projectile_attack::BasicProjectileAttack, AbilitySlot}, common::Living, player::{self, Player}, rune::{Rune, RuneApplicationEvent}};
+use crate::{ability::{basic_projectile_attack::BasicProjectileAttack, AbilitySlot}, common::Living, player::Player, rune::{Rune, RuneApplicationEvent}};
 
 #[derive(Clone, Debug)]
 pub struct SpeedRune {

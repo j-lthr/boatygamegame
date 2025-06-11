@@ -1,10 +1,7 @@
 use bevy::prelude::*;
-use crate::common::Living;
 use crate::enemy::spawn::SpawnerState;
 use crate::init::{DespawnOnReset, GameInit};
-use crate::player::Player;
 use crate::state::{GameState, GameScore};
-use crate::{enemy, projectile, player, common};
 
 const FONT_PATH: &str = "fonts/Jersey15-Regular.ttf";
 

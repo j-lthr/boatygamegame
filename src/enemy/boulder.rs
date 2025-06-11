@@ -1,12 +1,10 @@
-use bevy::ecs::spawn;
 use bevy::prelude::*;
 use std::f32;
 
 use super::{AttemptSpawnEvent, Enemy};
 use crate::ability::dash::{Dash, DashParams};
 use crate::ability::missile_launcher::MissileLauncher;
-use crate::ability::missile_launcher::MissileParams;
-use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
+use crate::ability::basic_projectile_attack::BasicProjectileAttack;
 use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 use crate::common::{self, Inertia};
@@ -15,7 +13,6 @@ use crate::common::Living;
 use crate::enemy::common::FirstOrderMovement;
 use crate::enemy::common::FollowTarget;
 use crate::enemy::common::FollowMovementMode;
-use crate::enemy::common::MoveEvent;
 use crate::event;
 use crate::init::DespawnOnReset;
 use crate::loot::DropTableBuilder;
@@ -188,9 +185,9 @@ pub fn boulder_combat_ai(
     >,
     player_query: Query<(Entity, &Transform), (With<player::Player>, Without<Boulder>)>,
     mut slam_action: EventWriter<AttemptCastEvent<Slam>>,
-    mut shotgun_action: EventWriter<AttemptCastEvent<BasicProjectileAttack>>,
+    shotgun_action: EventWriter<AttemptCastEvent<BasicProjectileAttack>>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
-    mut missile_action: EventWriter<AttemptCastEvent<MissileLauncher>>,
+    missile_action: EventWriter<AttemptCastEvent<MissileLauncher>>,
 ) {
     if let Ok((player_entity, player_transform)) = player_query.single() {
         for (

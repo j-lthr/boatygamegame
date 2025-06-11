@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
-use bevy::{ecs::spawn, prelude::*};
+use bevy::prelude::*;
 
 mod runes;
 
 pub use runes::*;
 
-use crate::{common::Inertia, init::DespawnOnReset, rune};
+use crate::{common::Inertia, init::DespawnOnReset};
 
 #[derive(Component)]
 pub struct Collector {

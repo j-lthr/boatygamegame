@@ -1,9 +1,5 @@
 use crate::event::DeathEvent;
-use crate::player::Player;
-use crate::rune::SpeedRune;
-use crate::enemy;
 use crate::event;
-use crate::fx;
 use crate::player;
 use crate::state;
 use bevy::prelude::*;
@@ -79,7 +75,7 @@ pub fn handle_damage_events(
 }
 
 pub fn emit_death_events(
-    mut commands: Commands,
+    commands: Commands,
     enemy_query: Query<(Entity, &Living, &Transform)>,
     mut death_events: EventWriter<DeathEvent>,
 ) {
