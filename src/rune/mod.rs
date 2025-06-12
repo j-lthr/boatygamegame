@@ -12,6 +12,7 @@ use crate::{common::Inertia, init::DespawnOnReset};
 pub struct Collector {
     pub collect_radius: f32,
     pub magnet_radius: f32,
+    pub magnet_force: f32,
 }
 
 #[derive(Component)]
@@ -22,7 +23,7 @@ pub struct RunePickup<T: Rune> {
 pub trait Rune: Send + Sync + 'static + Clone + std::fmt::Debug {
     fn register_systems(app: &mut App);
 
-    fn emissive() -> LinearRgba;
+    fn emissive(&self) -> LinearRgba;
 }
 
 #[derive(Event)]
@@ -65,7 +66,7 @@ pub fn handle_rune_pickup<T: Rune>(
             } else if distance < collector.magnet_radius {
                 pickup_transform.translation = pickup_transform.translation.lerp(
                     collector_transform.translation,
-                    1000.0 / distance.powi(2) * time.delta_secs() * time.delta_secs(),
+                    collector.magnet_force / distance.powi(2) * time.delta_secs() * time.delta_secs(),
                 );
             }
         }
@@ -75,22 +76,15 @@ pub fn handle_rune_pickup<T: Rune>(
 #[derive(Resource)]
 pub struct RuneAssets<T: Rune> {
     mesh: Handle<Mesh>,
-    material: Handle<StandardMaterial>,
     _marker: PhantomData<T>,
 }
 
 pub fn setup_rune_assets<T: Rune>(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.insert_resource(RuneAssets {
         mesh: meshes.add(Sphere::new(0.33)),
-        material: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 1.0, 1.0),
-            emissive: T::emissive(),
-            ..Default::default()
-        }),
         _marker: PhantomData::<T>,
     });
 }
@@ -103,6 +97,7 @@ struct RuneAnimation {
 pub fn spawn_runes<T: Rune>(
     mut commands: Commands,
     mut spawn_events: EventReader<RuneSpawnEvent<T>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     assets: Res<RuneAssets<T>>,
 ) {
     for spawn_event in spawn_events.read() {
@@ -110,10 +105,17 @@ pub fn spawn_runes<T: Rune>(
             "Rune '{:?}' spawned at {}",
             spawn_event.rune, spawn_event.position
         );
+
+        let material = materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 1.0, 1.0),
+            emissive: spawn_event.rune.emissive(),
+            ..Default::default()
+        });
+
         commands.spawn((
             Transform::from_translation(spawn_event.position),
             Mesh3d(assets.mesh.clone()),
-            MeshMaterial3d(assets.material.clone()),
+            MeshMaterial3d(material),
             RunePickup::<T> {
                 rune: spawn_event.rune.clone(),
             },
@@ -141,7 +143,7 @@ fn handle_rune_animation(time: Res<Time>, query: Query<(&mut Transform, &RuneAni
 pub fn register_rune<T: Rune>(app: &mut App) {
     app.add_event::<RuneApplicationEvent<T>>();
     app.add_event::<RuneSpawnEvent<T>>();
-    app.add_systems(Startup, setup_rune_assets::<T>);
+    app.add_systems(Update, setup_rune_assets::<T>);
     app.add_systems(Update, handle_rune_pickup::<T>);
     app.add_systems(PostUpdate, spawn_runes::<T>);
     T::register_systems(app);
@@ -150,7 +152,7 @@ pub fn register_rune<T: Rune>(app: &mut App) {
 pub fn plugin(app: &mut App) {
     register_rune::<SpeedRune>(app);
     register_rune::<HealRune>(app);
-    register_rune::<MultishotRune>(app);
+    register_rune::<BasicProjectileAttackRune>(app);
 
     app.add_systems(Update, handle_rune_animation);
 }

@@ -1,4 +1,4 @@
-use crate::event;
+use crate::{event, init::DespawnOnReset};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -52,6 +52,7 @@ pub fn spawn_damage_numbers(
                 initial_position: damage_event.position,
                 rise_speed: 20.0,
             },
+            DespawnOnReset
         ));
     }
 }

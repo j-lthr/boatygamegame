@@ -5,7 +5,7 @@ use crate::ability::AttemptCastEvent;
 use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
-use crate::common::Inertia;
+use crate::common::{Inertia, VelocityEWA};
 use crate::common::Living;
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
@@ -79,9 +79,14 @@ pub fn spawn_player(
             Collector {
                 collect_radius: 1.0,
                 magnet_radius: 50.0,
+                magnet_force: 5000.0,
             },
             SpawnerTarget,
             Faction::Friendly,
+            VelocityEWA {
+                velocity_ewa: Vec3::ZERO,
+                tau: 2.0,
+            },
             DespawnOnReset,
         ))
         .id();
@@ -148,9 +153,9 @@ pub fn handle_movement(
         let speed = player.speed;
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
-        let forward = Vec3::Z;
-        let right = Vec3::X;
-
+        let forward = camera_transform.forward();
+        let right = -camera_transform.right();
+;
         // Project forward and right vectors onto the horizontal plane (y=0)
         let forward_horizontal = Vec3::new(forward.x, 0.0, forward.z).normalize_or_zero();
         let right_horizontal = Vec3::new(right.x, 0.0, right.z).normalize_or_zero();
@@ -173,7 +178,6 @@ pub fn handle_movement(
             dash_action.write(AttemptCastEvent {
                 caster: player_entity,
                 params: DashParams::Directional(velocity),
-                _marker: PhantomData,
             });
         }
 
@@ -186,31 +190,34 @@ pub fn handle_movement(
 }
 
 pub fn handle_camera(
-    player_query: Query<(&Transform, &Inertia), With<Player>>,
+    player_query: Query<(&Transform, &Inertia, &Player, &VelocityEWA)>,
     mut camera_query: Query<(&mut Transform, &PlayerCamera), Without<Player>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_transform, player_inertia)), Ok((mut camera_transform, camera))) =
+    if let (Ok((player_transform, player_inertia, player, ewa)), Ok((mut camera_transform, camera))) =
         (player_query.single(), camera_query.single_mut())
     {
+
+        let player_velocity = ewa.velocity_ewa;
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = ((-1.0 * Vec3::Z
-            + 0.3 * (player_transform.translation - player_inertia.prev_pos).normalize_or_zero())
+        let camera_offset = (( 0.1 * player_velocity)
             * camera.ground_offset)
             .with_y(camera.height_offset);
 
         let target_position = player_transform.translation + camera_offset;
 
+        let lerp_factor = player.speed;
+
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
             .translation
-            .lerp(target_position, 10.0 * time.delta_secs());
+            .lerp(target_position,  lerp_factor * time.delta_secs());
 
         let target_transform = camera_transform.looking_at(player_transform.translation, Vec3::Y);
 
         camera_transform.rotation = camera_transform
             .rotation
-            .slerp(target_transform.rotation, 5.0 * time.delta_secs());
+            .slerp(target_transform.rotation, 0.5 * lerp_factor  * time.delta_secs());
     }
 }
 
@@ -233,7 +240,6 @@ pub fn shoot_gun(
                     params: BasicProjectileAttackParams {
                         target_position: cursor_pos,
                     },
-                    _marker: PhantomData,
                 });
             }
         }

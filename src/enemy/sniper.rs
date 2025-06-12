@@ -87,7 +87,7 @@ pub fn handle_sniper_spawn(
                                 explosion_radius: 5.0,
                                 color: Color::linear_rgb(50.0, 0.0, 0.0),
                                 tracking_strength: 5.0,
-                                lock_distance: 15.0,
+                                lock_distance: 10.0,
                             },
                         },
                         common::Living {
@@ -96,9 +96,10 @@ pub fn handle_sniper_spawn(
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()
-                            .add_rune(0.0, SPEED_RUNE)
                             .add_rune(2.0, HEAL_RUNE)
                             .add_rune(0.5, MULTISHOT_RUNE)
+                            .add_rune(1.0, PROJECTILE_SPEED_RUNE)
+                            .add_rune(0.5, ATTACK_SPEED_RUNE)
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,
@@ -133,7 +134,6 @@ pub fn sniper_combat_ai(
                 params: MissileParams {
                     target_entity: player_entity,
                 },
-                _marker: std::marker::PhantomData,
             });
         }
     }

@@ -46,7 +46,7 @@ pub fn collide(
                 .translation
                 .distance(target_transform.translation);
 
-            if distance < 0.7 {
+            if distance < 1.0 {
                 // Hit detection radius
                 commands.entity(projectile_entity).despawn();
 

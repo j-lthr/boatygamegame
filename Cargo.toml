@@ -1,6 +1,6 @@
 [package]
 name = "boatygame-game"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2024"
 
 [dependencies]
@@ -11,3 +11,7 @@ rand = "0.9.1"
 [dependencies.bevy]
 version = "0.16.0"
 features = ["mp3", "wav"]
+
+[profile.release]
+# v This is now used by default, if not provided
+strip = "debuginfo"
