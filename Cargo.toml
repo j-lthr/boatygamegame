@@ -1,0 +1,13 @@
+[package]
+name = "boatygame-game"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fastrand = "2.3.0"
+noise = "0.9.0"
+rand = "0.9.1"
+
+[dependencies.bevy]
+version = "0.16.0"
+features = ["mp3", "wav"]
