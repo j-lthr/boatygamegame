@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use bevy::prelude::*;
 
 pub mod basic_projectile_attack;
@@ -18,7 +16,6 @@ pub trait Ability: Clone + Send + Sync + 'static {
 pub struct AttemptCastEvent<T: Ability> {
     pub caster: Entity,
     pub params: T::CastParams,
-    pub _marker: std::marker::PhantomData<T>,
 }
 
 #[derive(Event)]
@@ -26,7 +23,6 @@ pub struct CastEvent<T: Ability> {
     pub ability: T,
     pub caster: Entity,
     pub params: T::CastParams,
-    pub _marker: std::marker::PhantomData<T>,
 }
 
 #[derive(Component)]
@@ -45,6 +41,7 @@ pub fn handle_cast_attempts<T: Ability>(
     for mut ability_slot in query.iter_mut() {
         ability_slot.cooldown.tick(time.delta());
     }
+    
     for cast_attempt in cast_attempts.read() {
         if let Ok(mut ability_slot) = query.get_mut(cast_attempt.caster) {
             if ability_slot.cooldown.finished() {
@@ -56,7 +53,6 @@ pub fn handle_cast_attempts<T: Ability>(
                     ability: ability_slot.ability.clone(),
                     caster: cast_attempt.caster,
                     params: cast_attempt.params.clone(),
-                    _marker: PhantomData,
                 });
                 ability_slot.cooldown.reset();
             }

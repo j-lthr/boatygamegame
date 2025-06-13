@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
 use crate::{
@@ -17,7 +19,7 @@ impl Rune for SpeedRune {
         app.add_systems(Update, handle_speed_rune);
     }
 
-    fn emissive() -> LinearRgba {
+    fn emissive(&self) -> LinearRgba {
         LinearRgba::new(0.5, 1.0, 100.0, 1.0)
     }
 }
@@ -43,8 +45,8 @@ impl Rune for HealRune {
         app.add_systems(Update, handle_heal_rune);
     }
 
-    fn emissive() -> LinearRgba {
-        LinearRgba::new(0.5, 100.0, 1.0, 1.0)
+    fn emissive(&self) -> LinearRgba {
+        LinearRgba::new(100.0, 100.0, 100.0, 1.0)
     }
 }
 
@@ -60,28 +62,48 @@ pub fn handle_heal_rune(
 }
 
 #[derive(Clone, Debug)]
-pub struct MultishotRune {
+pub struct BasicProjectileAttackRune {
     pub added_bullets: i32,
+    pub added_damage: i32,
+    pub cooldown_recovery_rate_factor: f32,
+    pub projectile_speed: f32,
+    pub color: Color,
 }
 
-impl Rune for MultishotRune {
+impl BasicProjectileAttackRune {
+    pub const fn empty() -> Self {
+        Self {
+            added_bullets: 0,
+            added_damage: 0,
+            cooldown_recovery_rate_factor: 1.0,
+            projectile_speed: 0.0,
+            color: Color::BLACK,
+        }
+    }
+}
+
+impl Rune for BasicProjectileAttackRune {
     fn register_systems(app: &mut App) {
         app.add_systems(Update, handle_multishot_rune);
     }
 
-    fn emissive() -> LinearRgba {
-        LinearRgba::new(100.0, 1.0, 1.0, 1.0)
+    fn emissive(&self) -> LinearRgba {
+        self.color.into()
     }
 }
 
 pub fn handle_multishot_rune(
     mut player_query: Query<&mut AbilitySlot<BasicProjectileAttack>>,
-    mut event_reader: EventReader<RuneApplicationEvent<MultishotRune>>,
+    mut event_reader: EventReader<RuneApplicationEvent<BasicProjectileAttackRune>>,
 ) {
     for event in event_reader.read() {
         if let Ok(mut projectile_attack) = player_query.get_mut(event.entity) {
             projectile_attack.ability.bullet_count += event.rune.added_bullets;
             projectile_attack.ability.spread += event.rune.added_bullets as f32 * 0.0005;
+            projectile_attack.ability.damage += event.rune.added_damage;
+            projectile_attack.ability.speed += event.rune.projectile_speed;
+            let current_duration = projectile_attack.cooldown.duration().as_secs_f32();
+            projectile_attack.cooldown.set_duration(Duration::from_secs_f32(current_duration * event.rune.cooldown_recovery_rate_factor));
         }
     }
 }
@@ -90,4 +112,7 @@ pub const SPEED_RUNE: SpeedRune = SpeedRune { increase: 1.0 };
 
 pub const HEAL_RUNE: HealRune = HealRune { restore_amount: 10 };
 
-pub const MULTISHOT_RUNE: MultishotRune = MultishotRune { added_bullets: 2 };
+pub const MULTISHOT_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_bullets: 2 , color: Color::linear_rgb(100.0, 0.0, 0.0), ..BasicProjectileAttackRune::empty()};
+pub const DAMAGE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_damage: 2 , color: Color::linear_rgb(100.0, 50.0, 0.0), ..BasicProjectileAttackRune::empty()};
+pub const ATTACK_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { cooldown_recovery_rate_factor: 0.9 , color: Color::linear_rgb(0.0, 100.0, 100.0), ..BasicProjectileAttackRune::empty()};
+pub const PROJECTILE_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { projectile_speed: 1.0, color: Color::linear_rgb(100.0, 0.0, 100.0), ..BasicProjectileAttackRune::empty()};

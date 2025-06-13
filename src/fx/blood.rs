@@ -10,22 +10,17 @@ use crate::{
 
 // Enhanced blood particle component with realistic properties
 #[derive(Component)]
-pub struct BloodParticle {
+pub struct Particle {
     velocity: Vec3,
-    initial_velocity: Vec3,
-    density: f32,
-    pressure: f32,
     lifetime: f32,
     max_lifetime: f32,
     size_factor: f32,
-    viscosity_factor: f32,
-    initial_color: Color,
     is_stuck: bool,
     stick_surface: Vec3, // Normal of the surface it's stuck to
 }
 
 /// Enhanced function to spawn realistic blood explosion particles
-pub fn spawn_blood_explosion(
+pub fn spawn_particles(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_: ResMut<Assets<StandardMaterial>>,
@@ -92,16 +87,11 @@ pub fn spawn_blood_explosion(
                         ..Default::default()
                     })),
                     Transform::from_translation(position + offset),
-                    BloodParticle {
+                    Particle {
                         velocity: initial_velocity,
-                        initial_velocity,
-                        density: 1200.0,
-                        pressure: 0.0,
                         lifetime: 0.0,
                         max_lifetime,
                         size_factor,
-                        viscosity_factor,
-                        initial_color: blood_color,
                         is_stuck: false,
                         stick_surface: Vec3::ZERO,
                     },
@@ -127,8 +117,8 @@ pub fn spawn_blood_explosion(
 }
 
 /// Enhanced physics system for blood particles with realistic behavior
-pub fn blood_particle_physics(
-    mut particle_query: Query<(&mut Transform, &mut BloodParticle)>,
+pub fn handle_particle_physics(
+    mut particle_query: Query<(&mut Transform, &mut Particle)>,
     time: Res<Time>,
 ) {
     //let particles: Vec<_> = particle_query.iter().map(|(t, p)| (t.translation, p.velocity)).collect();
@@ -210,7 +200,7 @@ pub fn blood_particle_rendering(
     mut particle_query: Query<(
         &mut MeshMaterial3d<StandardMaterial>,
         &mut Transform,
-        &BloodParticle,
+        &Particle,
     )>,
 ) {
     for (material, mut transform, particle) in &mut particle_query {
@@ -244,7 +234,7 @@ pub fn blood_particle_rendering(
 /// System to cleanup old blood particles
 pub fn cleanup_blood_particles(
     mut commands: Commands,
-    particle_query: Query<(Entity, &BloodParticle)>,
+    particle_query: Query<(Entity, &Particle)>,
 ) {
     for (entity, particle) in &particle_query {
         if particle.lifetime > particle.max_lifetime {

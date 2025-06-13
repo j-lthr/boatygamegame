@@ -27,11 +27,27 @@ pub struct Inertia {
     pub damping: f32,
 }
 
+#[derive(Component)]
+pub struct VelocityEWA {
+    pub velocity_ewa: Vec3,
+    pub tau: f32,
+}
+
 pub fn handle_inertia(mut player_query: Query<(&mut Transform, &mut Inertia)>) {
     for (mut transform, mut inertia) in &mut player_query {
         let last_timestep_movement = transform.translation - inertia.prev_pos;
         inertia.prev_pos = transform.translation;
         transform.translation += last_timestep_movement * inertia.damping;
+    }
+}
+
+pub fn handle_velocity_averaging(mut query: Query<(&Transform, &Inertia, &mut VelocityEWA)>, time: Res<Time>) {
+    
+    
+    for (transform, inertia, mut velocity_ewa) in &mut query {
+        let alpha = 1.0 / (1.0 + time.delta_secs() * velocity_ewa.tau);
+        let velocity = (transform.translation - inertia.prev_pos) / time.delta_secs().max(0.001);
+        velocity_ewa.velocity_ewa = alpha * velocity_ewa.velocity_ewa + (1.0 - alpha) * velocity;
     }
 }
 

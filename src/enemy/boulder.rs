@@ -123,6 +123,7 @@ pub fn handle_boulder_spawn(
                         DropTableBuilder::new()
                             .add_rune(1.0, SPEED_RUNE)
                             .add_rune(2.0, HEAL_RUNE)
+                            .add_rune(1.0, DAMAGE_RUNE)
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,
@@ -216,7 +217,6 @@ pub fn boulder_combat_ai(
                 dash_action.write(AttemptCastEvent {
                     caster: boulder_entity,
                     params: DashParams::Directional(direction),
-                    _marker: std::marker::PhantomData,
                 });
             }
 
@@ -227,7 +227,6 @@ pub fn boulder_combat_ai(
                     params: SlamParams {
                         target_position: player_transform.translation,
                     },
-                    _marker: std::marker::PhantomData,
                 });
             }
 
