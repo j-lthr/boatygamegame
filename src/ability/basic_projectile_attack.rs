@@ -10,6 +10,7 @@ use std::time::Duration;
 pub struct BasicProjectileAttack {
     pub bullet_count: i32,
     pub spread: f32,
+    pub angle_per_bullet: f32,
     pub speed: f32,
     pub lifetime: f32,
     pub damage: i32,
@@ -56,6 +57,11 @@ pub fn cast_basic_projectile_attack(
                 if i > 0 {
                     direction = Quat::from_rotation_y(normal_dist_1d(0.0, 1.0) * cast_event.ability.spread) * direction;
                 }
+
+               
+                direction = Quat::from_rotation_y(cast_event.ability.angle_per_bullet * (i as f32 - cast_event.ability.bullet_count as f32 / 2.0)) * direction;
+                
+
 
                 // Spawn projectile
                 let mut projectile = commands.spawn((

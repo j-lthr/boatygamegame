@@ -1,5 +1,6 @@
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::prelude::*;
+use std::f32;
 use std::marker::PhantomData;
 
 use crate::ability::AttemptCastEvent;
@@ -70,7 +71,8 @@ pub fn spawn_player(
                 name: "Shotgun",
                 ability: BasicProjectileAttack {
                     bullet_count: 5,
-                    spread: 0.05,
+                    spread: 0.01,
+                    angle_per_bullet: 0.025 * f32::consts::PI,
                     speed: 100.0,
                     lifetime: 1.0,
                     damage: 10,
