@@ -49,7 +49,9 @@ pub fn spawn(
 ) {
     state.wave_timer.tick(time.delta());
 
-    let num_packs = 1 + state.wave_index / 8;
+    let num_packs = 1 + state.wave_index / 16;
+
+    let power = 1.0 + (state.wave_index - 8).max(0) as f32 / 16.0;
 
     
 
@@ -74,13 +76,15 @@ pub fn spawn(
             for _ in 0..num_packs {
                 if state.wave_index % 2 == 0 {
                     commands.send_event(AttemptSpawnEvent::<Boulder>::new(BoulderSpawnParams {
-                        position: random_spawn_pos(target_transform.translation, 20.0, 2.0),
-                        pack_size: 3 * (state.wave_index / 16 + 1),
+                        position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
+                        pack_size: 3, 
+                        power: power
                     }));
                 } else {
                     commands.send_event(AttemptSpawnEvent::<Sniper>::new(SniperSpawnParams {
-                        position: random_spawn_pos(target_transform.translation, 5.0, 2.0),
-                        pack_size: 1 * (state.wave_index / 16 + 1),
+                        position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
+                        pack_size: 1,
+                        power: power
                     }));
                 }
             }

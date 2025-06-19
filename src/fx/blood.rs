@@ -77,7 +77,7 @@ pub fn spawn_particles(
                 };
 
                 let viscosity_factor = 0.8 + fastrand::f32() * 0.4;
-                let max_lifetime = 5.0 + fastrand::f32() * 3.0;
+                let max_lifetime = 1.0 + fastrand::f32() * 0.5;
 
                 commands.spawn((
                     Mesh3d(particle_mesh),

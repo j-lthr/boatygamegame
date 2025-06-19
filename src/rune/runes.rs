@@ -31,6 +31,8 @@ pub fn handle_speed_rune(
     for event in event_reader.read() {
         if let Ok(mut player) = player_query.get_mut(event.entity) {
             player.speed += event.rune.increase;
+
+            player.speed = player.speed.min(100.0);
         }
     }
 }
@@ -67,6 +69,7 @@ pub struct BasicProjectileAttackRune {
     pub added_damage: i32,
     pub cooldown_recovery_rate_factor: f32,
     pub projectile_speed: f32,
+    pub pierce: i32,
     pub color: Color,
 }
 
@@ -77,6 +80,7 @@ impl BasicProjectileAttackRune {
             added_damage: 0,
             cooldown_recovery_rate_factor: 1.0,
             projectile_speed: 0.0,
+            pierce: 0,
             color: Color::BLACK,
         }
     }
@@ -102,6 +106,7 @@ pub fn handle_multishot_rune(
             projectile_attack.ability.spread += event.rune.added_bullets as f32 * 0.0005;
             projectile_attack.ability.damage += event.rune.added_damage;
             projectile_attack.ability.speed += event.rune.projectile_speed;
+            projectile_attack.ability.pierce += event.rune.pierce;
             let current_duration = projectile_attack.cooldown.duration().as_secs_f32();
             projectile_attack.cooldown.set_duration(Duration::from_secs_f32(current_duration * event.rune.cooldown_recovery_rate_factor));
         }
@@ -116,3 +121,4 @@ pub const MULTISHOT_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune 
 pub const DAMAGE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_damage: 2 , color: Color::linear_rgb(100.0, 50.0, 0.0), ..BasicProjectileAttackRune::empty()};
 pub const ATTACK_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { cooldown_recovery_rate_factor: 0.9 , color: Color::linear_rgb(0.0, 100.0, 100.0), ..BasicProjectileAttackRune::empty()};
 pub const PROJECTILE_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { projectile_speed: 1.0, color: Color::linear_rgb(100.0, 0.0, 100.0), ..BasicProjectileAttackRune::empty()};
+pub const PIERCE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { pierce: 1, color: Color::linear_rgb(10.0, 0.0, 15.0), ..BasicProjectileAttackRune::empty()};

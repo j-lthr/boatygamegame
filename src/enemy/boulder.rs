@@ -32,6 +32,7 @@ pub struct Boulder;
 pub struct BoulderSpawnParams {
     pub position: Vec3,
     pub pack_size: i32,
+    pub power: f32,
 }
 
 /// System to handle boulder spawn events
@@ -56,6 +57,8 @@ pub fn handle_boulder_spawn(
                 let spawn_position = spawn_attempt.params.position
                     + vec3(f32::cos(offset_angle), 0.0, f32::sin(offset_angle));
 
+                let power = spawn_attempt.params.power;
+
                 let enemy = commands
                     .spawn((
                         Mesh3d(mesh.clone()),
@@ -64,14 +67,14 @@ pub fn handle_boulder_spawn(
                             emissive: BOULDER_COLOR.into(), // Slightly glowing
                             ..default()
                         })),
-                        Transform::from_translation(spawn_position),
+                        Transform::from_translation(spawn_position).with_scale(Vec3::splat(0.9 + 0.1 * power)),
                         Boulder,
                         FollowTarget {
                             target: player,
                             mode: FollowMovementMode::ToMeleeRange,
                         },
                         FirstOrderMovement {
-                            speed: 10.0,
+                            speed: 10.0 + power,
                             jitter: 0.1,
                         },
                         AbilitySlot {
@@ -84,13 +87,13 @@ pub fn handle_boulder_spawn(
                             },
                         },
                         AbilitySlot {
-                            cooldown: Timer::from_seconds(3.0, TimerMode::Once),
+                            cooldown: Timer::from_seconds(1.0 + 2.0 / power, TimerMode::Once),
                             name: "Dash",
-                            ability: Dash { range: 6.0 },
+                            ability: Dash { range: 6.0 + power },
                         },
                         common::Living {
-                            health: 32,
-                            max_health: 32,
+                            health: (32.0 * power) as i32,
+                            max_health: (32.0 * power) as i32,
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()

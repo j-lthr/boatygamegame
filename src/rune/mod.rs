@@ -135,7 +135,7 @@ fn handle_rune_animation(time: Res<Time>, query: Query<(&mut Transform, &RuneAni
     for (mut transform, animation) in query {
         let s = f32::sin(animation.speed * time.elapsed_secs());
 
-        transform.scale.y = 1.0 + s * 0.4;
+        transform.scale = Vec3::splat(1.0 + s * 0.4);
         //transform.translation.x = 0.5 + s * 0.2;
     }
 }

@@ -14,6 +14,7 @@ pub struct BasicProjectileAttack {
     pub speed: f32,
     pub lifetime: f32,
     pub damage: i32,
+    pub pierce: i32,
     pub color: Color,
 }
 
@@ -74,6 +75,8 @@ pub fn cast_basic_projectile_attack(
                         lifetime: cast_event.ability.lifetime,
                         damage: cast_event.ability.damage,
                         source: cast_event.caster,
+                        pierce: cast_event.ability.pierce,
+                        last_entity_hit: None,
                     },
                     DespawnOnReset,
                 ));

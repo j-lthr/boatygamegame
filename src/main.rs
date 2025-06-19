@@ -3,7 +3,7 @@ use std::thread::spawn;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 
-use bevy::audio::{AddAudioSource, AudioPlugin, Volume};
+use bevy::audio::{AddAudioSource, AudioPlugin, SpatialScale, Volume};
 
 mod ability;
 mod audio;
@@ -35,6 +35,7 @@ fn main() {
             DefaultPlugins
                 .set(AudioPlugin {
                     global_volume: Volume::Linear(1.0).into(),
+                    default_spatial_scale: SpatialScale::new(1.0 / 7.0),
                     ..default()
                 })
                 .set(WindowPlugin {

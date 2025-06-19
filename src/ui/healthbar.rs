@@ -40,7 +40,7 @@ pub fn spawn(
 
         commands.spawn((
             sprite,
-            Transform::from_xyz(0.0, 0.0, 0.0),
+            Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::splat(0.5)),
             HealthBar {
                 entity: event.entity,
             },
@@ -72,7 +72,7 @@ pub fn update(
                 let _ = camera_3d
                     .world_to_viewport(
                         camera_3d_transform,
-                        enemy_transform.translation() + Vec3::Y * 1.5,
+                        enemy_transform.translation() + Vec3::Z * 1.5,
                     )
                     .map(|viewport_position| {
                         camera_2d

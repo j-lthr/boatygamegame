@@ -15,21 +15,23 @@ pub struct Projectile {
     pub speed: f32,
     pub lifetime: f32,
     pub damage: i32,
+    pub pierce: i32,
     pub source: Entity, // Entity that fired this projectile
+    pub last_entity_hit: Option<Entity>,
 }
 
 pub fn collide(
     mut commands: Commands,
-    projectile_query: Query<(Entity, &Transform, &Projectile)>,
+    projectile_query: Query<(Entity, &Transform, &mut Projectile)>,
     target_query: Query<(Entity, &mut Transform, &common::Living), Without<Projectile>>,
     mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&Faction>,
 ) {
-    for (projectile_entity, projectile_transform, projectile) in &projectile_query {
+    for (projectile_entity, projectile_transform, mut projectile) in projectile_query {
         for (entity, target_transform, _living_opt) in &target_query {
             // Skip self-damage
-            if entity == projectile.source {
+            if entity == projectile.source || projectile.last_entity_hit == Some(entity) {
                 continue;
             }
 
@@ -47,8 +49,13 @@ pub fn collide(
                 .distance(target_transform.translation);
 
             if distance < 1.0 {
-                // Hit detection radius
-                commands.entity(projectile_entity).despawn();
+
+                if projectile.pierce == 0 {
+                    commands.entity(projectile_entity).despawn();
+                } else {
+                    projectile.pierce -= 1;
+                    projectile.last_entity_hit = Some(entity);
+                }
 
                 // Apply damage if target has Living component
 

@@ -1,3 +1,5 @@
+use std::f32;
+
 use super::*;
 use crate::fx;
 
@@ -74,7 +76,7 @@ pub fn cast_missiles(
     for cast_event in cast_events.read() {
         if let Ok(caster_transform) = caster_query.get(cast_event.caster) {
             // Create missile mesh (elongated cylinder for rocket shape)
-            let missile_mesh = meshes.add(Capsule3d::new(0.03, 0.15));
+            let missile_mesh = meshes.add(Capsule3d::new(0.06, 0.3));
             let missile_mat = materials.add(StandardMaterial {
                 base_color: Color::srgb(1.0, 1.0, 1.0),
                 emissive: cast_event.ability.color.into(),
@@ -83,12 +85,6 @@ pub fn cast_missiles(
 
             for i in 0..cast_event.ability.missile_count {
                 // Calculate initial direction with spread
-
-                let spread_offset = Vec3::new(
-                    (fastrand::f32() - 0.5) * cast_event.ability.spread,
-                    (fastrand::f32() - 0.5) * cast_event.ability.spread * 0.5, // Less vertical spread
-                    (fastrand::f32() - 0.5) * cast_event.ability.spread,
-                );
 
                 // Determine target for this missile
                 let target = MissileTarget::Entity(cast_event.params.target_entity);
@@ -99,8 +95,8 @@ pub fn cast_missiles(
                         Mesh3d(missile_mesh.clone()),
                         MeshMaterial3d(missile_mat.clone()),
                         Transform::from_translation(
-                            caster_transform.translation + Vec3::Y * 0.5 + spread_offset,
-                        ),
+                            caster_transform.translation,
+                        ).with_rotation(Quat::from_axis_angle(Vec3::Y, i as f32 / cast_event.ability.missile_count as f32 * std::f32::consts::PI * 2.0)),
                         Missile {
                             target: target.clone(),
                             tracking_strength: cast_event.ability.tracking_strength,

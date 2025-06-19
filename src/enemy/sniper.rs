@@ -29,6 +29,7 @@ pub struct Sniper;
 pub struct SniperSpawnParams {
     pub position: Vec3,
     pub pack_size: i32,
+    pub power: f32,
 }
 
 /// System to handle boulder spawn events
@@ -51,6 +52,8 @@ pub fn handle_sniper_spawn(
                 let spawn_position = spawn_attempt.params.position
                     + vec3(f32::cos(offset_angle), 0.0, f32::sin(offset_angle));
 
+                let power = spawn_attempt.params.power;
+
                 let enemy = commands
                     .spawn((
                         Mesh3d(mesh.clone()),
@@ -65,7 +68,7 @@ pub fn handle_sniper_spawn(
                             target: player,
                             mode: FollowMovementMode::Ranged {
                                 preferred_distance: 30.0,
-                                rotation_speed: 0.1,
+                                rotation_speed: 0.1 * power,
                             },
                         },
                         FirstOrderMovement {
@@ -79,15 +82,15 @@ pub fn handle_sniper_spawn(
                             ),
                             name: "Missile",
                             ability: MissileLauncher {
-                                missile_count: 1,
+                                missile_count: power as i32,
                                 spread: 0.45,
-                                speed: 50.0,
+                                speed: 30.0  + 10.0 * (power - 1.0),
                                 lifetime: 2.0,
                                 damage: 100,
-                                explosion_radius: 5.0,
+                                explosion_radius: 4.0 + power,
                                 color: Color::linear_rgb(50.0, 0.0, 0.0),
-                                tracking_strength: 5.0,
-                                lock_distance: 15.0,
+                                tracking_strength: 5.0 + 1.0 * (power - 1.0),
+                                lock_distance: 5.0 * power + 10.0 / power ,
                             },
                         },
                         common::Living {
@@ -98,7 +101,7 @@ pub fn handle_sniper_spawn(
                         DropTableBuilder::new()
                             .add_rune(2.0, HEAL_RUNE)
                             .add_rune(0.5, MULTISHOT_RUNE)
-                            .add_rune(1.0, PROJECTILE_SPEED_RUNE)
+                            .add_rune(0.5, PIERCE_RUNE)
                             .add_rune(0.5, ATTACK_SPEED_RUNE)
                             .build(),
                         Inertia {

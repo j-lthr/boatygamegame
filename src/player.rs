@@ -1,4 +1,5 @@
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
+use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
 use std::f32;
 use std::marker::PhantomData;
@@ -34,6 +35,9 @@ pub struct Player {
 pub struct PlayerCamera {
     pub ground_offset: f32,
     pub height_offset: f32,
+    pub pan_factor: f32,
+    pub pan_ratio: f32,
+    pub lerp_factor: f32,
 }
 
 pub fn spawn_player(
@@ -64,25 +68,26 @@ pub fn spawn_player(
             },
             Inertia {
                 prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
-                damping: 0.1,                       // Damping factor for Verlet integration
+                damping: 0.0,                       // Damping factor for Verlet integration
             },
             AbilitySlot {
-                cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+                cooldown: Timer::from_seconds(0.5, TimerMode::Once),
                 name: "Shotgun",
                 ability: BasicProjectileAttack {
-                    bullet_count: 5,
+                    bullet_count: 3,
                     spread: 0.01,
                     angle_per_bullet: 0.025 * f32::consts::PI,
-                    speed: 100.0,
+                    speed: 200.0,
                     lifetime: 1.0,
                     damage: 10,
+                    pierce: 0,
                     color: player_color,
                 },
             },
             Collector {
                 collect_radius: 1.0,
-                magnet_radius: 50.0,
-                magnet_force: 5000.0,
+                magnet_radius: 25.0,
+                magnet_force: 2000.0,
             },
             SpawnerTarget,
             Faction::Friendly,
@@ -107,7 +112,7 @@ pub fn spawn_camera(mut commands: Commands) {
             ..default()
         },
         Projection::from(PerspectiveProjection {
-            fov: 120.0_f32.to_radians(),
+            fov: 90.0_f32.to_radians(),
             ..default()
         }),
         Transform::from_xyz(0.0, 10.0, -6.0).looking_at(Vec3::ZERO, Vec3::Z),
@@ -121,8 +126,11 @@ pub fn spawn_camera(mut commands: Commands) {
         },
         ChromaticAberration::default(),
         PlayerCamera {
-            ground_offset: 10.0,
-            height_offset: 15.0,
+            ground_offset: 0.0,
+            height_offset: 40.0,
+            pan_factor: 0.5,
+            pan_ratio: -2.0,
+            lerp_factor: 50.0,
         }, //Atmosphere::EARTH,
            /*AtmosphereSettings {
                aerial_view_lut_max_distance: 3.2e5,
@@ -146,13 +154,14 @@ pub fn spawn_camera(mut commands: Commands) {
 pub fn handle_movement(
     mut player_query: Query<(Entity, &mut Transform, &Player)>,
     mut evr_gamepad: EventReader<GamepadEvent>,
-    camera_query: Query<&GlobalTransform, With<Camera3d>>,
+    mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
+    scroll_wheel: Res<AccumulatedMouseScroll>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_entity, mut player_transform, player)), Ok(camera_transform)) =
-        (player_query.single_mut(), camera_query.single())
+    if let (Ok((player_entity, mut player_transform, player)), Ok((camera_transform, mut camera))) =
+        (player_query.single_mut(), camera_query.single_mut())
     {
         let mut velocity = Vec3::ZERO;
         let speed = player.speed;
@@ -185,30 +194,32 @@ pub fn handle_movement(
         let mut dash = keyboard_input.pressed(KeyCode::Space);
 
         
-        for event in evr_gamepad.read() {
-            match event {
-                GamepadEvent::Connection(_) => {},
-                GamepadEvent::Button(GamepadButtonChangedEvent{button, value, ..}) => {
-                    match button {
-                        GamepadButton::RightTrigger => {
-                            dash = *value > 0.0;
-                        },
-                        _ => {}
-                    }
-                },
-                GamepadEvent::Axis(GamepadAxisChangedEvent {axis, value, ..}) => {
-                    match axis {
-                        GamepadAxis::LeftStickX => {
-                            velocity.x = *value;
-                        },
-                        GamepadAxis::LeftStickY => {
-                            velocity.y = *value;
-                        }
-                        _ => {}
-                    }
-                },
-            }
-        }
+        // for event in evr_gamepad.read() {
+        //     match event {
+        //         GamepadEvent::Connection(_) => {},
+        //         GamepadEvent::Button(GamepadButtonChangedEvent{button, value, ..}) => {
+        //             match button {
+        //                 GamepadButton::RightTrigger => {
+        //                     dash = *value > 0.0;
+        //                 },
+        //                 _ => {}
+        //             }
+        //         },
+        //         GamepadEvent::Axis(GamepadAxisChangedEvent {axis, value, ..}) => {
+        //             match axis {
+        //                 GamepadAxis::LeftStickX => {
+        //                     velocity.x = *value;
+        //                 },
+        //                 GamepadAxis::LeftStickY => {
+        //                     velocity.y = *value;
+        //                 }
+        //                 _ => {}
+        //             }
+        //         },
+        //     }
+        // }
+
+        camera.height_offset /= (0.1 * scroll_wheel.delta.y).exp2();
         
 
         if dash && velocity.length() > 1e-6 {
@@ -240,24 +251,24 @@ pub fn handle_camera(
 
         let player_velocity = ewa.velocity_ewa;
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = ((player_velocity.clamp_length_max(1.0))
+        let camera_offset = (-Vec3::Z
             * camera.ground_offset)
             .with_y(camera.height_offset);
 
-        let target_position = player_transform.translation + camera_offset + mouse_pos * 5.0;
-
-        let lerp_factor = player.speed;
+        let target_position = player_transform.translation + camera_offset - camera.height_offset * mouse_pos * camera.pan_factor * camera.pan_ratio;
+ 
+        let lerp_factor = (camera.lerp_factor * time.delta_secs()).min(1.0);
 
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
             .translation
-            .lerp(target_position,  lerp_factor * time.delta_secs());
+            .lerp(target_position,  lerp_factor);
 
-        let target_transform = camera_transform.looking_at(player_transform.translation - mouse_pos * 20.0, Vec3::Z);
+        let target_transform = camera_transform.looking_at(player_transform.translation - camera.height_offset * mouse_pos * camera.pan_factor, Vec3::Z);
 
         camera_transform.rotation = camera_transform
             .rotation
-            .slerp(target_transform.rotation, 0.5 * lerp_factor  * time.delta_secs());
+            .slerp(target_transform.rotation, lerp_factor);
     }
 }
 
@@ -286,7 +297,20 @@ pub fn shoot_gun(
     }
 }
 
+pub fn player_cooldown_visual(
+    mut player_query: Query<(&mut Transform, &AbilitySlot<BasicProjectileAttack>), With<Player>>,
+    time: Res<Time>,
+) {
+    for (mut sniper_transform, missile_ability) in &mut player_query {
+        sniper_transform.scale = sniper_transform.scale.lerp(
+            Vec3::splat(1.0 - missile_ability.cooldown.fraction_remaining() + 0.2),
+            time.delta_secs() * 10.0,
+        );
+    }
+}
+
 pub fn plugin(app: &mut App) {
     app.add_systems(GameInit, spawn_player);
     app.add_systems(Startup, spawn_camera);
+     app.add_systems(Update, player_cooldown_visual);
 }
