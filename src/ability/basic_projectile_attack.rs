@@ -21,7 +21,7 @@ pub struct BasicProjectileAttackParams {
     pub target_position: Vec3,
 }
 
-pub fn cast_basic_prjectile_attack(
+pub fn cast_basic_projectile_attack(
     mut cast_events: EventReader<CastEvent<BasicProjectileAttack>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -47,11 +47,15 @@ pub fn cast_basic_prjectile_attack(
 
             for i in 0..cast_event.ability.bullet_count {
                 // Calculate bullet direction with spread
-                let direction =
-                    Quat::from_rotation_y(normal_dist_1d(0.0, 1.0) * cast_event.ability.spread)
-                        * (cast_event.params.target_position - caster_transform.translation)
-                            .normalize()
-                            .with_y(0.0);
+
+                let mut direction = (cast_event.params.target_position
+                    - caster_transform.translation)
+                    .normalize()
+                    .with_y(0.0);
+
+                if i > 0 {
+                    direction = Quat::from_rotation_y(normal_dist_1d(0.0, 1.0) * cast_event.ability.spread) * direction;
+                }
 
                 // Spawn projectile
                 let mut projectile = commands.spawn((
@@ -85,6 +89,6 @@ impl Ability for BasicProjectileAttack {
     type CastParams = BasicProjectileAttackParams;
 
     fn add_systems(app: &mut bevy::app::App) {
-        app.add_systems(Update, cast_basic_prjectile_attack);
+        app.add_systems(Update, cast_basic_projectile_attack);
     }
 }

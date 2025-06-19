@@ -1,3 +1,4 @@
+use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
@@ -104,7 +105,7 @@ pub fn spawn_camera(mut commands: Commands) {
             ..default()
         },
         Projection::from(PerspectiveProjection {
-            fov: 95.0_f32.to_radians(),
+            fov: 120.0_f32.to_radians(),
             ..default()
         }),
         Transform::from_xyz(0.0, 10.0, -6.0).looking_at(Vec3::ZERO, Vec3::Z),
@@ -138,9 +139,11 @@ pub fn spawn_camera(mut commands: Commands) {
     ));
 }
 
+
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
     mut player_query: Query<(Entity, &mut Transform, &Player)>,
+    mut evr_gamepad: EventReader<GamepadEvent>,
     camera_query: Query<&GlobalTransform, With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
@@ -153,9 +156,12 @@ pub fn handle_movement(
         let speed = player.speed;
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
-        let forward = camera_transform.forward();
-        let right = -camera_transform.right();
-;
+        //let forward = camera_transform.forward();
+        //let right = -camera_transform.right();
+
+        let forward = Vec3::Z;
+        let right = Vec3::X;
+
         // Project forward and right vectors onto the horizontal plane (y=0)
         let forward_horizontal = Vec3::new(forward.x, 0.0, forward.z).normalize_or_zero();
         let right_horizontal = Vec3::new(right.x, 0.0, right.z).normalize_or_zero();
@@ -174,7 +180,36 @@ pub fn handle_movement(
             velocity -= right_horizontal;
         }
 
-        if keyboard_input.pressed(KeyCode::Space) && velocity.length() > 1e-6 {
+        let mut dash = keyboard_input.pressed(KeyCode::Space);
+
+        
+        for event in evr_gamepad.read() {
+            match event {
+                GamepadEvent::Connection(_) => {},
+                GamepadEvent::Button(GamepadButtonChangedEvent{button, value, ..}) => {
+                    match button {
+                        GamepadButton::RightTrigger => {
+                            dash = *value > 0.0;
+                        },
+                        _ => {}
+                    }
+                },
+                GamepadEvent::Axis(GamepadAxisChangedEvent {axis, value, ..}) => {
+                    match axis {
+                        GamepadAxis::LeftStickX => {
+                            velocity.x = *value;
+                        },
+                        GamepadAxis::LeftStickY => {
+                            velocity.y = *value;
+                        }
+                        _ => {}
+                    }
+                },
+            }
+        }
+        
+
+        if dash && velocity.length() > 1e-6 {
             dash_action.write(AttemptCastEvent {
                 caster: player_entity,
                 params: DashParams::Directional(velocity),
@@ -192,19 +227,22 @@ pub fn handle_movement(
 pub fn handle_camera(
     player_query: Query<(&Transform, &Inertia, &Player, &VelocityEWA)>,
     mut camera_query: Query<(&mut Transform, &PlayerCamera), Without<Player>>,
+    window: Single<&Window>,
     time: Res<Time>,
 ) {
     if let (Ok((player_transform, player_inertia, player, ewa)), Ok((mut camera_transform, camera))) =
         (player_query.single(), camera_query.single_mut())
     {
 
+        let mouse_pos = window.cursor_position().map(|pos| pos / window.size() - Vec2::splat(0.5)).map(|pos| Vec3::new(pos.x, 0.0, pos.y)).unwrap_or(Vec3::ZERO);
+
         let player_velocity = ewa.velocity_ewa;
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = (( 0.1 * player_velocity)
+        let camera_offset = ((player_velocity.clamp_length_max(1.0))
             * camera.ground_offset)
             .with_y(camera.height_offset);
 
-        let target_position = player_transform.translation + camera_offset;
+        let target_position = player_transform.translation + camera_offset + mouse_pos * 5.0;
 
         let lerp_factor = player.speed;
 
@@ -213,7 +251,7 @@ pub fn handle_camera(
             .translation
             .lerp(target_position,  lerp_factor * time.delta_secs());
 
-        let target_transform = camera_transform.looking_at(player_transform.translation, Vec3::Y);
+        let target_transform = camera_transform.looking_at(player_transform.translation - mouse_pos * 20.0, Vec3::Z);
 
         camera_transform.rotation = camera_transform
             .rotation

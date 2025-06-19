@@ -1,3 +1,4 @@
+use crate::audio::music::PlayMusicEvent;
 use crate::enemy::spawn::SpawnerState;
 use crate::init::{DespawnOnReset, GameInit};
 use crate::state::{GameScore, GameState};
@@ -90,6 +91,12 @@ pub fn setup_game_over_screen(
                 TextColor(Color::srgb(0.7, 0.7, 1.0)),
             ));
         });
+
+        commands.send_event(PlayMusicEvent {
+            track_name: "audio/bg_game_over.wav",
+            mode: bevy::audio::PlaybackMode::Once,
+        });
+
 }
 
 // Handle input on game over screen
@@ -103,7 +110,7 @@ pub fn handle_game_over_input(
     }
 
     if keyboard_input.just_pressed(KeyCode::Escape) {
-        app_exit_events.send(AppExit::Success);
+        app_exit_events.write(AppExit::Success);
     }
 }
 

@@ -11,5 +11,4 @@ pub fn plugin(app: &mut App,) {
     score::plugin(app);
     watermark::plugin(app);
     wave::plugin(app);
-
 }

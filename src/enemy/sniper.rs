@@ -87,7 +87,7 @@ pub fn handle_sniper_spawn(
                                 explosion_radius: 5.0,
                                 color: Color::linear_rgb(50.0, 0.0, 0.0),
                                 tracking_strength: 5.0,
-                                lock_distance: 10.0,
+                                lock_distance: 15.0,
                             },
                         },
                         common::Living {

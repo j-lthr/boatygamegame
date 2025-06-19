@@ -79,7 +79,7 @@ pub fn spawn(
                     }));
                 } else {
                     commands.send_event(AttemptSpawnEvent::<Sniper>::new(SniperSpawnParams {
-                        position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
+                        position: random_spawn_pos(target_transform.translation, 5.0, 2.0),
                         pack_size: 1 * (state.wave_index / 16 + 1),
                     }));
                 }

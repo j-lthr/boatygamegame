@@ -98,10 +98,6 @@ pub fn handle_drops(
                 death_event.entity
             );
             drop_table.drop_random(commands.reborrow(), drop_position);
-        } else {
-            unsafe {
-                dbg!(result.unwrap_err_unchecked());
-            }
         }
     }
 }

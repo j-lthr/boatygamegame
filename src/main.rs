@@ -1,8 +1,12 @@
+use std::thread::spawn;
+
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
 
 use bevy::audio::{AddAudioSource, AudioPlugin, Volume};
 
 mod ability;
+mod audio;
 mod common;
 mod enemy;
 mod event;
@@ -19,6 +23,11 @@ mod utils;
 
 use bevy::window::WindowMode;
 use state::GameState;
+
+use crate::audio::music::{MusicPlayer, PlayMusicEvent};
+use crate::init::GameInit;
+
+mod input;
 
 fn main() {
     App::new()
@@ -37,7 +46,9 @@ fn main() {
                     ..Default::default()
                 }),
         )
+        .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins((
+            FrameTimeDiagnosticsPlugin::default(),
             player::plugin,
             ui::HealthBarPlugin,
             ui::DamageNumbersPlugin,
@@ -48,11 +59,12 @@ fn main() {
             loot::plugin,
             event::plugin,
             init::plugin,
+            audio::plugin,
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
         .init_resource::<state::GameScore>()
-        .add_systems(Startup, (spawn_music, ui::hud::score::setup_score_ui))
+        .add_systems(Startup, ui::hud::score::setup_score_ui)
         .add_systems(
             Update,
             (
@@ -80,6 +92,7 @@ fn main() {
                 projectile::cleanup,
             ),
         )
+        .add_systems(GameInit, play_main_music)
         .add_systems(
             Update,
             (
@@ -99,14 +112,9 @@ fn main() {
         .run();
 }
 
-/// set up a simple 3D scene
-fn spawn_music(mut commands: Commands, asset_server: ResMut<AssetServer>) {
-    commands.spawn((
-        AudioPlayer(asset_server.load::<AudioSource>("audio/orch_game.wav")),
-        PlaybackSettings {
-            mode: bevy::audio::PlaybackMode::Loop,
-            volume: Volume::Decibels(-24.0),
-            ..default()
-        },
-    ));
+fn play_main_music(mut commands: Commands) {
+    commands.send_event(PlayMusicEvent {
+        track_name: "audio/bg_main.wav",
+        mode: bevy::audio::PlaybackMode::Loop,
+    });
 }
