@@ -84,13 +84,13 @@ pub fn handle_sniper_spawn(
                             ability: MissileLauncher {
                                 missile_count: power as i32,
                                 spread: 0.45,
-                                speed: 30.0  + 10.0 * (power - 1.0),
+                                speed: 40.0 + 10.0 * (power - 1.0),
                                 lifetime: 2.0,
                                 damage: 100,
-                                explosion_radius: 4.0 + power,
+                                explosion_radius: 3.0 + power,
                                 color: Color::linear_rgb(50.0, 0.0, 0.0),
                                 tracking_strength: 5.0 + 1.0 * (power - 1.0),
-                                lock_distance: 5.0 * power + 10.0 / power ,
+                                lock_distance: 3.0 + power + 10.0 / power ,
                             },
                         },
                         common::Living {

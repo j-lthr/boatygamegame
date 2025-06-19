@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use std::f32;
 use std::marker::PhantomData;
 
-use crate::ability::AttemptCastEvent;
+use crate::ability::{AttemptCastEvent, CastEvent};
 use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
@@ -297,20 +297,29 @@ pub fn shoot_gun(
     }
 }
 
-pub fn player_cooldown_visual(
+pub fn player_vfx(
     mut player_query: Query<(&mut Transform, &AbilitySlot<BasicProjectileAttack>), With<Player>>,
+    mut dash_cast_events: EventReader<CastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    for (mut sniper_transform, missile_ability) in &mut player_query {
-        sniper_transform.scale = sniper_transform.scale.lerp(
-            Vec3::splat(1.0 - missile_ability.cooldown.fraction_remaining() + 0.2),
+    for (mut transform, ability) in &mut player_query {
+        transform.scale = transform.scale.lerp(
+            Vec3::splat(1.0 - ability.cooldown.fraction_remaining() + 0.2),
             time.delta_secs() * 10.0,
         );
+    }
+
+    for event in dash_cast_events.read() {
+        if let Ok((mut transform, ability)) = player_query.get_mut(event.caster) {
+            if let DashParams::Directional(direction) = event.params {
+                transform.scale += direction.abs();
+            }
+        }
     }
 }
 
 pub fn plugin(app: &mut App) {
     app.add_systems(GameInit, spawn_player);
     app.add_systems(Startup, spawn_camera);
-     app.add_systems(Update, player_cooldown_visual);
+     app.add_systems(Update, player_vfx);
 }
