@@ -5,6 +5,8 @@ pub mod common;
 pub mod dash;
 pub mod missile_launcher;
 pub mod slam;
+pub mod basic_ability;
+pub mod components;
 
 pub trait Ability: Clone + Send + Sync + 'static {
     type CastParams: Clone + Send + Sync + 'static;

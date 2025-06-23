@@ -5,6 +5,10 @@ use bevy::prelude::*;
 
 use bevy::audio::{AddAudioSource, AudioPlugin, SpatialScale, Volume};
 
+use avian3d::prelude::*;
+
+use bevy::window::WindowMode;
+
 mod ability;
 mod audio;
 mod common;
@@ -12,6 +16,7 @@ mod enemy;
 mod event;
 mod fx;
 mod init;
+mod input;
 mod loot;
 mod player;
 mod procedural;
@@ -21,13 +26,9 @@ mod state;
 mod ui;
 mod utils;
 
-use bevy::window::WindowMode;
-use state::GameState;
-
 use crate::audio::music::{MusicPlayer, PlayMusicEvent};
 use crate::init::GameInit;
-
-mod input;
+use crate::state::GameState;
 
 fn main() {
     App::new()
@@ -42,11 +43,13 @@ fn main() {
                     primary_window: Some(Window {
                         resizable: false,
                         mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+                        present_mode: bevy::window::PresentMode::Immediate,
                         ..default()
                     }),
                     ..Default::default()
                 }),
         )
+        .add_plugins(PhysicsPlugins::default())
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins((
             FrameTimeDiagnosticsPlugin::default(),
@@ -74,7 +77,7 @@ fn main() {
                 fx::blood::handle_particle_physics,
                 fx::blood::blood_particle_rendering,
                 fx::blood::cleanup_blood_particles,
-                fx::blood::spawn_particles,
+                //fx::blood::spawn_particles,
                 common::handle_damage_events,
                 common::handle_player_death,
                 common::emit_death_events,
