@@ -100,6 +100,7 @@ pub fn handle_boulder_spawn(
                             .add_rune(1.0, SPEED_RUNE)
                             .add_rune(2.0, HEAL_RUNE)
                             .add_rune(1.0, DAMAGE_RUNE)
+                            .with_chance((0.6 - 0.1*power).max(0.1))
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,

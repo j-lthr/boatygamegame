@@ -113,12 +113,12 @@ pub fn handle_multishot_rune(
     }
 }
 
-pub const SPEED_RUNE: SpeedRune = SpeedRune { increase: 1.0 };
+pub const SPEED_RUNE: SpeedRune = SpeedRune { increase: 2.0 };
 
-pub const HEAL_RUNE: HealRune = HealRune { restore_amount: 10 };
+pub const HEAL_RUNE: HealRune = HealRune { restore_amount: 30 };
 
-pub const MULTISHOT_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_bullets: 2 , color: Color::linear_rgb(100.0, 0.0, 0.0), ..BasicProjectileAttackRune::empty()};
-pub const DAMAGE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_damage: 2 , color: Color::linear_rgb(100.0, 50.0, 0.0), ..BasicProjectileAttackRune::empty()};
-pub const ATTACK_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { cooldown_recovery_rate_factor: 0.9 , color: Color::linear_rgb(0.0, 100.0, 100.0), ..BasicProjectileAttackRune::empty()};
+pub const MULTISHOT_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_bullets: 1 , color: Color::linear_rgb(100.0, 0.0, 0.0), ..BasicProjectileAttackRune::empty()};
+pub const DAMAGE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { added_damage: 5 , color: Color::linear_rgb(100.0, 50.0, 0.0), ..BasicProjectileAttackRune::empty()};
+pub const ATTACK_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { cooldown_recovery_rate_factor: 0.8 , color: Color::linear_rgb(0.0, 100.0, 100.0), ..BasicProjectileAttackRune::empty()};
 pub const PROJECTILE_SPEED_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { projectile_speed: 1.0, color: Color::linear_rgb(100.0, 0.0, 100.0), ..BasicProjectileAttackRune::empty()};
-pub const PIERCE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { pierce: 1, color: Color::linear_rgb(10.0, 0.0, 15.0), ..BasicProjectileAttackRune::empty()};
+pub const PIERCE_RUNE: BasicProjectileAttackRune = BasicProjectileAttackRune { pierce: 2, color: Color::linear_rgb(10.0, 0.0, 15.0), ..BasicProjectileAttackRune::empty()};

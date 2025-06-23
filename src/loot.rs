@@ -21,10 +21,16 @@ impl<T: Rune> EventSource<Vec3> for RuneDrop<T> {
 #[derive(Component)]
 pub struct DropTable {
     entries: Vec<(f32, Box<dyn EventSource<Vec3>>)>,
+    total_chance: f32,
 }
 
 impl DropTable {
     pub fn drop_random(&self, mut commands: Commands, position: Vec3) {
+
+        if fastrand::f32() > self.total_chance {
+            return; // No drop this time
+        }
+
         let x = fastrand::f32();
 
         for (p, event_source) in &self.entries {
@@ -35,10 +41,11 @@ impl DropTable {
         }
     }
 
-    fn from_weighted_list(weighted_items: Vec<(f32, Box<dyn EventSource<Vec3>>)>) -> Self {
+    fn from_weighted_list(weighted_items: Vec<(f32, Box<dyn EventSource<Vec3>>)>, total_chance: f32) -> Self {
         if weighted_items.is_empty() {
             return Self {
                 entries: Vec::new(),
+                total_chance: 0.0,
             };
         }
 
@@ -47,6 +54,7 @@ impl DropTable {
         if total_weight <= 0.0 {
             return Self {
                 entries: Vec::new(),
+                total_chance: 0.0,
             };
         }
 
@@ -58,18 +66,20 @@ impl DropTable {
             entries.push((cumulative_prob, system));
         }
 
-        Self { entries }
+        Self { entries, total_chance }
     }
 }
 
 pub struct DropTableBuilder {
     weighted_items: Vec<(f32, Box<dyn EventSource<Vec3>>)>,
+    total_chance: f32,
 }
 
 impl DropTableBuilder {
     pub fn new() -> Self {
         Self {
             weighted_items: vec![],
+            total_chance: 1.0,
         }
     }
 
@@ -79,8 +89,14 @@ impl DropTableBuilder {
         self
     }
 
+    pub fn with_chance(mut self, chance: f32) -> Self {
+        self.total_chance = chance;
+        self
+    }
+
     pub fn build(self) -> DropTable {
-        DropTable::from_weighted_list(self.weighted_items)
+        debug_assert!(self.total_chance >= 0.0 && self.total_chance <= 1.0, "Total chance must be between 0 and 1.");
+        DropTable::from_weighted_list(self.weighted_items, self.total_chance)
     }
 }
 

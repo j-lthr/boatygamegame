@@ -82,7 +82,7 @@ pub fn handle_sniper_spawn(
                             ),
                             name: "Missile",
                             ability: MissileLauncher {
-                                missile_count: power as i32,
+                                missile_count: (power as i32).min(6),
                                 spread: 0.45,
                                 speed: 40.0 + 2.0 * (power - 1.0),
                                 lifetime: 2.0,
@@ -99,10 +99,11 @@ pub fn handle_sniper_spawn(
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()
-                            .add_rune(2.0, HEAL_RUNE)
-                            .add_rune(0.5, MULTISHOT_RUNE)
-                            .add_rune(0.5, PIERCE_RUNE)
-                            .add_rune(0.5, ATTACK_SPEED_RUNE)
+                            .add_rune(0.0, HEAL_RUNE)
+                            .add_rune(0.1, MULTISHOT_RUNE)
+                            .add_rune(1.0, PIERCE_RUNE)
+                            .add_rune(0.2, ATTACK_SPEED_RUNE)
+                            .with_chance((0.6 - 0.05 * power).max(0.1))
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,

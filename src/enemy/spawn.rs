@@ -63,12 +63,12 @@ pub fn spawn(
             state.wave_timer.set_duration(Duration::from_secs(current_duration));
         }
 
-        if state.wave_index > 32 && state.wave_index % 16 == 0 {
+        /*if state.wave_index > 32 && state.wave_index % 16 == 0 {
             let mut current_duration = state.wave_timer.duration().as_secs_f32();
             current_duration *= 0.8;
             current_duration = current_duration.max(1.0);
             state.wave_timer.set_duration(Duration::from_secs_f32(current_duration));
-        }
+        }*/
 
         state.wave_timer.reset();
 
