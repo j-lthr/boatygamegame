@@ -128,7 +128,7 @@ pub fn spawn_camera(mut commands: Commands) {
         PlayerCamera {
             ground_offset: 0.0,
             height_offset: 40.0,
-            pan_factor: 0.5,
+            pan_factor: 1.0,
             pan_ratio: -2.0,
             lerp_factor: 50.0,
         }, //Atmosphere::EARTH,
@@ -321,5 +321,5 @@ pub fn player_vfx(
 pub fn plugin(app: &mut App) {
     app.add_systems(GameInit, spawn_player);
     app.add_systems(Startup, spawn_camera);
-     app.add_systems(Update, player_vfx);
+    app.add_systems(Update, player_vfx);
 }
