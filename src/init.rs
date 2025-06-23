@@ -3,7 +3,7 @@ use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct GameInit;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct DespawnOnReset;
 
 pub fn trigger(mut commands: Commands) {

@@ -4,12 +4,17 @@ use bevy::prelude::*;
 use std::f32;
 use std::marker::PhantomData;
 
-use crate::ability::{AttemptCastEvent, CastEvent};
 use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
+use crate::ability::components::blast::BlastBundle;
+use crate::ability::components::common::AttachToCaster;
+use crate::ability::components::projectile::Projectile;
+use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition};
+use crate::ability::components::subcast::{SubCastOnce, TimedSubCast};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
-use crate::common::{Inertia, VelocityEWA};
+use crate::ability::{AttemptCastEvent, CastEvent, CastInfo, DynamicAbility};
 use crate::common::Living;
+use crate::common::{Inertia, VelocityEWA};
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
 use crate::init::GameInit;
@@ -47,6 +52,61 @@ pub fn spawn_player(
     asset_server: ResMut<AssetServer>,
 ) {
     let player_color = Color::srgb(10.0, 10.0, 10.0);
+
+    let bullet_mat = materials.add(StandardMaterial {
+        base_color: player_color,
+        metallic: 0.5,
+        perceptual_roughness: 0.5,
+        emissive: player_color.into(),
+        ..default()
+    });
+
+    let blast_ability = DynamicAbility::with_components((
+        BlastBundle::new(
+            &mut meshes,
+            &mut materials,
+            Color::srgb(100.0,100.0,100.0),
+            5.0,
+            10,
+            0.5,
+        ),
+        DespawnOnReset,
+    ));
+
+    // let secondary_projectile_ability = DynamicAbility::with_components((
+    //     Projectile {
+    //         speed: 100.0,
+    //         lifetime: 1.0,
+    //         damage: 10,
+    //     },
+    //     RadialSubCastOffset::from_radius_360(0.5),
+    //     Mesh3d(meshes.add(Sphere::new(0.05 + 0.05 * fastrand::f32()))),
+    //     MeshMaterial3d(bullet_mat.clone()),
+    //     DespawnOnReset,
+    //     TimedSubCast::new_once(blast_ability, 10, 0.5),
+    // ));
+
+    let projectile_ability = DynamicAbility::with_components((
+        Projectile {
+            speed: 100.0,
+            lifetime: 1.0,
+            damage: 10,
+        },
+        RadialSubCastOffset::from_degrees(0.1, 10.0),
+        Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
+        MeshMaterial3d(bullet_mat.clone()),
+        DespawnOnReset,
+        TimedSubCast::new_once(blast_ability, 1, 0.5),
+    ));
+
+    let shotgun_ability = DynamicAbility::with_components((
+        SubCastOnce::new(
+            projectile_ability.clone(),
+            5,
+        ),
+        DespawnOnReset,
+    ));
+
     // Player spawn point (invisible, camera will follow this)
     let player = commands
         .spawn((
@@ -73,16 +133,7 @@ pub fn spawn_player(
             AbilitySlot {
                 cooldown: Timer::from_seconds(0.5, TimerMode::Once),
                 name: "Shotgun",
-                ability: BasicProjectileAttack {
-                    bullet_count: 3,
-                    spread: 0.01,
-                    angle_per_bullet: 0.025 * f32::consts::PI,
-                    speed: 200.0,
-                    lifetime: 1.0,
-                    damage: 10,
-                    pierce: 0,
-                    color: player_color,
-                },
+                ability: shotgun_ability,
             },
             Collector {
                 collect_radius: 1.0,
@@ -129,7 +180,7 @@ pub fn spawn_camera(mut commands: Commands) {
             ground_offset: 0.0,
             height_offset: 40.0,
             pan_factor: 1.0,
-            pan_ratio: -2.0,
+            pan_ratio: 1.0,
             lerp_factor: 50.0,
         }, //Atmosphere::EARTH,
            /*AtmosphereSettings {
@@ -148,7 +199,6 @@ pub fn spawn_camera(mut commands: Commands) {
         },
     ));
 }
-
 
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
@@ -193,7 +243,6 @@ pub fn handle_movement(
 
         let mut dash = keyboard_input.pressed(KeyCode::Space);
 
-        
         // for event in evr_gamepad.read() {
         //     match event {
         //         GamepadEvent::Connection(_) => {},
@@ -220,7 +269,6 @@ pub fn handle_movement(
         // }
 
         camera.height_offset /= (0.1 * scroll_wheel.delta.y).exp2();
-        
 
         if dash && velocity.length() > 1e-6 {
             dash_action.write(AttemptCastEvent {
@@ -243,28 +291,35 @@ pub fn handle_camera(
     window: Single<&Window>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_transform, player_inertia, player, ewa)), Ok((mut camera_transform, camera))) =
-        (player_query.single(), camera_query.single_mut())
+    if let (
+        Ok((player_transform, player_inertia, player, ewa)),
+        Ok((mut camera_transform, camera)),
+    ) = (player_query.single(), camera_query.single_mut())
     {
-
-        let mouse_pos = window.cursor_position().map(|pos| pos / window.size() - Vec2::splat(0.5)).map(|pos| Vec3::new(pos.x, 0.0, pos.y)).unwrap_or(Vec3::ZERO);
+        let mouse_pos = window
+            .cursor_position()
+            .map(|pos| pos / window.size() - Vec2::splat(0.5))
+            .map(|pos| Vec3::new(pos.x, 0.0, pos.y))
+            .unwrap_or(Vec3::ZERO);
 
         let player_velocity = ewa.velocity_ewa;
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
-        let camera_offset = (-Vec3::Z
-            * camera.ground_offset)
-            .with_y(camera.height_offset);
+        let camera_offset = (-Vec3::Z * camera.ground_offset).with_y(camera.height_offset);
 
-        let target_position = player_transform.translation + camera_offset - camera.height_offset * mouse_pos * camera.pan_factor * camera.pan_ratio;
- 
+        let target_position = player_transform.translation + camera_offset
+            - camera.height_offset * mouse_pos * camera.pan_factor * camera.pan_ratio;
+
         let lerp_factor = (camera.lerp_factor * time.delta_secs()).min(1.0);
 
         // Smoothly move camera towards target position
         camera_transform.translation = camera_transform
             .translation
-            .lerp(target_position,  lerp_factor);
+            .lerp(target_position, lerp_factor);
 
-        let target_transform = camera_transform.looking_at(player_transform.translation - camera.height_offset * mouse_pos * camera.pan_factor, Vec3::Z);
+        let target_transform = camera_transform.looking_at(
+            player_transform.translation - camera.height_offset * mouse_pos * camera.pan_factor,
+            Vec3::Z,
+        );
 
         camera_transform.rotation = camera_transform
             .rotation
@@ -276,20 +331,24 @@ pub fn handle_camera(
 pub fn shoot_gun(
     mouse_input: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
-    player_query: Query<Entity, With<Player>>,
+    player_query: Query<(Entity, &Transform), With<Player>>,
     camera_query: Query<(&GlobalTransform, &Camera), With<PlayerCamera>>,
-    mut shotgun_action: EventWriter<AttemptCastEvent<BasicProjectileAttack>>,
+    mut shotgun_action: EventWriter<AttemptCastEvent<DynamicAbility>>,
+    time: Res<Time>,
 ) {
-    if let (Ok(player), Ok((camera_transform, camera))) =
+    if let (Ok((player, player_transform)), Ok((camera_transform, camera))) =
         (player_query.single(), camera_query.single())
     {
         if mouse_input.pressed(MouseButton::Left) {
-            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, camera_transform)
-            {
+            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, camera_transform) {
                 shotgun_action.write(AttemptCastEvent {
                     caster: player,
-                    params: BasicProjectileAttackParams {
+                    params: CastInfo {
+                        caster: player,
                         target_position: cursor_pos,
+                        target_entity: None,
+                        cast_position: player_transform.translation,
+                        cast_time: time.elapsed_secs_f64(),
                     },
                 });
             }

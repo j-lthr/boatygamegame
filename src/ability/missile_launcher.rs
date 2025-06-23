@@ -28,15 +28,7 @@ pub struct MissileLauncher {
     pub lock_distance: f32, // Portion of lifetime spent tracking entity (0.7 = 70% tracking, 30% locked)
 }
 
-#[derive(Component)]
-pub struct ExplosionEffect {
-    pub position: Vec3,
-    pub radius: f32,
-    pub damage: i32,
-    pub source: Entity,
-    pub lifetime: f32,
-    pub max_lifetime: f32,
-}
+
 
 use crate::common;
 use crate::event;
@@ -217,6 +209,16 @@ fn explode_missile(
 }
 
 const EXPLOSION_EMISSIVE: Color = Color::srgb(100.0, 0.0, 0.0);
+
+#[derive(Component)]
+pub struct ExplosionEffect {
+    pub position: Vec3,
+    pub radius: f32,
+    pub damage: i32,
+    pub source: Entity,
+    pub lifetime: f32,
+    pub max_lifetime: f32,
+}
 
 pub fn handle_explosions(
     mut commands: Commands,

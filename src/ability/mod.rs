@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 
+use std::sync::Arc;
+
 pub mod basic_projectile_attack;
 pub mod common;
 pub mod dash;
 pub mod missile_launcher;
 pub mod slam;
-pub mod basic_ability;
 pub mod components;
 
 pub trait Ability: Clone + Send + Sync + 'static {
@@ -67,6 +68,62 @@ pub fn handle_cast_attempts<T: Ability>(
     }
 }
 
+pub trait BundleInjector {
+    fn add_to_entity(&self, entity: &mut EntityCommands);
+}
+
+#[derive(Clone, Debug)]
+pub struct BundleWrapper<B: Bundle + Clone>(pub B);
+
+impl<B: Bundle + Clone> BundleInjector for BundleWrapper<B> {
+    fn add_to_entity(&self, entity: &mut EntityCommands) {
+        entity.insert(self.0.clone());
+    }
+}
+
+#[derive(Clone)]
+pub struct DynamicAbility {
+    components: Arc<dyn BundleInjector + Send + Sync>,
+}
+
+impl DynamicAbility {
+    pub fn with_components(bundle: impl Bundle + Clone) -> Self {
+        Self {
+            components: Arc::new(
+                BundleWrapper(bundle)
+            ),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Component)]
+pub struct CastInfo {
+    pub caster: Entity,
+    pub cast_position: Vec3,
+    pub target_position: Vec3,
+    pub target_entity: Option<Entity>,
+    pub cast_time: f64,
+}
+
+pub fn handle_dynamic_ability_casts(
+    mut cast_events: EventReader<CastEvent<DynamicAbility>>,
+    mut commands: Commands,
+) {
+    for event in cast_events.read() {
+        let mut default_cast_entity = commands.spawn(event.params);
+
+        event.ability.components.add_to_entity(&mut default_cast_entity);
+    }
+}
+
+impl Ability for DynamicAbility {
+    type CastParams = CastInfo;
+
+    fn add_systems(app: &mut bevy::app::App) {
+        app.add_systems(Update, handle_dynamic_ability_casts);
+    }
+}
+
 fn register_ability<T: Ability>(app: &mut App) {
     app.add_event::<AttemptCastEvent<T>>();
     app.add_event::<CastEvent<T>>();
@@ -80,5 +137,7 @@ pub fn plugin(app: &mut App) {
         register_ability::<basic_projectile_attack::BasicProjectileAttack>,
         register_ability::<slam::Slam>,
         register_ability::<missile_launcher::MissileLauncher>,
+        register_ability::<DynamicAbility>,
+        components::plugin,
     ));
 }

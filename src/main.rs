@@ -43,7 +43,6 @@ fn main() {
                     primary_window: Some(Window {
                         resizable: false,
                         mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
-                        present_mode: bevy::window::PresentMode::Immediate,
                         ..default()
                     }),
                     ..Default::default()
