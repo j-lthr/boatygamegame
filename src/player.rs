@@ -18,6 +18,7 @@ use crate::common::{Inertia, VelocityEWA};
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
 use crate::init::GameInit;
+use crate::input::Cursor;
 use crate::rune::Collector;
 use crate::ui;
 
@@ -49,7 +50,6 @@ pub fn spawn_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: ResMut<AssetServer>,
 ) {
     let player_color = Color::srgb(10.0, 10.0, 10.0);
 
@@ -66,11 +66,12 @@ pub fn spawn_player(
             &mut meshes,
             &mut materials,
             Color::srgb(100.0,100.0,100.0),
-            5.0,
-            10,
+            15.0,
+            33,
             0.5,
         ),
         DespawnOnReset,
+        SpawnAtCastPosition,
     ));
 
     // let secondary_projectile_ability = DynamicAbility::with_components((
@@ -96,7 +97,7 @@ pub fn spawn_player(
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),
         DespawnOnReset,
-        TimedSubCast::new_once(blast_ability, 1, 0.5),
+        TimedSubCast::new_once(blast_ability.clone(), 1, 0.5),
     ));
 
     let shotgun_ability = DynamicAbility::with_components((
@@ -133,7 +134,7 @@ pub fn spawn_player(
             AbilitySlot {
                 cooldown: Timer::from_seconds(0.5, TimerMode::Once),
                 name: "Shotgun",
-                ability: shotgun_ability,
+                ability: blast_ability.clone(),
             },
             Collector {
                 collect_radius: 1.0,
@@ -333,6 +334,7 @@ pub fn shoot_gun(
     windows: Query<&Window>,
     player_query: Query<(Entity, &Transform), With<Player>>,
     camera_query: Query<(&GlobalTransform, &Camera), With<PlayerCamera>>,
+    cursor_query: Query<&Transform, With<Cursor>>,
     mut shotgun_action: EventWriter<AttemptCastEvent<DynamicAbility>>,
     time: Res<Time>,
 ) {
@@ -340,12 +342,12 @@ pub fn shoot_gun(
         (player_query.single(), camera_query.single())
     {
         if mouse_input.pressed(MouseButton::Left) {
-            if let Some(cursor_pos) = ui::compute_3d_cursor_pos(windows, camera, camera_transform) {
+            if let Ok(cursor_transform) = cursor_query.single() {
                 shotgun_action.write(AttemptCastEvent {
                     caster: player,
                     params: CastInfo {
                         caster: player,
-                        target_position: cursor_pos,
+                        target_position: cursor_transform.translation,
                         target_entity: None,
                         cast_position: player_transform.translation,
                         cast_time: time.elapsed_secs_f64(),

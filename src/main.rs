@@ -2,6 +2,7 @@ use std::thread::spawn;
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
+use bevy::ecs::error::{GLOBAL_ERROR_HANDLER, error};
 
 use bevy::audio::{AddAudioSource, AudioPlugin, SpatialScale, Volume};
 
@@ -30,7 +31,10 @@ use crate::audio::music::{MusicPlayer, PlayMusicEvent};
 use crate::init::GameInit;
 use crate::state::GameState;
 
+
+
 fn main() {
+    GLOBAL_ERROR_HANDLER.set(error);
     App::new()
         .add_plugins(
             DefaultPlugins
@@ -63,6 +67,7 @@ fn main() {
             event::plugin,
             init::plugin,
             audio::plugin,
+            input::plugin,
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
