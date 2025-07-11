@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     common::Living,
-    event::{DamageEvent, DeathEvent},
+    event::DeathEvent,
     init::DespawnOnReset,
 };
 
@@ -24,7 +24,6 @@ pub fn spawn_particles(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_: ResMut<Assets<StandardMaterial>>,
-    damage_events: EventReader<DamageEvent>,
     mut death_events: EventReader<DeathEvent>,
     transform_query: Query<(&Transform, &MeshMaterial3d<StandardMaterial>, &Living)>,
 ) {
@@ -76,7 +75,6 @@ pub fn spawn_particles(
                     _ => 1.3 + fastrand::f32() * 0.4, // Large particles
                 };
 
-                let viscosity_factor = 0.8 + fastrand::f32() * 0.4;
                 let max_lifetime = 1.0 + fastrand::f32() * 0.5;
 
                 commands.spawn((
@@ -198,12 +196,11 @@ pub fn handle_particle_physics(
 /// System to update blood particle rendering based on age and state
 pub fn blood_particle_rendering(
     mut particle_query: Query<(
-        &mut MeshMaterial3d<StandardMaterial>,
         &mut Transform,
         &Particle,
     )>,
 ) {
-    for (material, mut transform, particle) in &mut particle_query {
+    for ( mut transform, particle) in &mut particle_query {
         let age_ratio = (particle.lifetime / particle.max_lifetime).clamp(0.0, 1.0);
 
         // Scale particles slightly based on size factor and age

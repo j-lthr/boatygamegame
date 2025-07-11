@@ -118,11 +118,9 @@ pub fn handle_game_over_input(
 pub fn update_game_over_screen(
     mut final_score_query: Query<&mut Text, With<FinalScoreText>>,
     score: Res<GameScore>,
-    time: Res<Time>,
 ) {
     // Add a pulsing effect to the final score
     if let Ok(mut score_text) = final_score_query.single_mut() {
-        let pulse = (time.elapsed_secs() * 2.0).sin() * 0.3 + 0.7;
         score_text.0 = format!("Final Score: {}", score.current);
     }
 }

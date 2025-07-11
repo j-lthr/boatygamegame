@@ -6,7 +6,6 @@ use crate::ability::missile_launcher::MissileLauncher;
 use crate::ability::missile_launcher::MissileParams;
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 use crate::common::Faction;
-use crate::common::Living;
 use crate::common::{self, Inertia};
 use crate::enemy::common::FirstOrderMovement;
 use crate::enemy::common::FollowMovementMode;
@@ -121,20 +120,16 @@ pub fn handle_sniper_spawn(
 
 pub fn sniper_combat_ai(
     mut sniper_query: Query<
-        (Entity, &Transform, &AbilitySlot<MissileLauncher>, &Living),
+        (Entity, &Transform),
         With<Sniper>,
     >,
     player_query: Query<(Entity, &Transform), (With<player::Player>, Without<Sniper>)>,
     mut missile_action: EventWriter<AttemptCastEvent<MissileLauncher>>,
 ) {
-    if let Ok((player_entity, player_transform)) = player_query.single() {
-        for (boulder_entity, boulder_transform, missile_ability, movement) in &mut sniper_query {
-            let distance = boulder_transform
-                .translation
-                .distance(player_transform.translation);
-
+    if let Ok((player_entity, _player_transform)) = player_query.single() {
+        for (sniper_entity, _sniper_transform) in &mut sniper_query {
             missile_action.write(AttemptCastEvent {
-                caster: boulder_entity,
+                caster: sniper_entity,
                 params: MissileParams {
                     target_entity: player_entity,
                 },

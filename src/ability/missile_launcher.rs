@@ -1,7 +1,6 @@
 use std::f32;
 
 use super::*;
-use crate::fx;
 
 // Missile Launcher System
 //
@@ -62,7 +61,6 @@ pub fn cast_missiles(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     caster_query: Query<&Transform, Without<crate::projectile::Projectile>>,
 ) {
     for cast_event in cast_events.read() {
@@ -82,7 +80,7 @@ pub fn cast_missiles(
                 let target = MissileTarget::Entity(cast_event.params.target_entity);
 
                 // Spawn missile
-                let missile_entity = commands
+                let _missile_entity = commands
                     .spawn((
                         Mesh3d(missile_mesh.clone()),
                         MeshMaterial3d(missile_mat.clone()),
@@ -126,8 +124,6 @@ pub fn update_missiles(
             continue;
         }
 
-        // Calculate how much of lifetime has passed
-        let lifetime_progress = 1.0 - (missile.lifetime_remaining / missile.max_lifetime);
         if let MissileTarget::Entity(target_entity) = missile.target {
             // Switch from entity tracking to position lock when we've used up the lock_time_ratio
             if let Ok(target_transform) = target_query.get(target_entity) {
@@ -229,7 +225,6 @@ pub fn handle_explosions(
     >,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    explosion_sounds: ResMut<Assets<fx::fm::FMSound>>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&common::Faction>,
     time: Res<Time>,

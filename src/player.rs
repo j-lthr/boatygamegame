@@ -1,4 +1,3 @@
-use bevy::input::gamepad::GamepadEvent;
 use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
 use std::f32;
@@ -97,7 +96,7 @@ pub fn spawn_player(
         TimedSubCast::new_once(blast_ability.clone(), 1, 0.5),
     ));
 
-    let shotgun_ability = DynamicAbility::with_components((
+    let _shotgun_ability = DynamicAbility::with_components((
         SubCastOnce::new(
             projectile_ability.clone(),
             5,
@@ -201,14 +200,13 @@ pub fn spawn_camera(mut commands: Commands) {
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
     mut player_query: Query<(Entity, &mut Transform, &Player)>,
-    evr_gamepad: EventReader<GamepadEvent>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     scroll_wheel: Res<AccumulatedMouseScroll>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_entity, mut player_transform, player)), Ok((camera_transform, mut camera))) =
+    if let (Ok((player_entity, mut player_transform, player)), Ok((_camera_transform, mut camera))) =
         (player_query.single_mut(), camera_query.single_mut())
     {
         let mut velocity = Vec3::ZERO;
@@ -290,7 +288,7 @@ pub fn handle_camera(
     time: Res<Time>,
 ) {
     if let (
-        Ok((player_transform, player_inertia, player, ewa)),
+        Ok((player_transform, _player_inertia, _player, ewa)),
         Ok((mut camera_transform, camera)),
     ) = (player_query.single(), camera_query.single_mut())
     {
@@ -300,7 +298,7 @@ pub fn handle_camera(
             .map(|pos| Vec3::new(pos.x, 0.0, pos.y))
             .unwrap_or(Vec3::ZERO);
 
-        let player_velocity = ewa.velocity_ewa;
+        let _player_velocity = ewa.velocity_ewa;
         // Fixed camera offset - 60 degree downward angle (10 units up, 5.77 units back)
         let camera_offset = (-Vec3::Z * camera.ground_offset).with_y(camera.height_offset);
 
@@ -328,15 +326,12 @@ pub fn handle_camera(
 /// System to handle shooting using ability system
 pub fn shoot_gun(
     mouse_input: Res<ButtonInput<MouseButton>>,
-    windows: Query<&Window>,
     player_query: Query<(Entity, &Transform), With<Player>>,
-    camera_query: Query<(&GlobalTransform, &Camera), With<PlayerCamera>>,
     cursor_query: Query<&Transform, With<Cursor>>,
     mut shotgun_action: EventWriter<AttemptCastEvent<DynamicAbility>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player, player_transform)), Ok((camera_transform, camera))) =
-        (player_query.single(), camera_query.single())
+    if let Ok((player, player_transform)) = player_query.single()
     {
         if mouse_input.pressed(MouseButton::Left) {
             if let Ok(cursor_transform) = cursor_query.single() {
@@ -368,7 +363,7 @@ pub fn player_vfx(
     }
 
     for event in dash_cast_events.read() {
-        if let Ok((mut transform, ability)) = player_query.get_mut(event.caster) {
+        if let Ok((mut transform, _ability)) = player_query.get_mut(event.caster) {
             if let DashParams::Directional(direction) = event.params {
                 transform.scale += direction.abs();
             }

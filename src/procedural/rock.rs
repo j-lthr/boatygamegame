@@ -6,7 +6,7 @@ use bevy::{
         render_asset::RenderAssetUsages,
     },
 };
-use noise::{NoiseFn, Perlin, Seedable};
+use noise::{NoiseFn, Perlin};
 use std::collections::HashMap;
 
 /// Component to mark entities as procedural rocks

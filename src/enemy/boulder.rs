@@ -2,9 +2,7 @@ use bevy::prelude::*;
 use std::f32;
 
 use super::{AttemptSpawnEvent, Enemy};
-use crate::ability::basic_projectile_attack::BasicProjectileAttack;
 use crate::ability::dash::{Dash, DashParams};
-use crate::ability::missile_launcher::MissileLauncher;
 use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 use crate::common::Faction;
@@ -119,7 +117,6 @@ pub fn handle_boulder_spawn(
 /// System to move boulder enemies toward player with rolling motion
 pub fn boulder_rotation_effect(
     mut boulder_query: Query<(&mut Transform, &Inertia), With<Boulder>>,
-    time: Res<Time>,
 ) {
     for (mut boulder_transform, boulder_inertia) in &mut boulder_query {
         let delta = boulder_transform.translation - boulder_inertia.prev_pos;
@@ -150,7 +147,6 @@ pub fn boulder_combat_ai(
             Entity,
             &Transform,
             &AbilitySlot<Slam>,
-            &AbilitySlot<Dash>,
             &Living,
             &mut FirstOrderMovement,
         ),
@@ -158,16 +154,13 @@ pub fn boulder_combat_ai(
     >,
     player_query: Query<(Entity, &Transform), (With<player::Player>, Without<Boulder>)>,
     mut slam_action: EventWriter<AttemptCastEvent<Slam>>,
-    shotgun_action: EventWriter<AttemptCastEvent<BasicProjectileAttack>>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
-    missile_action: EventWriter<AttemptCastEvent<MissileLauncher>>,
 ) {
-    if let Ok((player_entity, player_transform)) = player_query.single() {
+    if let Ok((_, player_transform)) = player_query.single() {
         for (
             boulder_entity,
             boulder_transform,
             slam_ability,
-            dash_ability,
             living,
             mut movement,
         ) in &mut boulder_query

@@ -58,7 +58,7 @@ pub fn handle_damage_events(
     player_query: Query<&player::Player>,
 ) {
     for damage_event in damage_events.read() {
-        if let Ok((mut living, target_transform)) = living_query.get_mut(damage_event.target) {
+        if let Ok((mut living, _)) = living_query.get_mut(damage_event.target) {
             living.health -= damage_event.damage;
             info!(
                 "Entity {:?} took {} damage! Health: {}",
@@ -90,11 +90,10 @@ pub fn handle_damage_events(
 }
 
 pub fn emit_death_events(
-    commands: Commands,
     enemy_query: Query<(Entity, &Living, &Transform)>,
     mut death_events: EventWriter<DeathEvent>,
 ) {
-    for (entity, living, transform) in &enemy_query {
+    for (entity, living, _) in &enemy_query {
         if living.health <= 0 {
             death_events.write(DeathEvent { entity });
         }

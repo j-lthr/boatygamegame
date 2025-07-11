@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
@@ -33,7 +34,7 @@ use crate::state::GameState;
 
 
 fn main() {
-    GLOBAL_ERROR_HANDLER.set(error);
+    GLOBAL_ERROR_HANDLER.set(error).expect("failed to set global error handler");
     App::new()
         .add_plugins(
             DefaultPlugins
