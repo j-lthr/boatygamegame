@@ -1,4 +1,3 @@
-use std::thread::spawn;
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::prelude::*;
@@ -27,7 +26,7 @@ mod state;
 mod ui;
 mod utils;
 
-use crate::audio::music::{MusicPlayer, PlayMusicEvent};
+use crate::audio::music::PlayMusicEvent;
 use crate::init::GameInit;
 use crate::state::GameState;
 

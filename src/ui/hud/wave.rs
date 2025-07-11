@@ -1,4 +1,4 @@
-use bevy::{ecs::spawn, prelude::*};
+use bevy::prelude::*;
 
 use crate::enemy::spawn::SpawnerState;
 

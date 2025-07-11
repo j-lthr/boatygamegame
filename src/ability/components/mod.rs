@@ -1,5 +1,4 @@
 use super::*;
-use bevy::prelude::*;
 
 pub mod projectile;
 pub mod subcast;

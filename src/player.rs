@@ -1,12 +1,10 @@
-use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
+use bevy::input::gamepad::GamepadEvent;
 use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
 use std::f32;
-use std::marker::PhantomData;
 
-use crate::ability::basic_projectile_attack::{BasicProjectileAttack, BasicProjectileAttackParams};
+use crate::ability::basic_projectile_attack::BasicProjectileAttack;
 use crate::ability::components::blast::BlastBundle;
-use crate::ability::components::common::AttachToCaster;
 use crate::ability::components::projectile::Projectile;
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition};
 use crate::ability::components::subcast::{SubCastOnce, TimedSubCast};
@@ -20,7 +18,6 @@ use crate::init::DespawnOnReset;
 use crate::init::GameInit;
 use crate::input::Cursor;
 use crate::rune::Collector;
-use crate::ui;
 
 use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::motion_blur::MotionBlur;
@@ -204,7 +201,7 @@ pub fn spawn_camera(mut commands: Commands) {
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
     mut player_query: Query<(Entity, &mut Transform, &Player)>,
-    mut evr_gamepad: EventReader<GamepadEvent>,
+    evr_gamepad: EventReader<GamepadEvent>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     scroll_wheel: Res<AccumulatedMouseScroll>,
@@ -242,7 +239,7 @@ pub fn handle_movement(
             velocity -= right_horizontal;
         }
 
-        let mut dash = keyboard_input.pressed(KeyCode::Space);
+        let dash = keyboard_input.pressed(KeyCode::Space);
 
         // for event in evr_gamepad.read() {
         //     match event {

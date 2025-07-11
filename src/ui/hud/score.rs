@@ -1,4 +1,4 @@
-use crate::{enemy::spawn::SpawnerState, state::GameScore};
+use crate::state::GameScore;
 use bevy::prelude::*;
 
 #[derive(Component)]

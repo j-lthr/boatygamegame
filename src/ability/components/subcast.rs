@@ -1,7 +1,4 @@
 use crate::ability::*;
-use bevy::prelude::*;
-use core::num;
-use std::sync::Arc;
 
 pub trait CastMap: Send + Sync {
     fn map_cast(&self, cast: &CastInfo) -> &dyn Iterator<Item = CastInfo>;

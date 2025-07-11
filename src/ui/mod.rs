@@ -1,4 +1,3 @@
-use bevy::prelude::*;
 
 pub mod damage_numbers;
 pub mod healthbar;
