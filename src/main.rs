@@ -40,7 +40,7 @@ fn main() {
             DefaultPlugins
                 .set(AudioPlugin {
                     global_volume: Volume::Linear(1.0).into(),
-                    default_spatial_scale: SpatialScale::new(1.0 / 7.0),
+                    default_spatial_scale: SpatialScale::new(1.0),
                     ..default()
                 })
                 .set(WindowPlugin {

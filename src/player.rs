@@ -93,10 +93,9 @@ pub fn spawn_player(
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),
         DespawnOnReset,
-        TimedSubCast::new_once(blast_ability.clone(), 1, 0.5),
     ));
 
-    let _shotgun_ability = DynamicAbility::with_components((
+    let shotgun_ability = DynamicAbility::with_components((
         SubCastOnce::new(
             projectile_ability.clone(),
             5,
@@ -130,7 +129,7 @@ pub fn spawn_player(
             AbilitySlot {
                 cooldown: Timer::from_seconds(0.5, TimerMode::Once),
                 name: "Shotgun",
-                ability: blast_ability.clone(),
+                ability: shotgun_ability.clone(),
             },
             Collector {
                 collect_radius: 1.0,
@@ -339,7 +338,7 @@ pub fn shoot_gun(
                     caster: player,
                     params: CastInfo {
                         caster: player,
-                        target_position: cursor_transform.translation,
+                        target_position: cursor_transform.translation.with_y(player_transform.translation.y),
                         target_entity: None,
                         cast_position: player_transform.translation,
                         cast_time: time.elapsed_secs_f64(),
