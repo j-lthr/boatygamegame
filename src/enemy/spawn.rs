@@ -78,13 +78,13 @@ pub fn spawn(
                     commands.send_event(AttemptSpawnEvent::<Boulder>::new(BoulderSpawnParams {
                         position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
                         pack_size: 3, 
-                        power: power
+                        power
                     }));
                 } else {
                     commands.send_event(AttemptSpawnEvent::<Sniper>::new(SniperSpawnParams {
                         position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
                         pack_size: 1,
-                        power: power
+                        power
                     }));
                 }
             }

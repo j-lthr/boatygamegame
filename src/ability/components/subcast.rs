@@ -46,7 +46,7 @@ pub fn handle_sub_cast_once(mut commands: Commands, sub_casts: Query<(Entity, &S
     for (entity, sub_cast_once, cast_info) in sub_casts.iter() {
         
         for index in 0..sub_cast_once.num_casts {
-            let mut entity = commands.spawn((cast_info.clone(), SubCastInfo::new(index, sub_cast_once.num_casts), Transform::from_translation(cast_info.cast_position)));
+            let mut entity = commands.spawn((*cast_info, SubCastInfo::new(index, sub_cast_once.num_casts), Transform::from_translation(cast_info.cast_position)));
             sub_cast_once.ability.components.add_to_entity(&mut entity);
         }
 
@@ -94,11 +94,11 @@ pub fn handle_timed_sub_cast(
 
             let cast_info = CastInfo {
                 cast_position: transform.translation,
-                .. cast_info.clone()
+                .. *cast_info
             };
 
             for index in 0..timed_sub_cast.num_casts_per_interval {
-                let mut entity = commands.spawn((cast_info.clone(), SubCastInfo::new(index, timed_sub_cast.num_casts_per_interval), Transform::from_translation(cast_info.cast_position)));
+                let mut entity = commands.spawn((cast_info, SubCastInfo::new(index, timed_sub_cast.num_casts_per_interval), Transform::from_translation(cast_info.cast_position)));
                 timed_sub_cast.ability.components.add_to_entity(&mut entity);
             }
 
