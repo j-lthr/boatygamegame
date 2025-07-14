@@ -89,7 +89,7 @@ pub fn handle_sniper_spawn(
                                 explosion_radius: 3.0 + power,
                                 color: Color::linear_rgb(50.0, 0.0, 0.0),
                                 tracking_strength: 5.0 + 1.0 * (power - 1.0),
-                                lock_distance: 2.0 * (3.0 + power),
+                                lock_distance: 2.0 * (5.0 + power),
                             },
                         },
                         common::Living {
@@ -98,10 +98,8 @@ pub fn handle_sniper_spawn(
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()
-                            .add_rune(0.0, HEAL_RUNE)
+                            
                             .add_rune(0.1, MULTISHOT_RUNE)
-                            .add_rune(1.0, PIERCE_RUNE)
-                            .add_rune(0.2, ATTACK_SPEED_RUNE)
                             .with_chance((0.6 - 0.05 * power).max(0.1))
                             .build(),
                         Inertia {

@@ -3,7 +3,9 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 
 mod runes;
+mod modifier_rune;
 
+pub use modifier_rune::*;
 pub use runes::*;
 
 use crate::{common::Inertia, init::DespawnOnReset};
@@ -150,9 +152,7 @@ pub fn register_rune<T: Rune>(app: &mut App) {
 }
 
 pub fn plugin(app: &mut App) {
-    register_rune::<SpeedRune>(app);
-    register_rune::<HealRune>(app);
-    register_rune::<BasicProjectileAttackRune>(app);
+    register_rune::<ModifierRune>(app);
 
     app.add_systems(Update, handle_rune_animation);
 }

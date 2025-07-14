@@ -1,4 +1,5 @@
-use crate::ability::*;
+use crate::{ability::*, modifiers::{apply_modifier_if_present, ModifierID, ModifierStack}};
+use super::common::Lifetime;
 
 pub trait CastMap: Send + Sync {
     fn map_cast(&self, cast: &CastInfo) -> &dyn Iterator<Item = CastInfo>;
@@ -31,6 +32,7 @@ impl SubCastInfo {
 pub struct SubCastOnce {
     pub ability: DynamicAbility,
     pub num_casts: i32,
+    pub modified_by: Option<ModifierID>,
 }
 
 impl SubCastOnce {
@@ -38,15 +40,27 @@ impl SubCastOnce {
         Self {
             ability,
             num_casts,
+            modified_by: None
         }
+    }
+
+    pub fn modified_by(mut self, modifier_id: ModifierID) -> Self {
+        self.modified_by = Some(modifier_id);
+        self
     }
 }
 
-pub fn handle_sub_cast_once(mut commands: Commands, sub_casts: Query<(Entity, &SubCastOnce, &CastInfo)>) {
+pub fn handle_sub_cast_once(mut commands: Commands, sub_casts: Query<(Entity, &SubCastOnce, &CastInfo)>, modifiers: Query<&ModifierStack>) {
     for (entity, sub_cast_once, cast_info) in sub_casts.iter() {
-        
-        for index in 0..sub_cast_once.num_casts {
-            let mut entity = commands.spawn((*cast_info, SubCastInfo::new(index, sub_cast_once.num_casts), Transform::from_translation(cast_info.cast_position)));
+
+        let num_casts = if let Some(modifier_id) = sub_cast_once.modified_by {
+            apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), modifier_id, sub_cast_once.num_casts as f32) as i32
+        } else {
+            sub_cast_once.num_casts
+        };
+        c
+        for index in 0..num_casts {
+            let mut entity = commands.spawn((*cast_info, SubCastInfo::new(index, num_casts), Transform::from_translation(cast_info.cast_position)));
             sub_cast_once.ability.components.add_to_entity(&mut entity);
         }
 
@@ -112,11 +126,61 @@ pub fn handle_timed_sub_cast(
     }
 }
 
+#[derive(Component, Clone)]
+pub struct CastOnDespawn {
+    pub ability: DynamicAbility,
+    pub num_casts: i32,
+    pub modified_by: Option<ModifierID>,
+}
 
+impl CastOnDespawn {
+    pub fn new(ability: DynamicAbility, num_casts: i32) -> Self {
+        Self {
+            ability,
+            num_casts,
+            modified_by: None,
+        }
+    }
+
+    pub fn modified_by(mut self, modifier_id: ModifierID) -> Self {
+        self.modified_by = Some(modifier_id);
+        self
+    }
+}
+
+pub fn handle_cast_on_despawn(
+    mut commands: Commands,
+    cast_on_despawn: Query<(Entity, &CastOnDespawn, &CastInfo, &Transform), With<Lifetime>>,
+    lifetimes: Query<&Lifetime>,
+    modifiers: Query<&ModifierStack>,
+) {
+    for (entity, cast_on_despawn, cast_info, transform) in cast_on_despawn.iter() {
+        if let Ok(lifetime) = lifetimes.get(entity) {
+            if lifetime.just_died() {
+                let num_casts = if let Some(modifier_id) = cast_on_despawn.modified_by {
+                    apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), modifier_id, cast_on_despawn.num_casts as f32) as i32
+                } else {
+                    cast_on_despawn.num_casts
+                };
+
+                let cast_info = CastInfo {
+                    cast_position: transform.translation,
+                    ..*cast_info
+                };
+
+                for index in 0..num_casts {
+                    let mut entity = commands.spawn((cast_info, SubCastInfo::new(index, num_casts), Transform::from_translation(cast_info.cast_position)));
+                    cast_on_despawn.ability.components.add_to_entity(&mut entity);
+                }
+            }
+        }
+    }
+}
 
 pub fn plugin(app: &mut bevy::app::App) {
     app.add_systems(Update, handle_sub_cast_once);
     app.add_systems(Update, handle_timed_sub_cast);
+    app.add_systems(Update, handle_cast_on_despawn);
 }
 
 

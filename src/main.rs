@@ -26,6 +26,7 @@ mod rune;
 mod state;
 mod ui;
 mod utils;
+mod modifiers;
 
 use crate::audio::music::PlayMusicEvent;
 use crate::init::GameInit;

@@ -2,11 +2,11 @@ use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
 use std::f32;
 
-use crate::ability::basic_projectile_attack::BasicProjectileAttack;
 use crate::ability::components::blast::BlastBundle;
+use crate::ability::components::common::Lifetime;
 use crate::ability::components::projectile::Projectile;
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition};
-use crate::ability::components::subcast::{SubCastOnce, TimedSubCast};
+use crate::ability::components::subcast::{SubCastOnce};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
 use crate::ability::{AttemptCastEvent, CastEvent, CastInfo, DynamicAbility};
@@ -17,6 +17,7 @@ use crate::init::DespawnOnReset;
 use crate::init::GameInit;
 use crate::input::Cursor;
 use crate::rune::Collector;
+use crate::modifiers::*;
 
 use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::motion_blur::MotionBlur;
@@ -85,11 +86,11 @@ pub fn spawn_player(
 
     let projectile_ability = DynamicAbility::with_components((
         Projectile {
-            speed: 100.0,
-            lifetime: 1.0,
-            damage: 10,
+            base_speed: 100.0,
+            base_damage: 10.0,
         },
-        RadialSubCastOffset::from_degrees(0.1, 10.0),
+        Lifetime::fixed_with_modifier(0.5, PROJECTILE_DURATION_MODIFIER),
+        RadialSubCastOffset::from_degrees(0.001, 10.0),
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),
         DespawnOnReset,
@@ -98,8 +99,8 @@ pub fn spawn_player(
     let shotgun_ability = DynamicAbility::with_components((
         SubCastOnce::new(
             projectile_ability.clone(),
-            5,
-        ),
+            1,
+        ).modified_by(PROJECTILE_COUNT_MODIFIER),
         DespawnOnReset,
     ));
 
@@ -136,6 +137,7 @@ pub fn spawn_player(
                 magnet_radius: 25.0,
                 magnet_force: 2000.0,
             },
+            ModifierStack::default(),
             SpawnerTarget,
             Faction::Friendly,
             VelocityEWA {
@@ -198,18 +200,18 @@ pub fn spawn_camera(mut commands: Commands) {
 
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
-    mut player_query: Query<(Entity, &mut Transform, &Player)>,
+    mut player_query: Query<(Entity, &mut Transform, &Player, Option<&ModifierStack>)>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     scroll_wheel: Res<AccumulatedMouseScroll>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_entity, mut player_transform, player)), Ok((_camera_transform, mut camera))) =
+    if let (Ok((player_entity, mut player_transform, player, modifier_stack)), Ok((_camera_transform, mut camera))) =
         (player_query.single_mut(), camera_query.single_mut())
     {
         let mut velocity = Vec3::ZERO;
-        let speed = player.speed;
+        let speed = apply_modifier_if_present(modifier_stack, PLAYER_SPEED_MODIFIER, player.speed);
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
         //let forward = camera_transform.forward();
@@ -350,7 +352,7 @@ pub fn shoot_gun(
 }
 
 pub fn player_vfx(
-    mut player_query: Query<(&mut Transform, &AbilitySlot<BasicProjectileAttack>), With<Player>>,
+    mut player_query: Query<(&mut Transform, &AbilitySlot<DynamicAbility>), With<Player>>,
     mut dash_cast_events: EventReader<CastEvent<Dash>>,
     time: Res<Time>,
 ) {

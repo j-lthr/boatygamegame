@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use std::sync::Arc;
 
-pub mod basic_projectile_attack;
 pub mod common;
 pub mod dash;
 pub mod missile_launcher;
@@ -134,7 +133,6 @@ fn register_ability<T: Ability>(app: &mut App) {
 pub fn plugin(app: &mut App) {
     app.add_plugins((
         register_ability::<dash::Dash>,
-        register_ability::<basic_projectile_attack::BasicProjectileAttack>,
         register_ability::<slam::Slam>,
         register_ability::<missile_launcher::MissileLauncher>,
         register_ability::<DynamicAbility>,

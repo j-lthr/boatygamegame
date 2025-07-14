@@ -55,7 +55,7 @@ pub fn handle_radial_sub_cast_offset(
 
         let direction = cast_info.target_position - transform.translation;
 
-        let angle = direction.z.atan2(direction.x) + (subcast_info.index() as f32 / subcast_info.num_casts() as f32) * radial_offset.spread_angle;
+        let angle = direction.z.atan2(direction.x) + ((subcast_info.index() - subcast_info.num_casts() / 2) as f32 / subcast_info.num_casts() as f32) * radial_offset.spread_angle;
         let offset = Vec3::new(radial_offset.radius * angle.cos(), 0.0, radial_offset.radius * angle.sin());
 
         let new_position = transform.translation + offset;
