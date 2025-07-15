@@ -3,10 +3,10 @@ use bevy::prelude::*;
 use std::f32;
 
 use crate::ability::components::blast::BlastBundle;
-use crate::ability::components::common::Lifetime;
-use crate::ability::components::projectile::Projectile;
+use crate::ability::components::common::{Lifetime, LifetimeFromCursor};
+use crate::ability::components::projectile::{LinearMovement, SimpleCollider, DamageOnCollision, DespawnOnCollision};
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition};
-use crate::ability::components::subcast::{SubCastOnce};
+use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
 use crate::ability::{AttemptCastEvent, CastEvent, CastInfo, DynamicAbility};
@@ -62,34 +62,42 @@ pub fn spawn_player(
         BlastBundle::new(
             &mut meshes,
             &mut materials,
-            Color::srgb(100.0,100.0,100.0),
-            15.0,
+            Color::srgb(10.0,10.0,10.0),
+            3.0,
             33,
             0.5,
         ),
+        RadialSubCastOffset::from_radius_360(2.5),
         DespawnOnReset,
         SpawnAtCastPosition,
     ));
 
     // let secondary_projectile_ability = DynamicAbility::with_components((
-    //     Projectile {
-    //         speed: 100.0,
-    //         lifetime: 1.0,
-    //         damage: 10,
+    //     LinearMovement {
+    //         base_speed: 200.0,
     //     },
+    //     SimpleCollider {
+    //         radius: 1.0,
+    //     },
+    //     DamageOnCollision {
+    //         base_damage: 10.0,
+    //     },
+    //     DespawnOnCollision,
+    //     Lifetime::fixed_with_modifier(0.2, PROJECTILE_DURATION_MODIFIER),
     //     RadialSubCastOffset::from_radius_360(0.5),
     //     Mesh3d(meshes.add(Sphere::new(0.05 + 0.05 * fastrand::f32()))),
     //     MeshMaterial3d(bullet_mat.clone()),
     //     DespawnOnReset,
-    //     TimedSubCast::new_once(blast_ability, 10, 0.5),
+    //     //CastOnDespawn::new(blast_ability, 1),
     // ));
 
     let projectile_ability = DynamicAbility::with_components((
-        Projectile {
+        LinearMovement {
             base_speed: 100.0,
-            base_damage: 10.0,
         },
-        Lifetime::fixed_with_modifier(0.5, PROJECTILE_DURATION_MODIFIER),
+        Lifetime::dynamic(),
+        LifetimeFromCursor,
+        CastOnDespawn::new(blast_ability, 5),
         RadialSubCastOffset::from_degrees(0.001, 10.0),
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),

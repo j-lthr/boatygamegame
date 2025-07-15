@@ -2,15 +2,13 @@
 use bevy::prelude::*;
 
 use crate::{
-    modifiers::{ModifierID, ModifierStack},
+    modifiers::{ModifierID, ModifierStack, Stat},
     rune::{Rune, RuneApplicationEvent},
 };
 
 #[derive(Clone, Debug)]
 pub struct ModifierRune {
-    pub modifier_id: ModifierID,
-    pub multiplicative_factor: f32,
-    pub additive_factor: f32,
+    pub stat: Stat,
     pub color: Color,
 }
 
@@ -30,12 +28,7 @@ pub fn handle_modifier_rune(
 ) {
     for event in event_reader.read() {
         if let Ok(mut modifier_stack) = query.get_mut(event.entity) {
-            modifier_stack.add_multiplicative_modifier(
-                event.rune.modifier_id,
-                event.rune.multiplicative_factor,
-            );
-            modifier_stack
-                .add_additive_modifier(event.rune.modifier_id, event.rune.additive_factor);
+            modifier_stack.add_stat(event.rune.stat);
         }
     }
 }

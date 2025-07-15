@@ -34,6 +34,40 @@ impl Modifier {
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct ModifierID(&'static str);
 
+impl ModifierID {
+    pub fn as_str(&self) -> &'static str {
+        self.0
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum StatKind {
+    Additive(f32),
+    Multiplicative(f32),
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct Stat {
+    pub id: ModifierID,
+    pub kind: StatKind,
+}
+
+impl Stat {
+    pub const fn additive(id: ModifierID, value: f32) -> Self {
+        Self {
+            id,
+            kind: StatKind::Additive(value),
+        }
+    }
+
+    pub const fn multiplicative(id: ModifierID, value: f32) -> Self {
+        Self {
+            id,
+            kind: StatKind::Multiplicative(value),
+        }
+    }
+}
+
 #[derive(Component, Default)]
 pub struct ModifierStack {
     stack: HashMap<ModifierID, Modifier>,
@@ -44,26 +78,25 @@ impl ModifierStack {
     pub fn get(&self, id: ModifierID) -> Option<Modifier> {
         self.stack.get(&id).cloned()
     }
-    pub fn add_multiplicative_modifier(&mut self, id: ModifierID, value: f32) {
-        if !self.stack.contains_key(&id) {
-            self.stack.insert(id, Default::default());
+
+    pub fn add_stat(&mut self, stat: Stat) {
+        if !self.stack.contains_key(&stat.id) {
+            self.stack.insert(stat.id, Default::default());
         }
 
-        self.stack
-            .get_mut(&id)
-            .unwrap()
-            .modify_multiplicative(value);
+        let modifier = self.stack.get_mut(&stat.id).unwrap();
+        match stat.kind {
+            StatKind::Additive(value) => modifier.modify_additive(value),
+            StatKind::Multiplicative(value) => modifier.modify_multiplicative(value),
+        }
+    }
+
+    pub fn add_multiplicative_modifier(&mut self, id: ModifierID, value: f32) {
+        self.add_stat(Stat { id, kind: StatKind::Multiplicative(value) });
     }
 
     pub fn add_additive_modifier(&mut self, id: ModifierID, value: f32) {
-        if !self.stack.contains_key(&id) {
-            self.stack.insert(id, Default::default());
-        }
-
-        self.stack
-            .get_mut(&id)
-            .unwrap()
-            .modify_additive(value);
+        self.add_stat(Stat { id, kind: StatKind::Additive(value) });
     }
 }
 
@@ -74,8 +107,10 @@ pub fn apply_modifier_if_present(query_result: Option<&ModifierStack>, id: Modif
     modifier.apply_to_base_value(base_value)
 }
 
-pub const DAMAGE_MODIFIER: ModifierID = ModifierID("basic_damage");
+pub const DAMAGE_MODIFIER: ModifierID = ModifierID("basic-damage");
 
-pub const PLAYER_SPEED_MODIFIER: ModifierID = ModifierID("player_speed");
-pub const PROJECTILE_COUNT_MODIFIER: ModifierID = ModifierID("projectile_count");
-pub const PROJECTILE_DURATION_MODIFIER: ModifierID = ModifierID("projectile_duration");
+pub const PLAYER_SPEED_MODIFIER: ModifierID = ModifierID("player-speed");
+pub const PROJECTILE_SPEED_MODIFIER: ModifierID = ModifierID("projectile-speed");
+pub const PROJECTILE_COUNT_MODIFIER: ModifierID = ModifierID("projectile-count");
+pub const PROJECTILE_DURATION_MODIFIER: ModifierID = ModifierID("projectile-duration");
+pub const AOE_RADIUS_MODIFIER: ModifierID = ModifierID("aoe-radius");

@@ -3,11 +3,12 @@ use bevy::prelude::*;
 use crate::ability::CastInfo;
 use crate::common;
 use crate::event;
+use crate::modifiers::*;
 
 #[derive(Component, Clone)]
 pub struct BlastDamage {
-    pub radius: f32,
-    pub damage: i32,
+    pub base_radius: f32,
+    pub base_damage: i32,
 }
 
 pub fn handle_blast_damage(
@@ -16,6 +17,7 @@ pub fn handle_blast_damage(
     target_query: Query<(Entity, &Transform, &common::Living)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&common::Faction>,
+    modifiers: Query<&ModifierStack>
 ) {
     for (explosion_entity, blast, cast_info, explosion_transform) in explosion_query.iter_mut() {
         // Apply area damage
@@ -38,10 +40,16 @@ pub fn handle_blast_damage(
             let distance = explosion_transform
                 .translation
                 .distance(target_transform.translation);
-            if distance <= blast.radius {
+
+                let modifiers = modifiers.get(cast_info.caster).ok();
+
+            let radius = apply_modifier_if_present(modifiers, AOE_RADIUS_MODIFIER, blast.base_radius);
+            let damage = apply_modifier_if_present(modifiers, DAMAGE_MODIFIER, blast.base_damage as f32) as i32;
+
+            if distance <= radius {
                 // Calculate damage falloff (full damage at center, 25% at edge)
-                let damage_multiplier = (1.0 - (distance / blast.radius) * 0.75).max(0.25);
-                let actual_damage = (blast.damage as f32 * damage_multiplier) as i32;
+                let damage_multiplier = (1.0 - (distance / radius) * 0.75).max(0.25);
+                let actual_damage = (damage as f32 * damage_multiplier) as i32;
 
                 // Emit damage event instead of directly modifying health
                 damage_events.write(event::DamageEvent {
@@ -84,7 +92,7 @@ impl BlastBundle {
         fade_duration: f32,
     ) -> Self {
         let explosion_material = materials.add(StandardMaterial {
-            base_color: Color::srgba(1.0, 0.5, 0.0, 0.8), // Orange with transparency
+            base_color: Color::srgba(1.0, 0.5, 0.0, 1.0), // Orange with transparency
             emissive: color.into(),
             alpha_mode: AlphaMode::Blend,
             ..default()
@@ -99,7 +107,7 @@ impl BlastBundle {
                 max_lifetime: fade_duration,
                 emissive_color: color,
             },
-            blast_damage: BlastDamage { radius, damage },
+            blast_damage: BlastDamage { base_radius: radius, base_damage: damage },
         }
     }
 }
@@ -111,11 +119,13 @@ pub fn handle_blast_visual(
         &mut Transform,
         &mut BlastVisual,
         &mut MeshMaterial3d<StandardMaterial>,
+        &CastInfo
     )>,
+    modifiers: Query<&ModifierStack>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
-    for (entity, mut transform, mut visual, material) in explosion_visual_query.iter_mut() {
+    for (entity, mut transform, mut visual, material, cast_info) in explosion_visual_query.iter_mut() {
         visual.lifetime -= time.delta_secs();
 
         if visual.lifetime <= 0.0 {
@@ -147,7 +157,9 @@ pub fn handle_blast_visual(
             emissive_rgb.blue * (brightness),
         );
 
-        transform.scale = Vec3::splat(scale_progress * visual.max_scale);
+        let max_scale = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), AOE_RADIUS_MODIFIER, visual.max_scale);
+
+        transform.scale = Vec3::splat(scale_progress * max_scale);
 
         // Fade out the explosion (you might need to update the material alpha)
         // This is a simplified approach - you may want to create separate materials

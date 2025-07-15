@@ -1,8 +1,9 @@
+use super::events::OnActiveDespawn;
 use bevy::prelude::*;
 
 use crate::ability::CastInfo;
 use crate::modifiers::*;
-use super::projectile::Projectile;
+use super::projectile::LinearMovement;
 
 
 #[derive(Component, Clone)]
@@ -128,21 +129,24 @@ pub fn handle_lifetime(mut commands: Commands, query: Query<(Entity, &mut Lifeti
                 *elapsed += time.delta_secs();
 
                 if elapsed > duration {
+
+
                     lifetime.phase = LifetimePhase::JustDied
                 }
             }
             LifetimePhase::JustDied => {
+                commands.entity(entity).trigger(OnActiveDespawn);
                 commands.entity(entity).despawn();
             }
         }
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 pub struct LifetimeFromCursor;
 
 pub fn handle_lifetime_from_cursor(
-    mut lifetimes: Query<(&mut Lifetime, &CastInfo, &Transform, &Projectile), With<LifetimeFromCursor>>,
+    mut lifetimes: Query<(&mut Lifetime, &CastInfo, &Transform, &LinearMovement), With<LifetimeFromCursor>>,
 ) {
     for (mut lifetime, cast_info, transform, projectile) in lifetimes.iter_mut() {
         if lifetime.just_spawned() {

@@ -100,6 +100,7 @@ pub fn handle_sniper_spawn(
                         DropTableBuilder::new()
                             
                             .add_rune(0.1, MULTISHOT_RUNE)
+                            .add_rune(0.1, AOE_RUNE)
                             .with_chance((0.6 - 0.05 * power).max(0.1))
                             .build(),
                         Inertia {

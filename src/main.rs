@@ -27,6 +27,7 @@ mod state;
 mod ui;
 mod utils;
 mod modifiers;
+mod localization;
 
 use crate::audio::music::PlayMusicEvent;
 use crate::init::GameInit;
@@ -58,9 +59,7 @@ fn main() {
         .add_plugins((
             FrameTimeDiagnosticsPlugin::default(),
             player::plugin,
-            ui::HealthBarPlugin,
-            ui::DamageNumbersPlugin,
-            ui::hud::plugin,
+            ui::plugin,
             ability::plugin,
             enemy::plugin,
             rune::plugin,
@@ -69,6 +68,7 @@ fn main() {
             init::plugin,
             audio::plugin,
             input::plugin,
+            localization::plugin,
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
