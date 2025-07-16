@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 
 #[derive(Copy, Clone)]
-pub struct Modifier {
+pub struct CompoundModifier {
     multiplicative_factor: f32,
     additive_factor: f32,
 }
 
-impl Default for Modifier {
+impl Default for CompoundModifier {
     fn default() -> Self {
         Self {
             multiplicative_factor: 1.0,
@@ -17,7 +17,7 @@ impl Default for Modifier {
     }
 }
 
-impl Modifier {
+impl CompoundModifier {
     pub fn apply_to_base_value(&self, base_value: f32) -> f32 {
         (1.0 + self.additive_factor) * self.multiplicative_factor * base_value
     }
@@ -41,65 +41,64 @@ impl ModifierID {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum StatKind {
+pub enum ModifierType {
     Additive(f32),
     Multiplicative(f32),
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct Stat {
+pub struct Modifier {
     pub id: ModifierID,
-    pub kind: StatKind,
+    pub typ: ModifierType,
 }
 
-impl Stat {
+impl Modifier {
     pub const fn additive(id: ModifierID, value: f32) -> Self {
         Self {
             id,
-            kind: StatKind::Additive(value),
+            typ: ModifierType::Additive(value),
         }
     }
 
     pub const fn multiplicative(id: ModifierID, value: f32) -> Self {
         Self {
             id,
-            kind: StatKind::Multiplicative(value),
+            typ: ModifierType::Multiplicative(value),
         }
     }
 }
 
 #[derive(Component, Default)]
 pub struct ModifierStack {
-    stack: HashMap<ModifierID, Modifier>,
+    stack: HashMap<ModifierID, CompoundModifier>,
 }
 
 impl ModifierStack {
   
-    pub fn get(&self, id: ModifierID) -> Option<Modifier> {
+    pub fn get(&self, id: ModifierID) -> Option<CompoundModifier> {
         self.stack.get(&id).cloned()
     }
 
-    pub fn add_stat(&mut self, stat: Stat) {
+    pub fn add_modifier(&mut self, stat: Modifier) {
         if !self.stack.contains_key(&stat.id) {
             self.stack.insert(stat.id, Default::default());
         }
 
         let modifier = self.stack.get_mut(&stat.id).unwrap();
-        match stat.kind {
-            StatKind::Additive(value) => modifier.modify_additive(value),
-            StatKind::Multiplicative(value) => modifier.modify_multiplicative(value),
+        match stat.typ {
+            ModifierType::Additive(value) => modifier.modify_additive(value),
+            ModifierType::Multiplicative(value) => modifier.modify_multiplicative(value),
         }
     }
 
     pub fn add_multiplicative_modifier(&mut self, id: ModifierID, value: f32) {
-        self.add_stat(Stat { id, kind: StatKind::Multiplicative(value) });
+        self.add_modifier(Modifier { id, typ: ModifierType::Multiplicative(value) });
     }
 
     pub fn add_additive_modifier(&mut self, id: ModifierID, value: f32) {
-        self.add_stat(Stat { id, kind: StatKind::Additive(value) });
+        self.add_modifier(Modifier { id, typ: ModifierType::Additive(value) });
     }
 }
-
 
 pub fn apply_modifier_if_present(query_result: Option<&ModifierStack>, id: ModifierID, base_value: f32) -> f32 {
     let modifier = query_result.and_then(|stack| stack.get(id)).unwrap_or_default();
@@ -108,7 +107,6 @@ pub fn apply_modifier_if_present(query_result: Option<&ModifierStack>, id: Modif
 }
 
 pub const DAMAGE_MODIFIER: ModifierID = ModifierID("basic-damage");
-
 pub const PLAYER_SPEED_MODIFIER: ModifierID = ModifierID("player-speed");
 pub const PROJECTILE_SPEED_MODIFIER: ModifierID = ModifierID("projectile-speed");
 pub const PROJECTILE_COUNT_MODIFIER: ModifierID = ModifierID("projectile-count");

@@ -3,7 +3,7 @@ use fluent::{FluentBundle, FluentResource};
 use fluent_templates::{static_loader, LanguageIdentifier, Loader};
 use std::collections::HashMap;
 use unic_langid::langid;
-use crate::modifiers::{Stat, StatKind, ModifierID};
+use crate::modifiers::{Modifier, ModifierType, ModifierID};
 
 const US_ENGLISH: LanguageIdentifier = langid!("en-US");
 const GERMAN: LanguageIdentifier = langid!("de-DE");
@@ -48,12 +48,12 @@ impl LocalizationResource {
         };
     }
 
-    pub fn format_stat(&self, stat: Stat) -> String {
+    pub fn format_stat(&self, stat: Modifier) -> String {
         let stat_key = format!("stat-{}", stat.id.as_str());
         
-        let (type_str, value) = match stat.kind {
-            StatKind::Additive(v) => ("additive", format!("{:.0}%", v * 100.0)),
-            StatKind::Multiplicative(v) => ("multiplicative", format!("{:.0}%", (v - 1.0) * 100.0)),
+        let (type_str, value) = match stat.typ {
+            ModifierType::Additive(v) => ("additive", format!("{:.0}%", v * 100.0)),
+            ModifierType::Multiplicative(v) => ("multiplicative", format!("{:.0}%", (v - 1.0) * 100.0)),
         };
 
 

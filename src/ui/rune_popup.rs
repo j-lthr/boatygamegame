@@ -27,7 +27,7 @@ pub fn handle_rune_pickup_ui(
     container_query: Query<Entity, With<Name>>,
 ) {
     for event in pickup_events.read() {
-        let localized_text = localization.format_stat(event.rune.stat);
+        let localized_text = localization.format_stat(event.rune.modifier);
         let start_pos = Vec2::new(50.0, 100.0);
         
         // Create popup with animations

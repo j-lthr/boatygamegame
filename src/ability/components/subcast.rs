@@ -175,9 +175,6 @@ pub fn handle_cast_on_despawn(
     cast_on_despawn: Query<(&CastOnDespawn, &CastInfo, &Transform)>,
     modifiers: Query<&ModifierStack>,
 ) {
-
-    info!("despawn triggered");
-
     if let Ok((cast_on_despawn, cast_info, transform)) = cast_on_despawn.get(trigger.target()) {
         let num_casts = if let Some(modifier_id) = cast_on_despawn.modified_by {
             apply_modifier_if_present(

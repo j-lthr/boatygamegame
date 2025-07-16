@@ -4,7 +4,9 @@ use std::f32;
 
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::{Lifetime, LifetimeFromCursor};
-use crate::ability::components::projectile::{LinearMovement, SimpleCollider, DamageOnCollision, DespawnOnCollision};
+use crate::ability::components::projectile::{
+    DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider,
+};
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
 use crate::ability::dash::Dash;
@@ -16,8 +18,8 @@ use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
 use crate::init::GameInit;
 use crate::input::Cursor;
-use crate::rune::Collector;
 use crate::modifiers::*;
+use crate::rune::Collector;
 
 use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::motion_blur::MotionBlur;
@@ -31,7 +33,7 @@ use crate::enemy::spawn::SpawnerTarget;
 // Component to mark the player
 #[derive(Component)]
 pub struct Player {
-    pub speed: f32,
+    pub base_speed: f32,
 }
 
 #[derive(Component)]
@@ -62,7 +64,7 @@ pub fn spawn_player(
         BlastBundle::new(
             &mut meshes,
             &mut materials,
-            Color::srgb(10.0,10.0,10.0),
+            Color::srgb(30.0, 30.0, 30.0),
             3.0,
             33,
             0.5,
@@ -92,12 +94,10 @@ pub fn spawn_player(
     // ));
 
     let projectile_ability = DynamicAbility::with_components((
-        LinearMovement {
-            base_speed: 100.0,
-        },
-        Lifetime::dynamic(),
-        LifetimeFromCursor,
-        CastOnDespawn::new(blast_ability, 5),
+        LinearMovement { base_speed: 100.0 },
+        Lifetime::fixed(1.0),
+        SimpleCollider { radius: 1.0 },
+        DamageOnCollision { base_damage: 10.0 },
         RadialSubCastOffset::from_degrees(0.001, 10.0),
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),
@@ -105,10 +105,7 @@ pub fn spawn_player(
     ));
 
     let shotgun_ability = DynamicAbility::with_components((
-        SubCastOnce::new(
-            projectile_ability.clone(),
-            1,
-        ).modified_by(PROJECTILE_COUNT_MODIFIER),
+        SubCastOnce::new(projectile_ability.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
         DespawnOnReset,
     ));
 
@@ -116,7 +113,7 @@ pub fn spawn_player(
     let player = commands
         .spawn((
             Transform::from_xyz(0.0, 0.5, 0.0), // Eye level height
-            Player { speed: 10.0 },
+            Player { base_speed: 10.0 },
             Mesh3d(meshes.add(Sphere::new(0.5))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: player_color,
@@ -215,11 +212,14 @@ pub fn handle_movement(
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     time: Res<Time>,
 ) {
-    if let (Ok((player_entity, mut player_transform, player, modifier_stack)), Ok((_camera_transform, mut camera))) =
-        (player_query.single_mut(), camera_query.single_mut())
+    if let (
+        Ok((player_entity, mut player_transform, player, modifier_stack)),
+        Ok((_camera_transform, mut camera)),
+    ) = (player_query.single_mut(), camera_query.single_mut())
     {
         let mut velocity = Vec3::ZERO;
-        let speed = apply_modifier_if_present(modifier_stack, PLAYER_SPEED_MODIFIER, player.speed);
+        let speed =
+            apply_modifier_if_present(modifier_stack, PLAYER_SPEED_MODIFIER, player.base_speed);
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
         //let forward = camera_transform.forward();
@@ -340,15 +340,16 @@ pub fn shoot_gun(
     mut shotgun_action: EventWriter<AttemptCastEvent<DynamicAbility>>,
     time: Res<Time>,
 ) {
-    if let Ok((player, player_transform)) = player_query.single()
-    {
+    if let Ok((player, player_transform)) = player_query.single() {
         if mouse_input.pressed(MouseButton::Left) {
             if let Ok(cursor_transform) = cursor_query.single() {
                 shotgun_action.write(AttemptCastEvent {
                     caster: player,
                     params: CastInfo {
                         caster: player,
-                        target_position: cursor_transform.translation.with_y(player_transform.translation.y),
+                        target_position: cursor_transform
+                            .translation
+                            .with_y(player_transform.translation.y),
                         target_entity: None,
                         cast_position: player_transform.translation,
                         cast_time: time.elapsed_secs_f64(),

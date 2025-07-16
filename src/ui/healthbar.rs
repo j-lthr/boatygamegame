@@ -21,6 +21,7 @@ pub fn spawn(
     mut spawn_event_reader: EventReader<event::SpawnEvent>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut mesh_server: ResMut<Assets<Mesh>>
 ) {
     for event in spawn_event_reader.read() {
         // Spawn health bar above enemy
@@ -40,6 +41,7 @@ pub fn spawn(
 
         commands.spawn((
             sprite,
+            Mesh2d(mesh_server.add(Rectangle::from_size(Vec2::new(5.0,1.0)))),
             Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::splat(0.5)),
             HealthBar {
                 entity: event.entity,
@@ -62,6 +64,8 @@ pub fn update(
                     .max(0)
                     .min(7);
                 texture_atlas.index = index; // Update based on health
+
+                healthbar_transform.scale.x = living.health_fraction();
 
                 sprite.color.set_alpha(if index == 7 { 0.0 } else { 1.0 });
             }
