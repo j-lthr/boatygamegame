@@ -1,5 +1,6 @@
-use crate::{event, init::DespawnOnReset};
+use crate::{event, init::DespawnOnReset, localization::LocalizationResource};
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 #[derive(Component)]
 pub struct DamageNumber {
@@ -27,6 +28,7 @@ pub fn spawn_damage_numbers(
     mut commands: Commands,
     mut damage_events: EventReader<event::DamageEvent>,
     asset_server: Res<AssetServer>,
+    localization: Res<LocalizationResource>,
 ) {
     for damage_event in damage_events.read() {
         // Spawn floating damage number
@@ -38,8 +40,10 @@ pub fn spawn_damage_numbers(
             None => Color::srgb(1.0, 1.0, 0.3),          // Yellow for environmental damage
         };
 
+        let mut damage_args = HashMap::new();
+        damage_args.insert("damage".to_string(), damage_event.damage.into());
         commands.spawn((
-            Text2d::new(format!("-{}", damage_event.damage)),
+            Text2d::new(localization.get_text("damage-number", Some(&damage_args))),
             TextFont {
                 font,
                 font_size: 24.0,

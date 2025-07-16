@@ -1,5 +1,7 @@
 use crate::state::GameScore;
+use crate::localization::LocalizationResource;
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 #[derive(Component)]
 pub struct ScoreText;
@@ -10,10 +12,16 @@ pub struct ComboText;
 
 
 // Setup the score UI
-pub fn setup_score_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup_score_ui(
+    mut commands: Commands, 
+    asset_server: Res<AssetServer>,
+    localization: Res<LocalizationResource>,
+) {
     // Score display
+    let mut score_args = HashMap::new();
+    score_args.insert("score".to_string(), 0.into());
     commands.spawn((
-        Text::new("Score: 0"),
+        Text::new(localization.get_text("hud-score", Some(&score_args))),
         TextFont {
             font: asset_server.load(super::FONT_PATH),
             font_size: 32.0,
@@ -55,21 +63,27 @@ pub fn setup_score_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn update_score_display(
     mut score_query: Query<&mut Text, With<ScoreText>>,
     score: Res<GameScore>,
+    localization: Res<LocalizationResource>,
 ) {
     // Update main score
     if let Ok(mut score_text) = score_query.single_mut() {
-        score_text.0 = format!("{}", score.current);
+        let mut score_args = HashMap::new();
+        score_args.insert("score".to_string(), score.current.into());
+        score_text.0 = localization.get_text("hud-score", Some(&score_args));
     }
 }
 
 pub fn update_combo_display(
     mut combo_query: Query<&mut Text, With<ComboText>>,
     score: Res<GameScore>,
+    localization: Res<LocalizationResource>,
 ) {
     // Update combo display
     if let Ok(mut combo_text) = combo_query.single_mut() {
         if score.combo > 1 {
-            combo_text.0 = format!("x{}", score.combo);
+            let mut combo_args = HashMap::new();
+            combo_args.insert("multiplier".to_string(), score.combo.into());
+            combo_text.0 = localization.get_text("hud-combo", Some(&combo_args));
         } else {
             combo_text.0 = String::new();
         }

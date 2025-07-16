@@ -1,6 +1,8 @@
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 use crate::enemy::spawn::SpawnerState;
+use crate::localization::LocalizationResource;
 
 #[derive(Component)]
 pub struct WaveNumberText;
@@ -11,9 +13,12 @@ pub struct WaveTimer;
 pub fn update_wave_number_display(
     mut wave_number_query: Query<&mut Text, With<WaveNumberText>>,
     spawner_state: Res<SpawnerState>,
+    localization: Res<LocalizationResource>,
 ) {
     if let Ok(mut wave_number_text) = wave_number_query.single_mut() {
-        wave_number_text.0 = format!("Wave {}", spawner_state.wave_index);
+        let mut wave_args = HashMap::new();
+        wave_args.insert("number".to_string(), spawner_state.wave_index.into());
+        wave_number_text.0 = localization.get_text("hud-wave", Some(&wave_args));
     }
 }
 

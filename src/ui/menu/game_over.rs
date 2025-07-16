@@ -2,7 +2,9 @@ use crate::audio::music::PlayMusicEvent;
 use crate::enemy::spawn::SpawnerState;
 use crate::init::{DespawnOnReset, GameInit};
 use crate::state::{GameScore, GameState};
+use crate::localization::LocalizationResource;
 use bevy::prelude::*;
+use std::collections::HashMap;
 
 const FONT_PATH: &str = "fonts/Jersey15-Regular.ttf";
 
@@ -17,6 +19,7 @@ pub fn setup_game_over_screen(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     score: Res<GameScore>,
+    localization: Res<LocalizationResource>,
 ) {
     // Background overlay
     commands
@@ -36,7 +39,7 @@ pub fn setup_game_over_screen(
         .with_children(|parent| {
             // Game Over title
             parent.spawn((
-                Text::new("GAME OVER"),
+                Text::new(localization.get_text("game-over-title", None)),
                 TextFont {
                     font: asset_server.load(FONT_PATH),
                     font_size: 64.0,
@@ -50,8 +53,10 @@ pub fn setup_game_over_screen(
             ));
 
             // Final score
+            let mut score_args = HashMap::new();
+            score_args.insert("score".to_string(), score.current.into());
             parent.spawn((
-                Text::new(format!("Final Score: {}", score.current)),
+                Text::new(localization.get_text("game-over-final-score", Some(&score_args))),
                 TextFont {
                     font: asset_server.load(FONT_PATH),
                     font_size: 36.0,
@@ -66,8 +71,10 @@ pub fn setup_game_over_screen(
             ));
 
             // Kill count
+            let mut kills_args = HashMap::new();
+            kills_args.insert("kills".to_string(), score.kills.into());
             parent.spawn((
-                Text::new(format!("Enemies Defeated: {}", score.kills)),
+                Text::new(localization.get_text("game-over-enemies-defeated", Some(&kills_args))),
                 TextFont {
                     font: asset_server.load(FONT_PATH),
                     font_size: 24.0,
@@ -82,7 +89,7 @@ pub fn setup_game_over_screen(
 
             // Restart instructions
             parent.spawn((
-                Text::new("Press R to Restart | Press ESC to Quit"),
+                Text::new(localization.get_text("game-over-restart-instructions", None)),
                 TextFont {
                     font: asset_server.load(FONT_PATH),
                     font_size: 20.0,
@@ -118,10 +125,13 @@ pub fn handle_game_over_input(
 pub fn update_game_over_screen(
     mut final_score_query: Query<&mut Text, With<FinalScoreText>>,
     score: Res<GameScore>,
+    localization: Res<LocalizationResource>,
 ) {
     // Add a pulsing effect to the final score
     if let Ok(mut score_text) = final_score_query.single_mut() {
-        score_text.0 = format!("Final Score: {}", score.current);
+        let mut score_args = HashMap::new();
+        score_args.insert("score".to_string(), score.current.into());
+        score_text.0 = localization.get_text("game-over-final-score", Some(&score_args));
     }
 }
 // Cleanup game over screen

@@ -6,11 +6,14 @@ use unic_langid::langid;
 use crate::modifiers::{Stat, StatKind, ModifierID};
 
 const US_ENGLISH: LanguageIdentifier = langid!("en-US");
+const GERMAN: LanguageIdentifier = langid!("de-DE");
+const SWISS_GERMAN: LanguageIdentifier = langid!("ch-CH");
 
 static_loader! {
     static LOCALES = {
         locales: "./assets/locale",
         fallback_language: "en-US",
+        customise: |bundle| bundle.set_use_isolating(false),
     };
 }
 
@@ -33,6 +36,18 @@ impl LocalizationResource {
         LOCALES.lookup_with_args(&self.current_language, key, args.unwrap_or(&HashMap::new()))
     }
 
+    pub fn switch_language(&mut self, language: LanguageIdentifier) {
+        self.current_language = language;
+    }
+
+    pub fn cycle_language(&mut self) {
+        self.current_language = match self.current_language {
+            ref lang if *lang == US_ENGLISH => GERMAN,
+            ref lang if *lang == GERMAN => SWISS_GERMAN,
+            _ => US_ENGLISH,
+        };
+    }
+
     pub fn format_stat(&self, stat: Stat) -> String {
         let stat_key = format!("stat-{}", stat.id.as_str());
         
@@ -51,6 +66,23 @@ impl LocalizationResource {
     }
 }
 
+fn handle_language_toggle(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut localization: ResMut<LocalizationResource>,
+) {
+    if keyboard_input.just_pressed(KeyCode::KeyL) {
+        localization.cycle_language();
+        let lang_name = match localization.current_language {
+            ref lang if *lang == US_ENGLISH => "English (US)",
+            ref lang if *lang == GERMAN => "Deutsch",
+            ref lang if *lang == SWISS_GERMAN => "Schwiizerdütsch",
+            _ => "Unknown",
+        };
+        info!("Language switched to: {} ({:?})", lang_name, localization.current_language);
+    }
+}
+
 pub fn plugin(app: &mut App) {
     app.insert_resource(LocalizationResource::default());
+    app.add_systems(Update, handle_language_toggle);
 }
