@@ -220,7 +220,7 @@ pub fn handle_explosions(
     mut commands: Commands,
     mut explosion_query: Query<(Entity, &mut ExplosionEffect)>,
     target_query: Query<
-        (Entity, &Transform, &common::Living),
+        (Entity, &Transform, &common::HealthPool),
         (Without<ExplosionEffect>, Without<Missile>),
     >,
     mut meshes: ResMut<Assets<Mesh>>,

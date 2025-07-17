@@ -1,10 +1,10 @@
 use super::events::OnActiveDespawn;
 use bevy::prelude::*;
 
-use crate::ability::CastInfo;
-use crate::modifiers::*;
 use super::projectile::LinearMovement;
-
+use crate::ability::CastInfo;
+use crate::ability::components::events::OnSpawn;
+use crate::modifiers::*;
 
 #[derive(Component, Clone)]
 pub struct AttachToCaster;
@@ -14,32 +14,27 @@ pub fn handle_attach_to_caster(
     query: Query<(&mut Transform, &CastInfo), With<AttachToCaster>>,
 ) {
     for (mut transform, cast_info) in query {
-        transform.translation = caster_query.get(cast_info.caster)
+        transform.translation = caster_query
+            .get(cast_info.caster)
             .map(|caster_transform| caster_transform.translation)
             .unwrap_or(Vec3::ZERO);
     }
 }
 
-
-
 #[derive(Copy, Clone)]
 pub enum LifetimeSource {
-    Fixed{
+    Fixed {
         base_duration: f32,
         modified_by: Option<ModifierID>,
     },
-    Dynamic
+    Dynamic,
 }
-
 
 #[derive(Copy, Clone)]
 pub enum LifetimePhase {
     JustSpawned(LifetimeSource),
-    Alive {
-        duration: f32,
-        elapsed: f32
-    },
-    JustDied
+    Alive { duration: f32, elapsed: f32 },
+    JustDied,
 }
 
 #[derive(Component, Clone, Copy)]
@@ -50,19 +45,25 @@ pub struct Lifetime {
 impl Lifetime {
     pub fn fixed(base_duration: f32) -> Self {
         Self {
-            phase: LifetimePhase::JustSpawned(LifetimeSource::Fixed { base_duration, modified_by: None })
+            phase: LifetimePhase::JustSpawned(LifetimeSource::Fixed {
+                base_duration,
+                modified_by: None,
+            }),
         }
     }
 
     pub fn fixed_with_modifier(base_duration: f32, modifier: ModifierID) -> Self {
         Self {
-            phase: LifetimePhase::JustSpawned(LifetimeSource::Fixed { base_duration, modified_by: Some(modifier)})
+            phase: LifetimePhase::JustSpawned(LifetimeSource::Fixed {
+                base_duration,
+                modified_by: Some(modifier),
+            }),
         }
     }
 
     pub fn dynamic() -> Self {
         Self {
-            phase: LifetimePhase::JustSpawned(LifetimeSource::Dynamic)
+            phase: LifetimePhase::JustSpawned(LifetimeSource::Dynamic),
         }
     }
 
@@ -99,18 +100,31 @@ impl Lifetime {
                 };
                 Ok(())
             }
-            _ => Err("Can only set duration for dynamic lifetime sources")
+            _ => Err("Can only set duration for dynamic lifetime sources"),
         }
     }
 }
 
-pub fn handle_lifetime(mut commands: Commands, query: Query<(Entity, &mut Lifetime, &CastInfo)>, modifiers: Query<&ModifierStack>, time: Res<Time>) {
+pub fn handle_lifetime(
+    mut commands: Commands,
+    query: Query<(Entity, &mut Lifetime, &CastInfo)>,
+    modifiers: Query<&ModifierStack>,
+    time: Res<Time>,
+) {
     for (entity, mut lifetime, cast_info) in query {
         match &mut lifetime.phase {
             LifetimePhase::JustSpawned(lifetime_source) => {
-                if let LifetimeSource::Fixed{base_duration, modified_by} = lifetime_source {
+                if let LifetimeSource::Fixed {
+                    base_duration,
+                    modified_by,
+                } = lifetime_source
+                {
                     let duration = if let Some(modified_by) = modified_by {
-                        apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), *modified_by, *base_duration)
+                        apply_modifier_if_present(
+                            modifiers.get(cast_info.caster).ok(),
+                            *modified_by,
+                            *base_duration,
+                        )
                     } else {
                         *base_duration
                     };
@@ -119,18 +133,12 @@ pub fn handle_lifetime(mut commands: Commands, query: Query<(Entity, &mut Lifeti
                         duration,
                         elapsed: 0.0,
                     };
-
                 }
             }
-            LifetimePhase::Alive {
-                elapsed,
-                duration
-            } => {
+            LifetimePhase::Alive { elapsed, duration } => {
                 *elapsed += time.delta_secs();
 
                 if elapsed > duration {
-
-
                     lifetime.phase = LifetimePhase::JustDied
                 }
             }
@@ -146,15 +154,19 @@ pub fn handle_lifetime(mut commands: Commands, query: Query<(Entity, &mut Lifeti
 pub struct LifetimeFromCursor;
 
 pub fn handle_lifetime_from_cursor(
-    mut lifetimes: Query<(&mut Lifetime, &CastInfo, &Transform, &LinearMovement), With<LifetimeFromCursor>>,
-) {
-    for (mut lifetime, cast_info, transform, projectile) in lifetimes.iter_mut() {
-        if lifetime.just_spawned() {
-            let distance = transform.translation.distance(cast_info.target_position);
-            let duration = distance / projectile.base_speed;
-            let _ = lifetime.set_dynamic_duration(duration);
-        }
+    mut query: Query<
+        (&mut Lifetime, &CastInfo, &Transform, &LinearMovement),
+        Added<LifetimeFromCursor>,
+    >,
+) -> Result {
+
+    for (mut lifetime, cast_info, transform, linear_movement) in query.iter_mut() {
+        let distance = transform.translation.distance(cast_info.target_position);
+        let duration = distance / linear_movement.base_speed;
+        lifetime.set_dynamic_duration(duration)?;
     }
+
+    Ok(())
 }
 
 pub fn plugin(app: &mut App) {
@@ -163,7 +175,8 @@ pub fn plugin(app: &mut App) {
         (
             handle_attach_to_caster,
             handle_lifetime,
-            handle_lifetime_from_cursor
-        )
+            handle_lifetime_from_cursor,
+        ),
     );
 }
+

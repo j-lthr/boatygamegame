@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 
 use std::sync::Arc;
+use std::time::Duration;
+
+use crate::{ability::components::events::OnSpawn, init::DespawnOnReset};
+
+use crate::modifiers::*;
 
 pub mod common;
 pub mod dash;
@@ -37,15 +42,17 @@ pub struct AbilitySlot<T: Ability> {
 pub fn handle_cast_attempts<T: Ability>(
     mut cast_attempts: EventReader<AttemptCastEvent<T>>,
     mut cast_events: EventWriter<CastEvent<T>>,
-    mut query: Query<&mut AbilitySlot<T>>,
+    mut query: Query<(&mut AbilitySlot<T>, Option<&ModifierStack>)>,
     time: Res<Time>,
 ) {
-    for mut ability_slot in query.iter_mut() {
-        ability_slot.cooldown.tick(time.delta());
+    for (mut ability_slot, modifiers) in query.iter_mut() {
+
+        let delta = time.delta_secs();
+        ability_slot.cooldown.tick(Duration::from_secs_f32(apply_modifier_if_present(modifiers, COOLDOWN_RECOVERY_RATE_MODIFIER, delta)));
     }
     
     for cast_attempt in cast_attempts.read() {
-        if let Ok(mut ability_slot) = query.get_mut(cast_attempt.caster) {
+        if let Ok((mut ability_slot, _)) = query.get_mut(cast_attempt.caster) {
             if ability_slot.cooldown.finished() {
                 info!(
                     "Entity {} used ability '{}'.",
@@ -80,20 +87,48 @@ impl<B: Bundle + Clone> BundleInjector for BundleWrapper<B> {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum SpawnLocation {
+    Caster,
+    Target
+}
+#[derive(Copy, Clone)]
+pub struct CastConfig {
+    pub spawn_location: SpawnLocation,
+}
+
+impl Default for CastConfig {
+    fn default() -> Self {
+        Self { spawn_location: SpawnLocation::Caster }
+    }
+}
+
 #[derive(Clone)]
 pub struct DynamicAbility {
     components: Arc<dyn BundleInjector + Send + Sync>,
+    config: CastConfig,
 }
 
 impl DynamicAbility {
-    pub fn with_components(bundle: impl Bundle + Clone) -> Self {
+    pub fn from_components(bundle: impl Bundle + Clone) -> Self {
         Self {
             components: Arc::new(
                 BundleWrapper(bundle)
             ),
+            config: Default::default()
         }
     }
+
+    pub fn with_config(mut self, config: CastConfig) -> Self {
+        self.config = config;
+        self
+    }
+
+
+
 }
+
+
 
 #[derive(Copy, Clone, Component)]
 pub struct CastInfo {
@@ -109,9 +144,16 @@ pub fn handle_dynamic_ability_casts(
     mut commands: Commands,
 ) {
     for event in cast_events.read() {
-        let mut default_cast_entity = commands.spawn(event.params);
+        let mut entity = commands.spawn((event.params, DespawnOnReset));
 
-        event.ability.components.add_to_entity(&mut default_cast_entity);
+        let config = event.ability.config;
+
+        match config.spawn_location {
+            SpawnLocation::Caster => entity.insert(Transform::from_translation(event.params.cast_position)),
+            SpawnLocation::Target => entity.insert(Transform::from_translation(event.params.target_position)),
+        };
+
+        event.ability.components.add_to_entity(&mut entity);
     }
 }
 

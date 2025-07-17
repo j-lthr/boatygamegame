@@ -29,7 +29,7 @@ pub fn cast_slam(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut slam_sounds: ResMut<Assets<fx::fm::FMSound>>,
-    mut entity_query: Query<(Entity, &mut Transform, Option<&common::Living>)>,
+    mut entity_query: Query<(Entity, &mut Transform, Option<&common::HealthPool>)>,
     mut damage_events: EventWriter<event::DamageEvent>,
 ) {
     for cast_event in cast_events.read() {

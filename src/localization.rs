@@ -52,6 +52,7 @@ impl LocalizationResource {
         let stat_key = format!("stat-{}", stat.id.as_str());
         
         let (type_str, value) = match stat.typ {
+            ModifierType::FlatAdded(v) => ("flat-added", format!("{:.0}", v)),
             ModifierType::Additive(v) => ("additive", format!("{:.0}%", v * 100.0)),
             ModifierType::Multiplicative(v) => ("multiplicative", format!("{:.0}%", (v - 1.0) * 100.0)),
         };

@@ -14,7 +14,7 @@ pub struct BlastDamage {
 pub fn handle_blast_damage(
     mut commands: Commands,
     mut explosion_query: Query<(Entity, &BlastDamage, &CastInfo, &Transform)>,
-    target_query: Query<(Entity, &Transform, &common::Living)>,
+    target_query: Query<(Entity, &Transform, &common::HealthPool)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&common::Faction>,
     modifiers: Query<&ModifierStack>

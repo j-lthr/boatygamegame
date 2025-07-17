@@ -50,7 +50,7 @@ pub fn handle_linear_movement(
 pub fn handle_simple_collision(
     mut commands: Commands,
     collider_query: Query<(Entity, &Transform, &SimpleCollider, &CastInfo)>,
-    target_query: Query<(Entity, &Transform, &common::Living), Without<SimpleCollider>>,
+    target_query: Query<(Entity, &Transform, &common::HealthPool), Without<SimpleCollider>>,
     faction_query: Query<&Faction>,
 ) {
     for (collider_entity, collider_transform, collider, cast_info) in collider_query {

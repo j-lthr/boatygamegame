@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 
 use crate::{
-    common::Living,
+    common::HealthPool,
     event::DeathEvent,
     init::DespawnOnReset,
 };
@@ -25,7 +25,7 @@ pub fn spawn_particles(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials_: ResMut<Assets<StandardMaterial>>,
     mut death_events: EventReader<DeathEvent>,
-    transform_query: Query<(&Transform, &MeshMaterial3d<StandardMaterial>, &Living)>,
+    transform_query: Query<(&Transform, &MeshMaterial3d<StandardMaterial>, &HealthPool)>,
 ) {
     let mut spawn_particles =
         |position: Vec3,

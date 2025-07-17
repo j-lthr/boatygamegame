@@ -23,7 +23,7 @@ pub struct Projectile {
 pub fn collide(
     mut commands: Commands,
     projectile_query: Query<(Entity, &Transform, &mut Projectile)>,
-    target_query: Query<(Entity, &mut Transform, &common::Living), Without<Projectile>>,
+    target_query: Query<(Entity, &mut Transform, &common::HealthPool), Without<Projectile>>,
     mut shoot_sounds: ResMut<Assets<fx::fm::FMSound>>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&Faction>,

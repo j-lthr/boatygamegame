@@ -6,7 +6,7 @@ use crate::ability::dash::{Dash, DashParams};
 use crate::ability::slam::{Slam, SlamParams};
 use crate::ability::{AbilitySlot, AttemptCastEvent};
 use crate::common::Faction;
-use crate::common::Living;
+use crate::common::HealthPool;
 use crate::common::{self, Inertia};
 use crate::enemy::common::FirstOrderMovement;
 use crate::enemy::common::FollowMovementMode;
@@ -89,15 +89,16 @@ pub fn handle_boulder_spawn(
                             name: "Dash",
                             ability: Dash { range: 6.0 + power },
                         },
-                        common::Living {
-                            health: (32.0 * power) as i32,
+                        common::HealthPool {
+                            current_health: (32.0 * power) as i32,
                             max_health: (32.0 * power) as i32,
+                            regen: power as i32,
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()
+                            .add_rune(1.0, MAX_HEALTH_RUNE)
                             .add_rune(1.0, SPEED_RUNE)
-                            .add_rune(1.0, DAMAGE_RUNE)
-                            .with_chance((0.6 - 0.1*power).max(0.1))
+                            .add_rune(1.0, HEALTH_REGEN_RUNE)
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,
@@ -146,7 +147,7 @@ pub fn boulder_combat_ai(
             Entity,
             &Transform,
             &AbilitySlot<Slam>,
-            &Living,
+            &HealthPool,
             &mut FirstOrderMovement,
         ),
         With<Boulder>,

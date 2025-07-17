@@ -19,29 +19,16 @@ impl Plugin for HealthBarPlugin {
 pub fn spawn(
     mut commands: Commands,
     mut spawn_event_reader: EventReader<event::SpawnEvent>,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    mut mesh_server: ResMut<Assets<Mesh>>
+    mut mesh_server: ResMut<Assets<Mesh>>,
+    mut material_server: ResMut<Assets<ColorMaterial>>,
 ) {
     for event in spawn_event_reader.read() {
-        // Spawn health bar above enemy
-        let texture = asset_server.load("sprites/healthbar.png");
-        let layout = TextureAtlasLayout::from_grid(UVec2::new(64, 4), 1, 8, None, None);
-        let texture_atlas_layout = texture_atlas_layouts.add(layout);
-
-        let mut sprite = Sprite::from_atlas_image(
-            texture,
-            TextureAtlas {
-                layout: texture_atlas_layout,
-                index: 7,
-            },
-        );
-
-        sprite.color.set_alpha(0.0); // Start invisible
-
         commands.spawn((
-            sprite,
-            Mesh2d(mesh_server.add(Rectangle::from_size(Vec2::new(5.0,1.0)))),
+            MeshMaterial2d(material_server.add(ColorMaterial {
+                color: Color::srgb(1.0, 1.0, 1.0),
+                ..Default::default()
+            })),
+            Mesh2d(mesh_server.add(Rectangle::from_size(Vec2::new(48.0, 8.0)))),
             Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::splat(0.5)),
             HealthBar {
                 entity: event.entity,
@@ -51,24 +38,14 @@ pub fn spawn(
 }
 
 pub fn update(
-    mut health_bar_query: Query<(&HealthBar, &mut Sprite, &mut Transform)>,
-    living_query: Query<(&common::Living, &GlobalTransform)>,
+    mut health_bar_query: Query<(&HealthBar, &mut Transform)>,
+    living_query: Query<(&common::HealthPool, &GlobalTransform)>,
     camera_3d_query: Query<(&GlobalTransform, &Camera), With<Camera3d>>,
     camera_2d_query: Query<(&GlobalTransform, &Camera), With<Camera2d>>,
 ) {
-    for (health_bar, mut sprite, mut healthbar_transform) in &mut health_bar_query {
+    for (health_bar, mut healthbar_transform) in &mut health_bar_query {
         if let Ok((living, enemy_transform)) = living_query.get(health_bar.entity) {
-            // Update health bar position above enemy
-            if let Some(ref mut texture_atlas) = sprite.texture_atlas {
-                let index = ((7.0 * (living.health as f32 / living.max_health as f32)) as usize)
-                    .max(0)
-                    .min(7);
-                texture_atlas.index = index; // Update based on health
-
-                healthbar_transform.scale.x = living.health_fraction();
-
-                sprite.color.set_alpha(if index == 7 { 0.0 } else { 1.0 });
-            }
+            healthbar_transform.scale.x = living.health_fraction();
 
             if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
                 (camera_3d_query.single(), camera_2d_query.single())
@@ -76,7 +53,7 @@ pub fn update(
                 let _ = camera_3d
                     .world_to_viewport(
                         camera_3d_transform,
-                        enemy_transform.translation() + Vec3::Z * 1.5,
+                        enemy_transform.translation() + Vec3::Z * 1.4,
                     )
                     .map(|viewport_position| {
                         camera_2d

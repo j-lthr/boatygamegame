@@ -76,7 +76,7 @@ pub fn handle_sniper_spawn(
                         },
                         AbilitySlot {
                             cooldown: Timer::from_seconds(
-                                normal_dist_1d(2.0, 0.01).abs(),
+                                5.0,
                                 TimerMode::Once,
                             ),
                             name: "Missile",
@@ -92,16 +92,18 @@ pub fn handle_sniper_spawn(
                                 lock_distance: 2.0 * (5.0 + power),
                             },
                         },
-                        common::Living {
-                            health: 8,
+                        common::HealthPool {
+                            current_health: 8,
                             max_health: 8,
+                            regen: 0,
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()
                             
                             .add_rune(0.1, MULTISHOT_RUNE)
                             .add_rune(0.1, AOE_RUNE)
-                            .with_chance((0.6 - 0.05 * power).max(0.1))
+                            .add_rune(0.1, DAMAGE_RUNE)
+                            .add_rune(0.1, COOLDOWN_RECOVERY_RATE_RUNE)
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,

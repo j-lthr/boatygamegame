@@ -7,6 +7,7 @@ pub mod hud;
 pub mod locale;
 pub mod menu;
 pub mod rune_popup;
+pub mod stats_screen;
 
 pub(crate) use damage_numbers::DamageNumbersPlugin;
 pub(crate) use healthbar::HealthBarPlugin;
@@ -18,5 +19,6 @@ pub fn plugin(app: &mut App) {
         hud::plugin,
         rune_popup::plugin,
         common::plugin,
+        stats_screen::plugin,
     ));
 }

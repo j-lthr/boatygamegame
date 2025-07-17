@@ -17,6 +17,22 @@ pub fn handle_spawn_at_cast_position(
     }
 }
 
+#[derive(Component, Clone)]
+pub struct SpawnAtTargetPosition;
+
+pub fn handle_spawn_at_target_position(
+    mut commands: Commands,
+    query: Query<(Entity, &mut Transform, &CastInfo), With<SpawnAtTargetPosition>>,
+) {
+    for (entity, mut transform, cast_info) in query {
+        transform.translation = cast_info.target_position;
+        commands.entity(entity).remove::<SpawnAtTargetPosition>();
+
+        info!("Spawned entity at target position: {:?}", transform.translation);
+    }
+}
+
+
 
 #[derive(Component, Clone)]
 pub struct RadialSubCastOffset {
@@ -71,4 +87,5 @@ pub fn handle_radial_sub_cast_offset(
 
 pub fn plugin(app: &mut bevy::app::App) {
     app.add_systems(Update, (handle_radial_sub_cast_offset, handle_spawn_at_cast_position).chain());
+    app.add_systems(Update, (handle_spawn_at_target_position));
 }

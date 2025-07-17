@@ -69,6 +69,7 @@ fn main() {
             audio::plugin,
             input::plugin,
             localization::plugin,
+            common::plugin
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()

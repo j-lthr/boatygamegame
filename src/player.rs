@@ -7,12 +7,13 @@ use crate::ability::components::common::{Lifetime, LifetimeFromCursor};
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider,
 };
-use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition};
+use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition, SpawnAtTargetPosition};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
-use crate::ability::{AttemptCastEvent, CastEvent, CastInfo, DynamicAbility};
-use crate::common::Living;
+use crate::ability::SpawnLocation;
+use crate::ability::{AttemptCastEvent, CastConfig, CastEvent, CastInfo, DynamicAbility};
+use crate::common::{Health, HealthBundle, HealthPool};
 use crate::common::{Inertia, VelocityEWA};
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
@@ -60,7 +61,7 @@ pub fn spawn_player(
         ..default()
     });
 
-    let blast_ability = DynamicAbility::with_components((
+    let mortar_blast = DynamicAbility::from_components((
         BlastBundle::new(
             &mut meshes,
             &mut materials,
@@ -71,8 +72,12 @@ pub fn spawn_player(
         ),
         RadialSubCastOffset::from_radius_360(2.5),
         DespawnOnReset,
-        SpawnAtCastPosition,
-    ));
+    )).with_config(
+        CastConfig {
+            spawn_location: SpawnLocation::Target,
+            .. Default::default()
+        }
+    );
 
     // let secondary_projectile_ability = DynamicAbility::with_components((
     //     LinearMovement {
@@ -93,19 +98,34 @@ pub fn spawn_player(
     //     //CastOnDespawn::new(blast_ability, 1),
     // ));
 
-    let projectile_ability = DynamicAbility::with_components((
+    let projectile_ability = DynamicAbility::from_components((
         LinearMovement { base_speed: 100.0 },
         Lifetime::fixed(1.0),
         SimpleCollider { radius: 1.0 },
         DamageOnCollision { base_damage: 10.0 },
+        DespawnOnCollision,
         RadialSubCastOffset::from_degrees(0.001, 10.0),
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),
         DespawnOnReset,
     ));
 
-    let shotgun_ability = DynamicAbility::with_components((
-        SubCastOnce::new(projectile_ability.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
+    let mortar_projectile = DynamicAbility::from_components((
+        LinearMovement { base_speed: 200.0 },
+        Lifetime::dynamic(),
+        LifetimeFromCursor,
+        SimpleCollider {
+            radius: 0.5,
+        },
+        DespawnOnCollision,
+        RadialSubCastOffset::from_degrees(0.001, 10.0),
+        Mesh3d(meshes.add(Sphere::new(0.5))),
+        MeshMaterial3d(bullet_mat.clone()),
+        CastOnDespawn::new(mortar_blast, 1)
+    ));
+
+    let mortar = DynamicAbility::from_components((
+        SubCastOnce::new(mortar_projectile.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
         DespawnOnReset,
     ));
 
@@ -124,10 +144,7 @@ pub fn spawn_player(
                 name: "Dash",
                 ability: Dash { range: 10.0 },
             },
-            Living {
-                health: 100,
-                max_health: 100,
-            },
+            HealthBundle::new(100, 0),
             Inertia {
                 prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
                 damping: 0.0,                       // Damping factor for Verlet integration
@@ -135,7 +152,7 @@ pub fn spawn_player(
             AbilitySlot {
                 cooldown: Timer::from_seconds(0.5, TimerMode::Once),
                 name: "Shotgun",
-                ability: shotgun_ability.clone(),
+                ability: mortar,
             },
             Collector {
                 collect_radius: 1.0,
