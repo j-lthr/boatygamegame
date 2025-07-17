@@ -16,6 +16,7 @@ stat-aoe-radius = AoE radius
 stat-max-health = maximum health
 stat-health-regen = health regeneration
 stat-cooldown-recovery-rate = cooldown recovery rate
+stat-homing-strength = homing strength
 
 # Game Over Screen
 game-over-title = GAME OVER

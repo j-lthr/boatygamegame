@@ -8,6 +8,7 @@ use crate::modifiers::{Modifier, ModifierType, ModifierID};
 const US_ENGLISH: LanguageIdentifier = langid!("en-US");
 const GERMAN: LanguageIdentifier = langid!("de-DE");
 const SWISS_GERMAN: LanguageIdentifier = langid!("ch-CH");
+const SPANISH: LanguageIdentifier = langid!("es-ES");
 
 static_loader! {
     static LOCALES = {
@@ -43,7 +44,8 @@ impl LocalizationResource {
     pub fn cycle_language(&mut self) {
         self.current_language = match self.current_language {
             ref lang if *lang == US_ENGLISH => GERMAN,
-            ref lang if *lang == GERMAN => SWISS_GERMAN,
+            ref lang if *lang == GERMAN => SPANISH,
+            ref lang if *lang == SPANISH => SWISS_GERMAN,
             _ => US_ENGLISH,
         };
     }
@@ -76,6 +78,7 @@ fn handle_language_toggle(
         let lang_name = match localization.current_language {
             ref lang if *lang == US_ENGLISH => "English (US)",
             ref lang if *lang == GERMAN => "Deutsch",
+            ref lang if *lang == SPANISH => "Español",
             ref lang if *lang == SWISS_GERMAN => "Schwiizerdütsch",
             _ => "Unknown",
         };

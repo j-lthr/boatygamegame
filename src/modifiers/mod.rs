@@ -148,3 +148,4 @@ pub const AOE_RADIUS_MODIFIER: ModifierID = ModifierID("aoe-radius");
 pub const MAX_HEALTH_MODIFIER: ModifierID = ModifierID("max-health");
 pub const HEALTH_REGEN_MODIFIER: ModifierID = ModifierID("health-regen");
 pub const COOLDOWN_RECOVERY_RATE_MODIFIER: ModifierID = ModifierID("cooldown-recovery-rate");
+pub const HOMING_STRENGTH_MODIFIER: ModifierID = ModifierID("homing-strength");

@@ -33,6 +33,12 @@ pub struct DamageOnCollision {
 #[derive(Component, Clone)]
 pub struct DespawnOnCollision;
 
+// Component for homing movement - rotates toward target_position
+#[derive(Component, Clone)]
+pub struct HomingMovement {
+    pub base_turn_speed: f32,
+}
+
 /// System to move entities with LinearMovement
 pub fn handle_linear_movement(
     mut movement_query: Query<(&mut Transform, &LinearMovement, &CastInfo)>,
@@ -43,6 +49,34 @@ pub fn handle_linear_movement(
         let speed = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), PROJECTILE_SPEED_MODIFIER, movement.base_speed);
         let fwd = transform.forward();
         transform.translation += fwd * speed * time.delta_secs();
+    }
+}
+
+/// System to rotate entities with HomingMovement toward target_position
+pub fn handle_homing_movement(
+    mut homing_query: Query<(&mut Transform, &HomingMovement, &CastInfo)>,
+    modifiers: Query<&ModifierStack>,
+    time: Res<Time>,
+) {
+    for (mut transform, homing, cast_info) in &mut homing_query {
+        let turn_speed = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), HOMING_STRENGTH_MODIFIER, homing.base_turn_speed);
+        
+        // Calculate direction to target
+        let to_target = (cast_info.target_position - transform.translation).normalize_or_zero();
+        
+        if to_target.length() > 0.0 {
+            // Get current forward direction
+            let current_forward = transform.forward();
+            
+            // Calculate rotation needed
+            let target_rotation = Transform::from_translation(transform.translation)
+                .looking_at(transform.translation + to_target, Vec3::Y)
+                .rotation;
+            
+            // Slerp toward target rotation
+            let max_rotation = turn_speed * time.delta_secs();
+            transform.rotation = transform.rotation.slerp(target_rotation, max_rotation);
+        }
     }
 }
 
@@ -126,6 +160,7 @@ pub fn plugin(app: &mut bevy::app::App) {
         Update,
         (
             handle_linear_movement,
+            handle_homing_movement,
             handle_simple_collision,
         )
     );

@@ -2,6 +2,7 @@
 modifier-text = { $type ->
     [additive] { $stat } erhöht um { $value }
     [multiplicative] { $value } mehr { $stat }
+    [flat-added] +{ $value } zu { $stat }
     *[other] { $value } { $stat }
 }
 
@@ -12,6 +13,10 @@ stat-projectile-speed = Projektilgeschwindigkeit
 stat-projectile-count = Projektilanzahl
 stat-projectile-duration = Projektildauer
 stat-aoe-radius = Flächenschadenradius
+stat-max-health = maximale Gesundheit
+stat-health-regen = Gesundheitsregeneration
+stat-cooldown-recovery-rate = Cooldown-Wiederherstellungsrate
+stat-homing-strength = Zielverfolgungsstärke
 
 # Game Over Screen
 game-over-title = SPIEL VORBEI
@@ -37,3 +42,7 @@ ability-missile = Rakete
 
 # Watermark
 watermark-dev-build = Entwicklerversion v{ $version }
+
+# Stats Screen
+stats-screen-title = STATISTIKEN
+stats-screen-instructions = TAB halten um Statistiken anzuzeigen

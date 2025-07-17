@@ -99,11 +99,11 @@ pub fn handle_sniper_spawn(
                         },
                         Faction::Enemy,
                         DropTableBuilder::new()
-                            
                             .add_rune(0.1, MULTISHOT_RUNE)
                             .add_rune(0.1, AOE_RUNE)
                             .add_rune(0.1, DAMAGE_RUNE)
                             .add_rune(0.1, COOLDOWN_RECOVERY_RATE_RUNE)
+                            .add_rune(0.15, HOMING_RUNE)
                             .build(),
                         Inertia {
                             prev_pos: spawn_position,

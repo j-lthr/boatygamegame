@@ -5,7 +5,7 @@ use std::f32;
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::{Lifetime, LifetimeFromCursor};
 use crate::ability::components::projectile::{
-    DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider,
+    DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider, HomingMovement
 };
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition, SpawnAtTargetPosition};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
@@ -107,28 +107,27 @@ pub fn spawn_player(
         RadialSubCastOffset::from_degrees(0.001, 10.0),
         Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
         MeshMaterial3d(bullet_mat.clone()),
-        DespawnOnReset,
     ));
 
     let mortar_projectile = DynamicAbility::from_components((
-        LinearMovement { base_speed: 200.0 },
+        LinearMovement { base_speed: 100.0 },
+        HomingMovement {base_turn_speed: 10.0},
         Lifetime::dynamic(),
         LifetimeFromCursor,
         SimpleCollider {
             radius: 0.5,
         },
         DespawnOnCollision,
-        RadialSubCastOffset::from_degrees(0.001, 10.0),
+        RadialSubCastOffset::from_radius_360(1.0),
         Mesh3d(meshes.add(Sphere::new(0.5))),
         MeshMaterial3d(bullet_mat.clone()),
-        CastOnDespawn::new(mortar_blast, 1)
+        CastOnDespawn::new(mortar_blast, 1).modified_by(PROJECTILE_COUNT_MODIFIER)
     ));
 
     let mortar = DynamicAbility::from_components((
-        SubCastOnce::new(mortar_projectile.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
-        DespawnOnReset,
+        SubCastOnce::new(mortar_projectile.clone(), 4).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
-
+    
     // Player spawn point (invisible, camera will follow this)
     let player = commands
         .spawn((

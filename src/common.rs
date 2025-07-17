@@ -69,8 +69,6 @@ impl Default for RegenTick {
 pub fn apply_regen(query: Query<&mut HealthPool>, time: Res<Time>, mut tick: Local<RegenTick>) {
     let now = time.elapsed_secs_f64();
 
-    info!("last regen tick: {}, now: {}", tick.last_regen_tick, now);
-
     if now - tick.last_regen_tick > 1.0 {
         for mut pool in query {
             pool.current_health = (pool.current_health + pool.regen).min(pool.max_health);
