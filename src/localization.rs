@@ -9,6 +9,7 @@ const US_ENGLISH: LanguageIdentifier = langid!("en-US");
 const GERMAN: LanguageIdentifier = langid!("de-DE");
 const SWISS_GERMAN: LanguageIdentifier = langid!("ch-CH");
 const SPANISH: LanguageIdentifier = langid!("es-ES");
+const LADAKHI: LanguageIdentifier = langid!("lbj-IN");
 
 static_loader! {
     static LOCALES = {
@@ -46,6 +47,7 @@ impl LocalizationResource {
             ref lang if *lang == US_ENGLISH => GERMAN,
             ref lang if *lang == GERMAN => SPANISH,
             ref lang if *lang == SPANISH => SWISS_GERMAN,
+            ref lang if *lang == SWISS_GERMAN => LADAKHI,
             _ => US_ENGLISH,
         };
     }
@@ -80,6 +82,7 @@ fn handle_language_toggle(
             ref lang if *lang == GERMAN => "Deutsch",
             ref lang if *lang == SPANISH => "Español",
             ref lang if *lang == SWISS_GERMAN => "Schwiizerdütsch",
+            ref lang if *lang == LADAKHI => "ལ་དྭགས་སྐད",
             _ => "Unknown",
         };
         info!("Language switched to: {} ({:?})", lang_name, localization.current_language);
