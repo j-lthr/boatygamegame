@@ -44,8 +44,8 @@ pub fn update(
     camera_2d_query: Query<(&GlobalTransform, &Camera), With<Camera2d>>,
 ) {
     for (health_bar, mut healthbar_transform) in &mut health_bar_query {
-        if let Ok((living, enemy_transform)) = living_query.get(health_bar.entity) {
-            healthbar_transform.scale.x = living.health_fraction();
+        if let Ok((health_pool, enemy_transform)) = living_query.get(health_bar.entity) {
+            healthbar_transform.scale.x = health_pool.health_fraction().max(0.0);
 
             if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
                 (camera_3d_query.single(), camera_2d_query.single())

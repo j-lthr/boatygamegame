@@ -24,8 +24,8 @@ pub struct SpawnerTarget;
 impl FromWorld for SpawnerState {
     fn from_world(_world: &mut World) -> Self {
         SpawnerState {
-            wave_interval: 6.0,
-            wave_timer: Timer::from_seconds(6.0, TimerMode::Repeating),
+            wave_interval: 10.0,
+            wave_timer: Timer::from_seconds(10.0, TimerMode::Repeating),
             wave_index: 0,
         }
     }

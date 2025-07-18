@@ -65,67 +65,34 @@ pub fn spawn_player(
         BlastBundle::new(
             &mut meshes,
             &mut materials,
-            Color::srgb(30.0, 30.0, 30.0),
-            3.0,
-            33,
+            Color::srgb(10.0, 10.0, 10.0),
+            2.0,
+            10,
             0.5,
         ),
-        RadialSubCastOffset::from_radius_360(2.5),
         DespawnOnReset,
-    )).with_config(
-        CastConfig {
-            spawn_location: SpawnLocation::Target,
-            .. Default::default()
-        }
-    );
-
-    // let secondary_projectile_ability = DynamicAbility::with_components((
-    //     LinearMovement {
-    //         base_speed: 200.0,
-    //     },
-    //     SimpleCollider {
-    //         radius: 1.0,
-    //     },
-    //     DamageOnCollision {
-    //         base_damage: 10.0,
-    //     },
-    //     DespawnOnCollision,
-    //     Lifetime::fixed_with_modifier(0.2, PROJECTILE_DURATION_MODIFIER),
-    //     RadialSubCastOffset::from_radius_360(0.5),
-    //     Mesh3d(meshes.add(Sphere::new(0.05 + 0.05 * fastrand::f32()))),
-    //     MeshMaterial3d(bullet_mat.clone()),
-    //     DespawnOnReset,
-    //     //CastOnDespawn::new(blast_ability, 1),
-    // ));
-
-    let projectile_ability = DynamicAbility::from_components((
-        LinearMovement { base_speed: 100.0 },
-        Lifetime::fixed(1.0),
-        SimpleCollider { radius: 1.0 },
-        DamageOnCollision { base_damage: 10.0 },
-        DespawnOnCollision,
-        RadialSubCastOffset::from_degrees(0.001, 10.0),
-        Mesh3d(meshes.add(Sphere::new(0.2 + 0.05 * fastrand::f32()))),
-        MeshMaterial3d(bullet_mat.clone()),
     ));
 
     let mortar_projectile = DynamicAbility::from_components((
         LinearMovement { base_speed: 100.0 },
-        HomingMovement {base_turn_speed: 10.0},
-        Lifetime::dynamic(),
-        LifetimeFromCursor,
+        //HomingMovement {base_turn_speed: 10.0},
+        Lifetime::fixed(1.0),
+        //LifetimeFromCursor,
         SimpleCollider {
-            radius: 0.5,
+            radius: 1.0,
         },
         DespawnOnCollision,
-        RadialSubCastOffset::from_radius_360(1.0),
-        Mesh3d(meshes.add(Sphere::new(0.5))),
+        DamageOnCollision {
+            base_damage: 10.0,
+        },
+        RadialSubCastOffset::from_degrees_per_cast(1.0, 5.0),
+        Mesh3d(meshes.add(Sphere::new(0.25))),
         MeshMaterial3d(bullet_mat.clone()),
-        CastOnDespawn::new(mortar_blast, 1).modified_by(PROJECTILE_COUNT_MODIFIER)
+        CastOnDespawn::new(mortar_blast, 1)
     ));
 
     let mortar = DynamicAbility::from_components((
-        SubCastOnce::new(mortar_projectile.clone(), 4).modified_by(PROJECTILE_COUNT_MODIFIER),
+        SubCastOnce::new(mortar_projectile.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
     
     // Player spawn point (invisible, camera will follow this)

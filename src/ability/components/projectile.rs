@@ -61,22 +61,15 @@ pub fn handle_homing_movement(
     for (mut transform, homing, cast_info) in &mut homing_query {
         let turn_speed = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), HOMING_STRENGTH_MODIFIER, homing.base_turn_speed);
         
-        // Calculate direction to target
-        let to_target = (cast_info.target_position - transform.translation).normalize_or_zero();
+        // Calculate rotation needed
+        let target_rotation = Transform::from_translation(transform.translation)
+            .looking_at(cast_info.target_position, Vec3::Y)
+            .rotation;
         
-        if to_target.length() > 0.0 {
-            // Get current forward direction
-            let current_forward = transform.forward();
-            
-            // Calculate rotation needed
-            let target_rotation = Transform::from_translation(transform.translation)
-                .looking_at(transform.translation + to_target, Vec3::Y)
-                .rotation;
-            
-            // Slerp toward target rotation
-            let max_rotation = turn_speed * time.delta_secs();
-            transform.rotation = transform.rotation.slerp(target_rotation, max_rotation);
-        }
+        // Slerp toward target rotation
+        let max_rotation = turn_speed * time.delta_secs();
+        transform.rotation = transform.rotation.slerp(target_rotation, max_rotation);
+        
     }
 }
 
