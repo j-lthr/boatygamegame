@@ -4,16 +4,16 @@ use bevy::prelude::*;
 
 use crate::{
     enemy::{
-        AttemptSpawnEvent,
         boulder::{Boulder, BoulderSpawnParams},
         sniper::{Sniper, SniperSpawnParams},
+        AttemptSpawnEvent,
     },
     utils::normal_dist_1d,
 };
+use crate::enemy::registry::EnemyRegistry;
 
 #[derive(Resource)]
 pub struct SpawnerState {
-    pub wave_interval: f32,
     pub wave_timer: Timer,
     pub wave_index: i32,
 }
@@ -24,11 +24,21 @@ pub struct SpawnerTarget;
 impl FromWorld for SpawnerState {
     fn from_world(_world: &mut World) -> Self {
         SpawnerState {
-            wave_interval: 10.0,
-            wave_timer: Timer::from_seconds(10.0, TimerMode::Repeating),
+            wave_timer: Timer::from_seconds(6.0, TimerMode::Repeating),
             wave_index: 0,
         }
     }
+}
+
+#[derive(Clone, Copy)]
+pub enum SpawnRequirement {
+    MinWave(i32),
+}
+
+#[derive(Clone)]
+pub struct SpawnInfo {
+    pub requirement: Vec<SpawnRequirement>,
+    pub weight: f32,
 }
 
 pub fn random_spawn_pos(center: Vec3, radius_avg: f32, radius_std: f32) -> Vec3 {
@@ -44,16 +54,15 @@ pub fn random_spawn_pos(center: Vec3, radius_avg: f32, radius_std: f32) -> Vec3 
 pub fn spawn(
     mut commands: Commands,
     mut state: ResMut<SpawnerState>,
-    time: ResMut<Time>,
+    enemy_registry: Res<EnemyRegistry>,
+    time: Res<Time>,
     target_query: Query<&Transform, With<SpawnerTarget>>,
 ) {
     state.wave_timer.tick(time.delta());
 
-    let num_packs = 1 + state.wave_index / 16;
+    let enemies: Vec<_> = enemy_registry.enemies().collect();
 
-    let power = 1.0 + (state.wave_index - 8).max(0) as f32 / 16.0;
-
-    
+    let enemy = enemies[state.wave_index as usize % enemies.len()];
 
     if state.wave_timer.finished() {
         
@@ -63,33 +72,15 @@ pub fn spawn(
             state.wave_timer.set_duration(Duration::from_secs(current_duration));
         }
 
-        /*if state.wave_index > 32 && state.wave_index % 16 == 0 {
-            let mut current_duration = state.wave_timer.duration().as_secs_f32();
-            current_duration *= 0.8;
-            current_duration = current_duration.max(1.0);
-            state.wave_timer.set_duration(Duration::from_secs_f32(current_duration));
-        }*/
-
-        state.wave_timer.reset();
-
         for target_transform in target_query {
-            for _ in 0..num_packs {
-                if state.wave_index % 2 == 0 {
-                    commands.send_event(AttemptSpawnEvent::<Boulder>::new(BoulderSpawnParams {
-                        position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
-                        pack_size: 3, 
-                        power
-                    }));
-                } else {
-                    commands.send_event(AttemptSpawnEvent::<Sniper>::new(SniperSpawnParams {
-                        position: random_spawn_pos(target_transform.translation, 50.0, 10.0),
-                        pack_size: 1,
-                        power
-                    }));
-                }
-            }
+            let spawn_pos = random_spawn_pos(target_transform.translation, 30.0, 10.0);
+
+            let mut entity = commands.spawn(Transform::from_translation(spawn_pos));
+
+            enemy.add_to_entity(&mut entity);
         }
 
+        state.wave_timer.reset();
         state.wave_index += 1;
     }
 }

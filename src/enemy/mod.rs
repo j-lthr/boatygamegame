@@ -5,6 +5,8 @@ pub mod boulder;
 pub mod common;
 pub mod sniper;
 pub mod spawn;
+pub mod registry;
+pub mod components;
 
 pub trait Enemy: Component + Clone + Send + Sync + 'static {
     type SpawnParams: Clone + Send + Sync + 'static;
@@ -39,4 +41,6 @@ pub fn plugin(app: &mut App) {
     ));
 
     common::register(app);
+
+    registry::plugin(app);
 }

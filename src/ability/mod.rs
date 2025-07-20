@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::{ability::components::events::OnSpawn, init::DespawnOnReset};
-
+use crate::common::{BundleInjector, BundleWrapper};
 use crate::modifiers::*;
 
 pub mod common;
@@ -71,19 +71,6 @@ pub fn handle_cast_attempts<T: Ability>(
                 cast_attempt.caster
             );
         }
-    }
-}
-
-pub trait BundleInjector {
-    fn add_to_entity(&self, entity: &mut EntityCommands);
-}
-
-#[derive(Clone, Debug)]
-pub struct BundleWrapper<B: Bundle + Clone>(pub B);
-
-impl<B: Bundle + Clone> BundleInjector for BundleWrapper<B> {
-    fn add_to_entity(&self, entity: &mut EntityCommands) {
-        entity.insert(self.0.clone());
     }
 }
 

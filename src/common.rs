@@ -1,4 +1,5 @@
 use std::f64::INFINITY;
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::event;
@@ -210,4 +211,21 @@ pub fn handle_npc_death(
 
 pub fn plugin(app: &mut App) {
     app.add_systems(Update, (update_health_pool, apply_regen));
+}
+
+pub trait BundleInjector {
+    fn add_to_entity(&self, entity: &mut EntityCommands);
+}
+
+#[derive(Clone, Debug)]
+pub struct BundleWrapper<B: Bundle + Clone>(pub B);
+
+impl<B: Bundle + Clone> BundleInjector for BundleWrapper<B> {
+    fn add_to_entity(&self, entity: &mut EntityCommands) {
+        entity.insert(self.0.clone());
+    }
+}
+
+pub fn create_bundle_injector<B: Bundle + Clone>(b: B) -> Arc<dyn BundleInjector> {
+    Arc::new(BundleWrapper(b))
 }
