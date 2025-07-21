@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-use bevy::prelude::*;
 use bevy::ecs::error::{GLOBAL_ERROR_HANDLER, error};
+use bevy::prelude::*;
 
 use bevy::audio::{AddAudioSource, AudioPlugin, SpatialScale, Volume};
 
@@ -18,7 +18,9 @@ mod event;
 mod fx;
 mod init;
 mod input;
+mod localization;
 mod loot;
+mod modifiers;
 mod player;
 mod procedural;
 mod projectile;
@@ -26,17 +28,15 @@ mod rune;
 mod state;
 mod ui;
 mod utils;
-mod modifiers;
-mod localization;
 
 use crate::audio::music::PlayMusicEvent;
 use crate::init::GameInit;
 use crate::state::GameState;
 
-
-
 fn main() {
-    GLOBAL_ERROR_HANDLER.set(error).expect("failed to set global error handler");
+    GLOBAL_ERROR_HANDLER
+        .set(error)
+        .expect("failed to set global error handler");
     App::new()
         .add_plugins(
             DefaultPlugins
@@ -46,6 +46,11 @@ fn main() {
                     ..default()
                 })
                 .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        resizable: false,
+                        mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+                        ..default()
+                    }),
                     ..Default::default()
                 }),
         )
@@ -64,7 +69,7 @@ fn main() {
             audio::plugin,
             input::plugin,
             localization::plugin,
-            common::plugin
+            common::plugin,
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()

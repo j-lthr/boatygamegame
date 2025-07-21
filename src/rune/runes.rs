@@ -32,7 +32,7 @@ pub const MAX_HEALTH_RUNE: ModifierRune = ModifierRune {
 };
 
 pub const HEALTH_REGEN_RUNE: ModifierRune = ModifierRune {
-    modifier: Modifier::flat_added(HEALTH_REGEN_MODIFIER, 5.0),
+    modifier: Modifier::flat_added(HEALTH_REGEN_MODIFIER, 1.0),
     color: Color::linear_rgb(30.0, 50.0, 30.0),
 };
 
