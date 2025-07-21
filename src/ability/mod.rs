@@ -110,9 +110,28 @@ impl DynamicAbility {
         self.config = config;
         self
     }
+}
 
+#[derive(Event)]
+pub struct CastDynamicAbility {
+    ability: DynamicAbility,
+    caster: Entity,
+    target: Option<Entity>,
+}
 
+impl CastDynamicAbility {
+    pub fn at_caster(ability: DynamicAbility, caster: Entity) -> Self {
+        Self {
+            ability,
+            caster,
+            target: None
+        }
+    }
 
+    pub fn with_target_entity(mut self, target: Entity) -> Self {
+        self.target = Some(target);
+        self
+    }
 }
 
 
@@ -144,6 +163,38 @@ pub fn handle_dynamic_ability_casts(
     }
 }
 
+
+pub fn event_handler_dynamic_ability_casts(
+    mut cast_events: EventReader<CastDynamicAbility>,
+    time: Res<Time>,
+    query: Query<&Transform>,
+    mut commands: Commands,
+) -> Result<()> {
+    for event in cast_events.read() {
+
+        let cast_params = CastInfo {
+            caster: event.caster,
+            cast_position: query.get(event.caster)?.translation,
+            target_position: query.get(event.target.ok_or("no target entity transform")?)?.translation,
+            target_entity: event.target,
+            cast_time: time.elapsed_secs_f64(),
+        };
+
+        let mut entity = commands.spawn((cast_params, DespawnOnReset));
+
+        let config = event.ability.config;
+
+        match config.spawn_location {
+            SpawnLocation::Caster => entity.insert(Transform::from_translation(cast_params.cast_position)),
+            SpawnLocation::Target => entity.insert(Transform::from_translation(cast_params.target_position)),
+        };
+
+        event.ability.components.add_to_entity(&mut entity);
+    }
+
+    Ok(())
+}
+
 impl Ability for DynamicAbility {
     type CastParams = CastInfo;
 
@@ -167,4 +218,8 @@ pub fn plugin(app: &mut App) {
         register_ability::<DynamicAbility>,
         components::plugin,
     ));
+
+    app.add_event::<CastDynamicAbility>();
+
+    app.add_systems(Update, event_handler_dynamic_ability_casts);
 }

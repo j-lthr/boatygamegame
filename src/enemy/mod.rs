@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 use std::marker::PhantomData;
 
-pub mod boulder;
-pub mod common;
-pub mod sniper;
+pub mod components;
 pub mod spawn;
 pub mod registry;
-pub mod components;
+
+pub mod enemies;
 
 pub trait Enemy: Component + Clone + Send + Sync + 'static {
     type SpawnParams: Clone + Send + Sync + 'static;
@@ -34,13 +33,7 @@ fn register_enemy<T: Enemy>(app: &mut App) {
 }
 
 pub fn plugin(app: &mut App) {
-    app.add_plugins((
-        register_enemy::<boulder::Boulder>,
-        register_enemy::<sniper::Sniper>,
-        spawn::plugin,
-    ));
-
-    common::register(app);
-
-    registry::plugin(app);
+    spawn::plugin(app);
+    components::plugin(app);
+    enemies::plugin(app);
 }

@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
+
 
 use crate::{
     event::{DeathEvent, EventSource},
@@ -18,9 +21,9 @@ impl<T: Rune> EventSource<Vec3> for RuneDrop<T> {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct DropTable {
-    entries: Vec<(f32, Box<dyn EventSource<Vec3>>)>,
+    entries: Vec<(f32, Arc<dyn EventSource<Vec3>>)>,
     total_chance: f32,
 }
 
@@ -41,7 +44,7 @@ impl DropTable {
         }
     }
 
-    fn from_weighted_list(weighted_items: Vec<(f32, Box<dyn EventSource<Vec3>>)>, total_chance: f32) -> Self {
+    fn from_weighted_list(weighted_items: Vec<(f32, Arc<dyn EventSource<Vec3>>)>, total_chance: f32) -> Self {
         if weighted_items.is_empty() {
             return Self {
                 entries: Vec::new(),
@@ -71,7 +74,7 @@ impl DropTable {
 }
 
 pub struct DropTableBuilder {
-    weighted_items: Vec<(f32, Box<dyn EventSource<Vec3>>)>,
+    weighted_items: Vec<(f32, Arc<dyn EventSource<Vec3>>)>,
     total_chance: f32,
 }
 
@@ -85,7 +88,7 @@ impl DropTableBuilder {
 
     pub fn add_rune<T: Rune + 'static>(mut self, weight: f32, rune: T) -> Self {
         self.weighted_items
-            .push((weight, Box::new(RuneDrop { rune })));
+            .push((weight, Arc::new(RuneDrop { rune })));
         self
     }
 

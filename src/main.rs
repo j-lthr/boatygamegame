@@ -46,11 +46,6 @@ fn main() {
                     ..default()
                 })
                 .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        resizable: false,
-                        mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
-                        ..default()
-                    }),
                     ..Default::default()
                 }),
         )

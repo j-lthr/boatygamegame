@@ -73,6 +73,7 @@ pub fn handle_sub_cast_once(
                 *cast_info,
                 SubCastInfo::new(index, num_casts),
                 Transform::from_translation(cast_info.cast_position),
+                DespawnOnReset
             ));
             sub_cast_once.ability.components.add_to_entity(&mut entity);
         }

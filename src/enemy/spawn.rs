@@ -2,13 +2,9 @@ use std::{f32, time::Duration};
 
 use bevy::prelude::*;
 
+use crate::init::DespawnOnReset;
 use crate::{
-    enemy::{
-        boulder::{Boulder, BoulderSpawnParams},
-        sniper::{Sniper, SniperSpawnParams},
-        AttemptSpawnEvent,
-    },
-    utils::normal_dist_1d,
+    common::Faction, event::SpawnEvent, utils::normal_dist_1d
 };
 use crate::enemy::registry::EnemyRegistry;
 
@@ -35,10 +31,9 @@ pub enum SpawnRequirement {
     MinWave(i32),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Component)]
 pub struct SpawnInfo {
-    pub requirement: Vec<SpawnRequirement>,
-    pub weight: f32,
+    pub target: Entity,
 }
 
 pub fn random_spawn_pos(center: Vec3, radius_avg: f32, radius_std: f32) -> Vec3 {
@@ -56,14 +51,13 @@ pub fn spawn(
     mut state: ResMut<SpawnerState>,
     enemy_registry: Res<EnemyRegistry>,
     time: Res<Time>,
-    target_query: Query<&Transform, With<SpawnerTarget>>,
+    target_query: Query<(Entity, &Transform), With<SpawnerTarget>>,
+    mut spawn_events: EventWriter<SpawnEvent>,
 ) {
     state.wave_timer.tick(time.delta());
 
-    let enemies: Vec<_> = enemy_registry.enemies().collect();
-
-    let enemy = enemies[state.wave_index as usize % enemies.len()];
-
+    let enemy = fastrand::choice(enemy_registry.enemies()).unwrap();
+    
     if state.wave_timer.finished() {
         
         if state.wave_index < 3 || state.wave_index == 32  {
@@ -72,12 +66,23 @@ pub fn spawn(
             state.wave_timer.set_duration(Duration::from_secs(current_duration));
         }
 
-        for target_transform in target_query {
+        for (target, target_transform) in target_query {
             let spawn_pos = random_spawn_pos(target_transform.translation, 30.0, 10.0);
 
-            let mut entity = commands.spawn(Transform::from_translation(spawn_pos));
+            let mut entity = commands.spawn((
+                Transform::from_translation(spawn_pos),
+                Faction::Enemy,
+                SpawnInfo {
+                    target
+                },
+                DespawnOnReset
+            ));
 
             enemy.add_to_entity(&mut entity);
+
+            spawn_events.write(SpawnEvent {
+                entity: entity.id()
+            });
         }
 
         state.wave_timer.reset();
@@ -87,5 +92,6 @@ pub fn spawn(
 
 pub fn plugin(app: &mut App) {
     app.init_resource::<SpawnerState>();
+    app.init_resource::<EnemyRegistry>();
     app.add_systems(Update, spawn);
 }

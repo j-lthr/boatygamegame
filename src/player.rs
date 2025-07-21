@@ -100,7 +100,7 @@ pub fn spawn_player(
         .spawn((
             Transform::from_xyz(0.0, 0.5, 0.0), // Eye level height
             Player { base_speed: 10.0 },
-            Mesh3d(meshes.add(Sphere::new(0.5))),
+            Mesh3d(meshes.add(Sphere::new(1.0))),
             MeshMaterial3d(materials.add(StandardMaterial {
                 base_color: player_color,
                 ..default()
@@ -110,13 +110,13 @@ pub fn spawn_player(
                 name: "Dash",
                 ability: Dash { range: 10.0 },
             },
-            HealthBundle::new(100, 0),
+            HealthBundle::new(50, 0),
             Inertia {
                 prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
                 damping: 0.0,                       // Damping factor for Verlet integration
             },
             AbilitySlot {
-                cooldown: Timer::from_seconds(0.5, TimerMode::Once),
+                cooldown: Timer::from_seconds(1.0/3.0, TimerMode::Once),
                 name: "Shotgun",
                 ability: mortar,
             },

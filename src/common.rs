@@ -9,14 +9,14 @@ use crate::player;
 use crate::state;
 use bevy::prelude::*;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct HealthPool {
     pub current_health: i32,
     pub max_health: i32,
     pub regen: i32,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Health {
     pub base_health: i32,
     pub base_regen: i32,
@@ -94,7 +94,7 @@ pub fn update_health_pool(query: Query<(&mut HealthPool, &Health, Option<&Modifi
     }
 }
 
-#[derive(Bundle)]
+#[derive(Bundle, Clone)]
 pub struct HealthBundle {
     health: Health,
     pool: HealthPool,
