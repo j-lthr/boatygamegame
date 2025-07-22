@@ -83,7 +83,7 @@ fn main() {
                 fx::blood::handle_particle_physics,
                 fx::blood::blood_particle_rendering,
                 fx::blood::cleanup_blood_particles,
-                //fx::blood::spawn_particles,
+                fx::blood::spawn_particles,
                 common::handle_damage_events,
                 common::handle_player_death,
                 common::emit_death_events,
