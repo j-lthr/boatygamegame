@@ -19,8 +19,11 @@ pub struct SpawnerTarget;
 
 impl FromWorld for SpawnerState {
     fn from_world(_world: &mut World) -> Self {
+        let mut timer = Timer::from_seconds(10.0, TimerMode::Repeating);
+        timer.set_elapsed(Duration::from_secs_f32(7.0));
+
         SpawnerState {
-            wave_timer: Timer::from_seconds(6.0, TimerMode::Repeating),
+            wave_timer: timer,
             wave_index: 0,
         }
     }
@@ -56,33 +59,39 @@ pub fn spawn(
 ) {
     state.wave_timer.tick(time.delta());
 
-    let enemy = fastrand::choice(enemy_registry.enemies()).unwrap();
+    
     
     if state.wave_timer.finished() {
         
-        if state.wave_index < 3 || state.wave_index == 32  {
-            let mut current_duration = state.wave_timer.duration().as_secs();
-            current_duration -= 1;
-            state.wave_timer.set_duration(Duration::from_secs(current_duration));
-        }
+        // if state.wave_index < 3 || state.wave_index == 32  {
+        //     let mut current_duration = state.wave_timer.duration().as_secs();
+        //     current_duration -= 1;
+        //     state.wave_timer.set_duration(Duration::from_secs(current_duration));
+        // }
 
-        for (target, target_transform) in target_query {
-            let spawn_pos = random_spawn_pos(target_transform.translation, 30.0, 10.0);
+        for _ in 1..3 {
 
-            let mut entity = commands.spawn((
-                Transform::from_translation(spawn_pos),
-                Faction::Enemy,
-                SpawnInfo {
-                    target
-                },
-                DespawnOnReset
-            ));
+            let enemy = fastrand::choice(enemy_registry.enemies()).unwrap();
 
-            enemy.add_to_entity(&mut entity);
+            for (target, target_transform) in target_query {
+                let spawn_pos = random_spawn_pos(target_transform.translation, 30.0, 10.0);
 
-            spawn_events.write(SpawnEvent {
-                entity: entity.id()
-            });
+                let mut entity = commands.spawn((
+                    Transform::from_translation(spawn_pos),
+                    Faction::Enemy,
+                    SpawnInfo {
+                        target
+                    },
+                    DespawnOnReset
+                ));
+
+                enemy.add_to_entity(&mut entity);
+
+                spawn_events.write(SpawnEvent {
+                    entity: entity.id()
+                });
+            }
+
         }
 
         state.wave_timer.reset();
