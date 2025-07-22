@@ -34,7 +34,7 @@ pub fn register_enemies(
 
     {
         let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(10.0, 1.0, 1.0),
+            emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
             ..Default::default()
         });
 
@@ -72,7 +72,7 @@ pub fn register_enemies(
 
     {
         let rusher_material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(5.0, 5.0, 1.0),
+            emissive: LinearRgba::rgb(70.0, 70.0, 1.0),
             ..Default::default()
         });
 
@@ -99,7 +99,7 @@ pub fn register_enemies(
 
     {
         let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(1.0, 1.0, 10.0),
+            emissive: LinearRgba::rgb(1.0, 1.0, 70.0),
             ..Default::default()
         });
 
@@ -121,8 +121,8 @@ pub fn register_enemies(
             (
                 Mesh3d(meshes.add(Sphere::new(1.0))),
                 MeshMaterial3d(material),
-                HealthBundle::new(100, 0),
-                SingleAbilityTimed::new(ability, 0.5),
+                HealthBundle::new(40, 5),
+                SingleAbilityTimed::new(ability, 0.1),
                 FollowTarget {
                     mode: FollowMovementMode::Ranged { preferred_distance: 30.0, rotation_speed: 0.0 },
                 },
@@ -138,9 +138,8 @@ pub fn register_enemies(
     }
 
     {
-        let color = LinearRgba::rgb(1.0, 10.0, 10.0);
         let material = materials.add(StandardMaterial {
-            emissive: color,
+            emissive: LinearRgba::rgb(1.0, 60.0, 55.0),
             ..Default::default()
         });
 
@@ -148,7 +147,7 @@ pub fn register_enemies(
             BlastBundle::new(
                 &mut meshes, 
                 &mut materials,
-                color.into(),
+                LinearRgba::rgb(1000.0, 1000.0, 1000.0).into(),
                 4.0,
                 100,
                 0.5

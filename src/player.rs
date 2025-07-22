@@ -92,7 +92,7 @@ pub fn spawn_player(
     ));
 
     let mortar = DynamicAbility::from_components((
-        SubCastOnce::new(mortar_projectile.clone(), 3).modified_by(PROJECTILE_COUNT_MODIFIER),
+        SubCastOnce::new(mortar_projectile.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
     
     // Player spawn point (invisible, camera will follow this)
