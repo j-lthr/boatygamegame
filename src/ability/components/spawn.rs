@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::ability::{CastInfo, components::subcast::SubCastInfo};
 use crate::utils::{normal_dist_1d, normal_dist_2d};
+use crate::enemy::spawn::{SpawnEnemyEvent, SpawnInfo};
 
 #[derive(Component, Clone)]
 pub struct SpawnAtCastPosition;
@@ -116,10 +117,19 @@ pub fn handle_radial_sub_cast_offset(
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 pub struct RandomSpawnOffset {
     pub position_stddev: f32,
     pub rotation_stddev: f32,
+}
+
+impl RandomSpawnOffset {
+    pub fn new(position_stddev: f32, rotation_stddev: f32) -> Self {
+        Self {
+            position_stddev,
+            rotation_stddev,
+        }
+    }
 }
 
 pub fn handle_random_spawn_offset(
@@ -130,23 +140,61 @@ pub fn handle_random_spawn_offset(
         &RandomSpawnOffset,
     )>,
 ) {
-    for (entity, mut transform, radial_offset) in query {
+    for (entity, mut transform, random_spawn_offset) in query {
 
 
-        let new_position = transform.translation + normal_dist_2d(Vec2::ZERO, radial_offset.position_stddev).xxy().with_y(0.0);
-        let new_rotation = Quat::from_axis_angle(Vec3::Y, normal_dist_1d(0.0,radial_offset.rotation_stddev));
+        let new_position = transform.translation + normal_dist_2d(Vec2::ZERO, random_spawn_offset.position_stddev).xxy().with_y(0.0);
+        let new_rotation = Quat::from_axis_angle(Vec3::Y, normal_dist_1d(0.0, random_spawn_offset.rotation_stddev));
 
-        transform.look_at(new_position, Vec3::Y);
         transform.translation = new_position;
+        transform.rotation *= new_rotation;
 
-        commands.entity(entity).remove::<RadialSubCastOffset>();
+        commands.entity(entity).remove::<RandomSpawnOffset>();
+    }
+}
+
+#[derive(Component, Clone)]
+pub struct SpawnEnemyAtCastPosition {
+    pub enemy_id: String,
+}
+
+impl SpawnEnemyAtCastPosition {
+    pub fn new(enemy_id: impl Into<String>) -> Self {
+        Self {
+            enemy_id: enemy_id.into(),
+        }
+    }
+}
+
+pub fn handle_spawn_enemy_at_cast_position(
+    mut commands: Commands,
+    mut spawn_events: EventWriter<SpawnEnemyEvent>,
+    query: Query<(Entity, &Transform, &CastInfo, &SpawnEnemyAtCastPosition)>,
+    spawn_info_query: Query<&SpawnInfo>,
+) {
+    for (entity, transform, cast_info, spawn_enemy) in query {
+        // Get the target from the original caster (summoner)
+        if let Ok(spawn_info) = spawn_info_query.get(cast_info.caster) {
+            spawn_events.write(SpawnEnemyEvent {
+                enemy_id: spawn_enemy.enemy_id.clone(),
+                position: transform.translation,
+                target: spawn_info.target,
+            });
+        }
+        
+        commands.entity(entity).despawn();
     }
 }
 
 pub fn plugin(app: &mut bevy::app::App) {
     app.add_systems(
         Update,
-        (handle_radial_sub_cast_offset, handle_spawn_at_cast_position).chain(),
+        (
+            handle_spawn_at_target_position, 
+            handle_radial_sub_cast_offset, 
+            handle_spawn_at_cast_position,
+            handle_spawn_enemy_at_cast_position,
+            handle_random_spawn_offset,
+        ).chain(),
     );
-    app.add_systems(Update, (handle_spawn_at_target_position));
 }

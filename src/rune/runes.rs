@@ -41,6 +41,11 @@ pub const COOLDOWN_RECOVERY_RATE_RUNE: ModifierRune = ModifierRune {
     color: Color::linear_rgb(45.0, 15.0, 45.0),
 };
 
+pub const PROJECTILE_SPEED_RUNE: ModifierRune = ModifierRune {
+    modifier: Modifier::additive(PROJECTILE_SPEED_MODIFIER, 0.2),
+    color: Color::linear_rgb(10.0, 15.0, 45.0),
+};
+
 pub const HOMING_RUNE: ModifierRune = ModifierRune {
     modifier: Modifier::flat_added(HOMING_STRENGTH_MODIFIER, 1.0),
     color: Color::linear_rgb(25.0, 40.0, 20.0),

@@ -7,7 +7,7 @@ use crate::ability::components::common::{Lifetime, LifetimeFromCursor};
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider, HomingMovement
 };
-use crate::ability::components::spawn::{RadialSubCastOffset, SpawnAtCastPosition, SpawnAtTargetPosition};
+use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset, SpawnAtCastPosition, SpawnAtTargetPosition};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
@@ -28,6 +28,7 @@ use bevy::core_pipeline::post_process::ChromaticAberration;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 
 use crate::ability::AbilitySlot;
+use crate::ability::components::visual::LifetimeFadeout;
 use crate::common::Faction;
 use crate::enemy::spawn::SpawnerTarget;
 
@@ -65,18 +66,19 @@ pub fn spawn_player(
         BlastBundle::new(
             &mut meshes,
             &mut materials,
-            Color::srgb(120.0, 120.0, 100.0),
-            2.0,
-            10,
+            Color::srgb(30.0, 30.0, 30.0),
             0.5,
+            10,
+            0.1,
         ),
         DespawnOnReset,
     ));
 
     let mortar_projectile = DynamicAbility::from_components((
         LinearMovement { base_speed: 50.0 },
-        //HomingMovement {base_turn_speed: 10.0},
-        Lifetime::fixed(1.0),
+        HomingMovement {base_turn_speed: 0.0},
+        Lifetime::fixed(0.5),
+        LifetimeFadeout::new(0.1),
         //LifetimeFromCursor,
         SimpleCollider {
             radius: 1.0,
@@ -85,14 +87,15 @@ pub fn spawn_player(
         DamageOnCollision {
             base_damage: 10.0,
         },
-        RadialSubCastOffset::from_degrees_per_cast(0.001, 5.0),
-        Mesh3d(meshes.add(Sphere::new(0.25))),
+        RadialSubCastOffset::from_degrees_per_cast(0.001, 10.0),
+        RandomSpawnOffset::new(0.0, 0.05),
+        Mesh3d(meshes.add(Sphere::new(0.1))),
         MeshMaterial3d(bullet_mat.clone()),
-        CastOnDespawn::new(mortar_blast, 1)
+        //CastOnDespawn::new(mortar_blast, 1)
     ));
 
     let mortar = DynamicAbility::from_components((
-        SubCastOnce::new(mortar_projectile.clone(), 1).modified_by(PROJECTILE_COUNT_MODIFIER),
+        SubCastOnce::new(mortar_projectile.clone(), 4).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
     
     // Player spawn point (invisible, camera will follow this)
@@ -116,7 +119,7 @@ pub fn spawn_player(
                 damping: 0.0,                       // Damping factor for Verlet integration
             },
             AbilitySlot {
-                cooldown: Timer::from_seconds(0.7, TimerMode::Once),
+                cooldown: Timer::from_seconds(0.8, TimerMode::Once),
                 name: "Shotgun",
                 ability: mortar,
             },

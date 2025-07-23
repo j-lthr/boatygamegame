@@ -9,6 +9,7 @@ pub use modifier_rune::*;
 pub use runes::*;
 
 use crate::{common::Inertia, init::DespawnOnReset};
+use crate::ability::components::spawn::RandomSpawnOffset;
 
 #[derive(Component)]
 pub struct Collector {
@@ -129,6 +130,7 @@ pub fn spawn_runes<T: Rune>(
                 prev_pos: spawn_event.position,
                 damping: 0.95,
             },
+            RandomSpawnOffset::new(1.0,0.0)
         ));
     }
 }

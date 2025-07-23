@@ -7,6 +7,13 @@ use crate::{
     common::Faction, event::SpawnEvent, utils::normal_dist_1d
 };
 
+#[derive(Event)]
+pub struct SpawnEnemyEvent {
+    pub enemy_id: String,
+    pub position: Vec3,
+    pub target: Entity,
+}
+
 use crate::enemy::registry::*;
 use crate::loot::DropScale;
 
@@ -128,8 +135,38 @@ pub fn spawn(
     }
 }
 
+pub fn handle_spawn_enemy_events(
+    mut commands: Commands,
+    mut spawn_events: EventReader<SpawnEnemyEvent>,
+    enemy_registry: Res<EnemyRegistry>,
+    mut game_spawn_events: EventWriter<SpawnEvent>,
+) {
+    for event in spawn_events.read() {
+        if let Some(enemy) = enemy_registry.get(&event.enemy_id) {
+            let mut entity = commands.spawn((
+                Transform::from_translation(event.position),
+                Faction::Enemy,
+                SpawnInfo {
+                    target: event.target,
+                },
+                DropScale {
+                    scale: enemy.config().num_slots
+                },
+                DespawnOnReset
+            ));
+
+            enemy.add_to_entity(&mut entity);
+
+            game_spawn_events.write(SpawnEvent {
+                entity: entity.id()
+            });
+        }
+    }
+}
+
 pub fn plugin(app: &mut App) {
     app.init_resource::<SpawnerState>();
     app.init_resource::<EnemyRegistry>();
-    app.add_systems(Update, spawn);
+    app.add_event::<SpawnEnemyEvent>();
+    app.add_systems(Update, (spawn, handle_spawn_enemy_events));
 }

@@ -9,7 +9,7 @@ use crate::ability::components::common::Lifetime;
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider,
 };
-use crate::ability::components::spawn::RadialSubCastOffset;
+use crate::ability::components::spawn::{RadialSubCastOffset, SpawnEnemyAtCastPosition, RandomSpawnOffset};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
 use crate::common::HealthBundle;
 use crate::loot::DropTableBuilder;
@@ -28,7 +28,8 @@ pub fn register_enemies(
         .add_rune(2.5, MAX_HEALTH_RUNE)
         .add_rune(1.2, HEALTH_REGEN_RUNE)
         .add_rune(0.8, COOLDOWN_RECOVERY_RATE_RUNE)
-        //    .add_rune(0.6, HOMING_RUNE)
+        .add_rune(0.6, PROJECTILE_SPEED_RUNE)
+        .add_rune(0.6, HOMING_RUNE)
         .with_chance(0.3)
         .build();
 
@@ -145,7 +146,7 @@ pub fn register_enemies(
 
         let blast = DynamicAbility::from_components(
             BlastBundle::new(
-                &mut meshes, 
+                &mut meshes,
                 &mut materials,
                 LinearRgba::rgb(1000.0, 1000.0, 1000.0).into(),
                 4.0,
@@ -188,6 +189,74 @@ pub fn register_enemies(
 
 
         registry.register_enemy(star_blaster);
+    }
+
+    // Minion enemy - spawned by summoner
+    {
+        let minion_material = materials.add(StandardMaterial {
+            emissive: LinearRgba::rgb(20.0, 20.0, 80.0),
+            ..Default::default()
+        });
+
+        let minion = Enemy::from_components(
+            "minion",
+            (
+                Mesh3d(meshes.add(Sphere::new(0.3))),
+                MeshMaterial3d(minion_material),
+                HealthBundle::new(20, 0),
+                FollowTarget {
+                    mode: FollowMovementMode::ToMeleeRange,
+                },
+                FirstOrderMovement {
+                    speed: 12.0,
+                    jitter: 0.15,
+                },
+                ContactDamage::new(15, 1.5, 1.0).with_self_knockback(8.0),
+                Lifetime::fixed(20.0),
+                normal_drop_table.clone(),
+            ),
+        ).with_num_slots(1);
+
+        registry.register_enemy(minion);
+    }
+
+    // Summoner enemy
+    {
+        let summoner_material = materials.add(StandardMaterial {
+            emissive: LinearRgba::rgb(20.0, 20.0, 80.0),
+            ..Default::default()
+        });
+
+        let summoning_ability = DynamicAbility::from_components((
+            SubCastOnce::new(
+                DynamicAbility::from_components((
+                    SpawnEnemyAtCastPosition::new("minion"),
+                    RadialSubCastOffset::from_radius_360(2.0),
+                    RandomSpawnOffset::new(1.0, 0.5),
+                )),
+                3
+            ),
+        ));
+
+        let summoner = Enemy::from_components(
+            "summoner",
+            (
+                Mesh3d(meshes.add(Sphere::new(1.2))),
+                MeshMaterial3d(summoner_material),
+                HealthBundle::new(60, 2),
+                FollowTarget {
+                    mode: FollowMovementMode::Ranged { preferred_distance: 15.0, rotation_speed: 0.0 },
+                },
+                FirstOrderMovement {
+                    speed: 5.0,
+                    jitter: 0.1,
+                },
+                SingleAbilityTimed::new(summoning_ability, 3.0),
+                normal_drop_table.clone(),
+            ),
+        ).with_min_level(3).with_num_slots(3);
+
+        registry.register_enemy(summoner);
     }
 }
 

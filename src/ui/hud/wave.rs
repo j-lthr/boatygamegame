@@ -21,7 +21,7 @@ pub fn update_wave_number_display(
         let text = match spawner_state.wave_index {
             0 => localization.get_text("hud-wave-zero", None),
             i => {
-                wave_args.insert("number".to_string(), spawner_state.wave_index.into());
+                wave_args.insert("number".to_string(), i.into());
                 localization.get_text("hud-wave", Some(&wave_args))
             }
         };

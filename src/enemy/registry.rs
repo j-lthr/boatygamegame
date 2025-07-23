@@ -91,4 +91,8 @@ impl EnemyRegistry {
     pub fn enemies(&self) -> impl ExactSizeIterator<Item = &Enemy> {
         self.enemies.iter()
     }
+
+    pub fn get(&self, id: &str) -> Option<&Enemy> {
+        self.enemies.iter().find(|enemy| enemy.id.as_str() == id)
+    }
 }

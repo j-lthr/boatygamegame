@@ -6,6 +6,7 @@ pub mod spawn;
 pub mod common;
 pub mod blast;
 pub mod events;
+pub mod visual;
 
 pub fn plugin(app: &mut App) {
     app.add_plugins(
@@ -16,6 +17,7 @@ pub fn plugin(app: &mut App) {
             common::plugin,
             blast::plugin,
             events::plugin,
+            visual::plugin,
         )
     );
 }
