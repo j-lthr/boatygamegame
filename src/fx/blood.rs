@@ -103,7 +103,7 @@ pub fn spawn_particles(
             let color: Color = materials_.get(material.id()).unwrap().emissive.into();
             spawn_particles(
                 transform.translation,
-                living.max_health as usize * 4,
+                living.max_health as usize,
                 4.0,
                 Vec3::ZERO,
                 color,

@@ -29,18 +29,18 @@ pub fn register_enemies(
         .add_rune(1.2, HEALTH_REGEN_RUNE)
         .add_rune(0.8, COOLDOWN_RECOVERY_RATE_RUNE)
         //    .add_rune(0.6, HOMING_RUNE)
-        .with_chance(1.0)
+        .with_chance(0.3)
         .build();
 
     {
         let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(10.0, 1.0, 1.0),
+            emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
             ..Default::default()
         });
 
         let projectile = DynamicAbility::from_components((
             LinearMovement { base_speed: 30.0 },
-            Lifetime::fixed(10.0),
+            Lifetime::fixed(2.0),
             SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
@@ -72,7 +72,7 @@ pub fn register_enemies(
 
     {
         let rusher_material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(5.0, 5.0, 1.0),
+            emissive: LinearRgba::rgb(70.0, 70.0, 1.0),
             ..Default::default()
         });
 
@@ -99,13 +99,13 @@ pub fn register_enemies(
 
     {
         let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(1.0, 1.0, 10.0),
+            emissive: LinearRgba::rgb(1.0, 1.0, 70.0),
             ..Default::default()
         });
 
         let projectile = DynamicAbility::from_components((
             LinearMovement { base_speed: 30.0 },
-            Lifetime::fixed(10.0),
+            Lifetime::fixed(2.0),
             SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
@@ -121,8 +121,15 @@ pub fn register_enemies(
             (
                 Mesh3d(meshes.add(Sphere::new(1.0))),
                 MeshMaterial3d(material),
-                HealthBundle::new(100, 0),
-                SingleAbilityTimed::new(ability, 0.5),
+                HealthBundle::new(40, 5),
+                SingleAbilityTimed::new(ability, 0.1),
+                FollowTarget {
+                    mode: FollowMovementMode::Ranged { preferred_distance: 30.0, rotation_speed: 0.0 },
+                },
+                FirstOrderMovement {
+                    speed: 3.0,
+                    jitter: 0.0,
+                },
                 normal_drop_table.clone(),
             ),
         );
@@ -131,9 +138,8 @@ pub fn register_enemies(
     }
 
     {
-        let color = LinearRgba::rgb(1.0, 10.0, 10.0);
         let material = materials.add(StandardMaterial {
-            emissive: color,
+            emissive: LinearRgba::rgb(1.0, 60.0, 55.0),
             ..Default::default()
         });
 
@@ -141,7 +147,7 @@ pub fn register_enemies(
             BlastBundle::new(
                 &mut meshes, 
                 &mut materials,
-                color.into(),
+                LinearRgba::rgb(1000.0, 1000.0, 1000.0).into(),
                 4.0,
                 100,
                 0.5
@@ -162,8 +168,8 @@ pub fn register_enemies(
 
         let ability = DynamicAbility::from_components((SubCastOnce::new(projectile.clone(), 5),));
 
-        let spiral_blaster = Enemy::from_components(
-            "spiral-shooter",
+        let star_blaster = Enemy::from_components(
+            "star-blaster",
             (
                 Mesh3d(meshes.add(Sphere::new(1.0))),
                 MeshMaterial3d(material),
@@ -181,7 +187,7 @@ pub fn register_enemies(
         );
 
 
-        registry.register_enemy(spiral_blaster);
+        registry.register_enemy(star_blaster);
     }
 }
 

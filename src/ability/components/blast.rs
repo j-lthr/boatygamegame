@@ -91,10 +91,8 @@ impl BlastBundle {
         damage: i32,
         fade_duration: f32,
     ) -> Self {
-        let explosion_material = materials.add(StandardMaterial {
-            base_color: Color::srgba(1.0, 0.5, 0.0, 1.0), // Orange with transparency
+        let explosion_material = materials.add(StandardMaterial { // Orange with transparency
             emissive: color.into(),
-            alpha_mode: AlphaMode::Blend,
             ..default()
         });
 
@@ -145,7 +143,6 @@ pub fn handle_blast_visual(
         };
 
         let material = materials.get_mut(material.id()).unwrap();
-        material.base_color.set_alpha(1.0 - fade_progress);
 
         let emissive_rgb = LinearRgba::from(visual.emissive_color);
 

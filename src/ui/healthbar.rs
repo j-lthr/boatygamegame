@@ -28,7 +28,7 @@ pub fn spawn(
                 color: Color::srgb(1.0, 1.0, 1.0),
                 ..Default::default()
             })),
-            Mesh2d(mesh_server.add(Rectangle::from_size(Vec2::new(24.0, 4.0)))),
+            Mesh2d(mesh_server.add(Rectangle::from_size(Vec2::new(48.0, 8.0)))),
             Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::splat(0.5)),
             HealthBar {
                 entity: event.entity,
