@@ -27,6 +27,17 @@ pub struct DropTable {
     total_chance: f32,
 }
 
+#[derive(Component, Clone)]
+pub struct DropScale {
+    pub scale: i32
+}
+
+impl Default for DropScale {
+    fn default() -> Self {
+        Self { scale: 1 }
+    }
+}
+
 impl DropTable {
     pub fn drop_random(&self, mut commands: Commands, position: Vec3) {
 
@@ -106,17 +117,21 @@ impl DropTableBuilder {
 pub fn handle_drops(
     mut commands: Commands,
     mut death_events: EventReader<DeathEvent>,
-    query: Query<(&Transform, &DropTable)>,
+    query: Query<(&Transform, &DropTable, Option<&DropScale>)>,
 ) {
     for death_event in death_events.read() {
         let result = query.get(death_event.entity);
-        if let Ok((transform, drop_table)) = result {
+        if let Ok((transform, drop_table, drop_scale)) = result {
             let drop_position = transform.translation;
             info!(
                 "Received death event for entity {}, dropping loot.",
                 death_event.entity
             );
-            drop_table.drop_random(commands.reborrow(), drop_position);
+
+            let scale = drop_scale.unwrap_or(&Default::default()).scale;
+            for _ in 0..scale {
+                drop_table.drop_random(commands.reborrow(), drop_position);
+            }
         }
     }
 }

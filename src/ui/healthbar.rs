@@ -33,37 +33,43 @@ pub fn spawn(
             HealthBar {
                 entity: event.entity,
             },
+            Visibility::Hidden,
         ));
     }
 }
 
 pub fn update(
-    mut health_bar_query: Query<(&HealthBar, &mut Transform)>,
+    mut health_bar_query: Query<(&HealthBar, &mut Transform, &mut Visibility)>,
     living_query: Query<(&common::HealthPool, &GlobalTransform)>,
     camera_3d_query: Query<(&GlobalTransform, &Camera), With<Camera3d>>,
     camera_2d_query: Query<(&GlobalTransform, &Camera), With<Camera2d>>,
 ) {
-    for (health_bar, mut healthbar_transform) in &mut health_bar_query {
+    for (health_bar, mut healthbar_transform, mut vis) in &mut health_bar_query {
         if let Ok((health_pool, enemy_transform)) = living_query.get(health_bar.entity) {
             healthbar_transform.scale.x = health_pool.health_fraction().max(0.0);
 
-            if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
-                (camera_3d_query.single(), camera_2d_query.single())
-            {
-                let _ = camera_3d
-                    .world_to_viewport(
-                        camera_3d_transform,
-                        enemy_transform.translation() + Vec3::Z * 1.4,
-                    )
-                    .map(|viewport_position| {
-                        camera_2d
-                            .viewport_to_world_2d(camera_2d_transform, viewport_position)
-                            .map(|world_pos_2d| {
-                                // Update health bar position in 2D space
-                                healthbar_transform.translation =
-                                    Vec3::new(world_pos_2d.x, world_pos_2d.y, 0.0);
-                            })
-                    });
+            if health_pool.full() {
+                *vis = Visibility::Hidden;
+            } else {
+                *vis = Visibility::default();
+                if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
+                    (camera_3d_query.single(), camera_2d_query.single())
+                {
+                    let _ = camera_3d
+                        .world_to_viewport(
+                            camera_3d_transform,
+                            enemy_transform.translation() + Vec3::Z * 1.4,
+                        )
+                        .map(|viewport_position| {
+                            camera_2d
+                                .viewport_to_world_2d(camera_2d_transform, viewport_position)
+                                .map(|world_pos_2d| {
+                                    // Update health bar position in 2D space
+                                    healthbar_transform.translation =
+                                        Vec3::new(world_pos_2d.x, world_pos_2d.y, 0.0);
+                                })
+                        });
+                }
             }
         }
     }

@@ -27,7 +27,9 @@ game-over-restart-instructions = Press R to Restart | Press ESC to Quit
 # HUD Elements
 hud-score = Score: { $score }
 hud-combo = x{ $multiplier }
+hud-wave-zero = Hello Player
 hud-wave = Wave { $number }
+
 
 # Damage Numbers
 damage-number = -{ $damage }

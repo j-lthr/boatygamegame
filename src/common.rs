@@ -35,6 +35,10 @@ impl HealthPool {
     pub(crate) fn health_fraction(&self) -> f32 {
         self.current_health as f32 / self.max_health as f32
     }
+
+    pub fn full(&self) -> bool {
+        self.current_health == self.max_health
+    }
 }
 
 #[derive(Component, PartialEq, Eq)]

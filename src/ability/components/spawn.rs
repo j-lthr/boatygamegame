@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::ability::{CastInfo, components::subcast::SubCastInfo};
+use crate::utils::{normal_dist_1d, normal_dist_2d};
 
 #[derive(Component, Clone)]
 pub struct SpawnAtCastPosition;
@@ -108,7 +109,32 @@ pub fn handle_radial_sub_cast_offset(
 
         let new_position = transform.translation + offset;
 
-        info!("Looking at new position: {:?}", new_position);
+        transform.look_at(new_position, Vec3::Y);
+        transform.translation = new_position;
+
+        commands.entity(entity).remove::<RadialSubCastOffset>();
+    }
+}
+
+#[derive(Component)]
+pub struct RandomSpawnOffset {
+    pub position_stddev: f32,
+    pub rotation_stddev: f32,
+}
+
+pub fn handle_random_spawn_offset(
+    mut commands: Commands,
+    query: Query<(
+        Entity,
+        &mut Transform,
+        &RandomSpawnOffset,
+    )>,
+) {
+    for (entity, mut transform, radial_offset) in query {
+
+
+        let new_position = transform.translation + normal_dist_2d(Vec2::ZERO, radial_offset.position_stddev).xxy().with_y(0.0);
+        let new_rotation = Quat::from_axis_angle(Vec3::Y, normal_dist_1d(0.0,radial_offset.rotation_stddev));
 
         transform.look_at(new_position, Vec3::Y);
         transform.translation = new_position;

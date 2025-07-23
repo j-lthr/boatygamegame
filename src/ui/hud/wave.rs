@@ -17,8 +17,16 @@ pub fn update_wave_number_display(
 ) {
     if let Ok(mut wave_number_text) = wave_number_query.single_mut() {
         let mut wave_args = HashMap::new();
-        wave_args.insert("number".to_string(), spawner_state.wave_index.into());
-        wave_number_text.0 = localization.get_text("hud-wave", Some(&wave_args));
+
+        let text = match spawner_state.wave_index {
+            0 => localization.get_text("hud-wave-zero", None),
+            i => {
+                wave_args.insert("number".to_string(), spawner_state.wave_index.into());
+                localization.get_text("hud-wave", Some(&wave_args))
+            }
+        };
+
+        wave_number_text.0 = text;
     }
 }
 

@@ -65,7 +65,7 @@ pub fn spawn_player(
         BlastBundle::new(
             &mut meshes,
             &mut materials,
-            Color::srgb(10.0, 10.0, 10.0),
+            Color::srgb(120.0, 120.0, 100.0),
             2.0,
             10,
             0.5,
@@ -74,7 +74,7 @@ pub fn spawn_player(
     ));
 
     let mortar_projectile = DynamicAbility::from_components((
-        LinearMovement { base_speed: 100.0 },
+        LinearMovement { base_speed: 50.0 },
         //HomingMovement {base_turn_speed: 10.0},
         Lifetime::fixed(1.0),
         //LifetimeFromCursor,
@@ -85,7 +85,7 @@ pub fn spawn_player(
         DamageOnCollision {
             base_damage: 10.0,
         },
-        RadialSubCastOffset::from_degrees_per_cast(1.0, 5.0),
+        RadialSubCastOffset::from_degrees_per_cast(0.001, 5.0),
         Mesh3d(meshes.add(Sphere::new(0.25))),
         MeshMaterial3d(bullet_mat.clone()),
         CastOnDespawn::new(mortar_blast, 1)
@@ -98,7 +98,7 @@ pub fn spawn_player(
     // Player spawn point (invisible, camera will follow this)
     let player = commands
         .spawn((
-            Transform::from_xyz(0.0, 0.5, 0.0), // Eye level height
+            Transform::from_xyz(0.0, 0.0, 0.0), // Eye level height
             Player { base_speed: 10.0 },
             Mesh3d(meshes.add(Sphere::new(0.5))),
             MeshMaterial3d(materials.add(StandardMaterial {
@@ -110,13 +110,13 @@ pub fn spawn_player(
                 name: "Dash",
                 ability: Dash { range: 10.0 },
             },
-            HealthBundle::new(50, 0),
+            HealthBundle::new(50, 1),
             Inertia {
                 prev_pos: Vec3::new(0.0, 0.5, 0.0), // Initial previous position
                 damping: 0.0,                       // Damping factor for Verlet integration
             },
             AbilitySlot {
-                cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+                cooldown: Timer::from_seconds(0.7, TimerMode::Once),
                 name: "Shotgun",
                 ability: mortar,
             },

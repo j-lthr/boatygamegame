@@ -65,7 +65,7 @@ pub fn register_enemies(
                 SingleAbilityTimed::new(ability, 1.0),
                 normal_drop_table.clone(),
             ),
-        );
+        ).with_num_slots(2);
 
         registry.register_enemy(ranger);
     }
@@ -92,7 +92,7 @@ pub fn register_enemies(
                 ContactDamage::new(25, 2.0, 1.0).with_self_knockback(10.0),
                 normal_drop_table.clone(),
             ),
-        );
+        ).with_num_slots(1);;
 
         registry.register_enemy(rusher);
     }
@@ -132,7 +132,7 @@ pub fn register_enemies(
                 },
                 normal_drop_table.clone(),
             ),
-        );
+        ).with_min_level(5).with_num_slots(5);
 
         registry.register_enemy(spiral_shooter);
     }
@@ -184,7 +184,7 @@ pub fn register_enemies(
                 SingleAbilityTimed::new(ability, 2.0),
                 normal_drop_table.clone(),
             ),
-        );
+        ).with_min_level(5).with_num_slots(5);
 
 
         registry.register_enemy(star_blaster);
