@@ -84,10 +84,12 @@ pub struct RuneAssets<T: Rune> {
 
 pub fn setup_rune_assets<T: Rune>(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
 ) {
+    let mesh_handle = asset_server.load::<Mesh>("models/ico.obj");
+
     commands.insert_resource(RuneAssets {
-        mesh: meshes.add(Sphere::new(0.33)),
+        mesh: mesh_handle,
         _marker: PhantomData::<T>,
     });
 }
@@ -130,7 +132,7 @@ pub fn spawn_runes<T: Rune>(
                 prev_pos: spawn_event.position,
                 damping: 0.95,
             },
-            RandomSpawnOffset::new(1.0,0.0)
+            RandomSpawnOffset::new(0.05,0.0)
         ));
     }
 }

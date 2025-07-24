@@ -9,6 +9,7 @@ use bevy::audio::{AddAudioSource, AudioPlugin, SpatialScale, Volume};
 use avian3d::prelude::*;
 
 use bevy::window::WindowMode;
+use bevy_obj::ObjPlugin;
 
 mod ability;
 mod audio;
@@ -55,6 +56,7 @@ fn main() {
         )
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(LogDiagnosticsPlugin::default())
+        .add_plugins(ObjPlugin)
         .add_plugins((
             FrameTimeDiagnosticsPlugin::default(),
             player::plugin,
