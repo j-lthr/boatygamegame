@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::ability::{CastInfo, components::subcast::SubCastInfo};
+use crate::enemy::registry::Enemy;
 use crate::utils::{normal_dist_1d, normal_dist_2d};
 use crate::enemy::spawn::{SpawnEnemyEvent, SpawnInfo};
 
@@ -90,28 +91,19 @@ pub fn handle_radial_sub_cast_offset(
     )>,
 ) {
     for (entity, mut transform, radial_offset, subcast_info, cast_info) in query {
-        let direction = cast_info.target_position - transform.translation;
+
 
         let total_angle = match radial_offset.ty {
             RadialSubCastType::TotalAngle(a) => a,
             RadialSubCastType::AnglePerCast(a) => a * subcast_info.num_casts() as f32,
         };
 
-        let angle = direction.z.atan2(direction.x)
-            + ((subcast_info.index() as f32 - (subcast_info.num_casts() - 1) as f32 / 2.0)
+        let angle = ((subcast_info.index() as f32 - (subcast_info.num_casts() - 1) as f32 / 2.0)
                 / subcast_info.num_casts() as f32)
                 * total_angle;
 
-        let offset = Vec3::new(
-            radial_offset.radius * angle.cos(),
-            0.0,
-            radial_offset.radius * angle.sin(),
-        );
 
-        let new_position = transform.translation + offset;
-
-        transform.look_at(new_position, Vec3::Y);
-        transform.translation = new_position;
+        transform.rotation = Quat::from_rotation_y(angle) * transform.rotation;
 
         commands.entity(entity).remove::<RadialSubCastOffset>();
     }
@@ -155,13 +147,13 @@ pub fn handle_random_spawn_offset(
 
 #[derive(Component, Clone)]
 pub struct SpawnEnemyAtCastPosition {
-    pub enemy_id: String,
+    pub enemy: Enemy,
 }
 
 impl SpawnEnemyAtCastPosition {
-    pub fn new(enemy_id: impl Into<String>) -> Self {
+    pub fn new(enemy: Enemy) -> Self {
         Self {
-            enemy_id: enemy_id.into(),
+            enemy,
         }
     }
 }
@@ -176,7 +168,7 @@ pub fn handle_spawn_enemy_at_cast_position(
         // Get the target from the original caster (summoner)
         if let Ok(spawn_info) = spawn_info_query.get(cast_info.caster) {
             spawn_events.write(SpawnEnemyEvent {
-                enemy_id: spawn_enemy.enemy_id.clone(),
+                enemy: spawn_enemy.enemy.clone(),
                 position: transform.translation,
                 target: spawn_info.target,
             });

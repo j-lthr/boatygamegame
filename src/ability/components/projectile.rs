@@ -5,6 +5,7 @@ use bevy::prelude::*;
 
 use crate::ability::components::events::{OnActiveDespawn, OnCollision};
 use crate::ability::CastInfo;
+use crate::ability::components::common::DynamicTarget;
 use crate::common;
 use crate::common::Faction;
 use crate::event;
@@ -13,7 +14,7 @@ use crate::modifiers::*;
 
 // Component for linear movement
 #[derive(Component, Clone)]
-pub struct LinearMovement {
+pub struct MoveForward {
     pub base_speed: f32,
 }
 
@@ -33,15 +34,15 @@ pub struct DamageOnCollision {
 #[derive(Component, Clone)]
 pub struct DespawnOnCollision;
 
-// Component for homing movement - rotates toward target_position
+// Component for homing movement - needs DynamicTarget to work
 #[derive(Component, Clone)]
-pub struct HomingMovement {
+pub struct Homing {
     pub base_turn_speed: f32,
 }
 
-/// System to move entities with LinearMovement
-pub fn handle_linear_movement(
-    mut movement_query: Query<(&mut Transform, &LinearMovement, &CastInfo)>,
+/// System to move entities with MoveForward
+pub fn handle_forward_movement(
+    mut movement_query: Query<(&mut Transform, &MoveForward, &CastInfo)>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
@@ -54,22 +55,24 @@ pub fn handle_linear_movement(
 
 /// System to rotate entities with HomingMovement toward target_position
 pub fn handle_homing_movement(
-    mut homing_query: Query<(&mut Transform, &HomingMovement, &CastInfo)>,
+    transforms: Query<&Transform, Without<Homing>>,
+    mut homing_query: Query<(&mut Transform, &Homing, &CastInfo, &DynamicTarget)>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
-    for (mut transform, homing, cast_info) in &mut homing_query {
+    for (mut transform, homing, cast_info, target) in &mut homing_query {
         let turn_speed = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), HOMING_STRENGTH_MODIFIER, homing.base_turn_speed);
-        
-        // Calculate rotation needed
-        let target_rotation = Transform::from_translation(transform.translation)
-            .looking_at(cast_info.target_position, Vec3::Y)
-            .rotation;
-        
-        // Slerp toward target rotation
-        let max_rotation = turn_speed * time.delta_secs();
-        transform.rotation = transform.rotation.slerp(target_rotation, max_rotation);
-        
+
+        if let Some(target_pos) = target.target.and_then(|e| transforms.get(e).ok()).map(|t|t.translation) {
+            // Calculate rotation needed
+            let target_rotation = Transform::from_translation(transform.translation)
+                .looking_at(target_pos, Vec3::Y)
+                .rotation;
+
+            // Slerp toward target rotation
+            let max_rotation = turn_speed * time.delta_secs();
+            transform.rotation = transform.rotation.slerp(target_rotation, max_rotation);
+        }
     }
 }
 
@@ -111,7 +114,7 @@ pub fn handle_simple_collision(
 /// Observer system to handle collision damage
 pub fn handle_collision_damage(
     trigger: Trigger<OnCollision>,
-    damage_on_collision_query: Query<(&DamageOnCollision, &CastInfo, &Transform, &LinearMovement)>,
+    damage_on_collision_query: Query<(&DamageOnCollision, &CastInfo, &Transform, &MoveForward)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     modifiers: Query<&ModifierStack>,
     target_transforms: Query<&Transform, Without<DamageOnCollision>>,
@@ -152,7 +155,7 @@ pub fn plugin(app: &mut bevy::app::App) {
     app.add_systems(
         Update,
         (
-            handle_linear_movement,
+            handle_forward_movement,
             handle_homing_movement,
             handle_simple_collision,
         )

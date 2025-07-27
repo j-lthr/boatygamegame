@@ -125,7 +125,7 @@ pub fn handle_particle_physics(
         particle.lifetime += time.delta_secs();
 
         // Apply gravity
-        let gravity = Vec3::new(0.0, -9.81, 0.0);
+        let gravity = Vec3::new(0.0, 0.0, 0.0);
         particle.velocity += gravity * time.delta_secs();
 
         // Apply viscosity - blood gets thicker over time
@@ -144,7 +144,7 @@ pub fn handle_particle_physics(
         transform.translation += particle.velocity * time.delta_secs();
 
         // Enhanced collision detection and sticking
-        let ground_level = 0.02;
+        let ground_level = -10.0;
         if transform.translation.y <= ground_level {
             transform.translation.y = ground_level;
 

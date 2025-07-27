@@ -1,9 +1,10 @@
 use super::events::OnActiveDespawn;
 use bevy::prelude::*;
 
-use super::projectile::LinearMovement;
+use super::projectile::MoveForward;
 use crate::ability::CastInfo;
 use crate::ability::components::events::OnSpawn;
+use crate::common::Targetable;
 use crate::modifiers::*;
 
 #[derive(Component, Clone)]
@@ -155,7 +156,7 @@ pub struct LifetimeFromCursor;
 
 pub fn handle_lifetime_from_cursor(
     mut query: Query<
-        (&mut Lifetime, &CastInfo, &Transform, &LinearMovement),
+        (&mut Lifetime, &CastInfo, &Transform, &MoveForward),
         Added<LifetimeFromCursor>,
     >,
 ) -> Result {
@@ -169,6 +170,52 @@ pub fn handle_lifetime_from_cursor(
     Ok(())
 }
 
+#[derive(Component, Clone)]
+pub struct DynamicTarget {
+    pub target: Option<Entity>,
+}
+
+impl DynamicTarget {
+    pub fn new() -> Self {
+        Self { target: None }
+    }
+}
+
+#[derive(Component, Clone)]
+pub struct SelectNearestTargetOnSpawn {
+    max_distance: f32,
+}
+
+impl SelectNearestTargetOnSpawn {
+    pub fn new(max_distance: f32) -> Self {
+        Self { max_distance }
+    }
+}
+
+fn handle_select_nearest_target_on_spawn(
+    mut commands: Commands,
+    mut query: Query<(Entity, &Transform, &mut DynamicTarget, &CastInfo, &SelectNearestTargetOnSpawn)>,
+    targets: Query<(Entity, &Transform), (With<Targetable>, Without<SelectNearestTargetOnSpawn>)>,
+) {
+    for (entity, transform, mut dynamic_target, info, selector) in query.iter_mut() {
+        // Find nearest target
+        let mut nearest_entity = None;
+        let mut nearest_distance = f32::INFINITY;
+        
+        for (target_entity, target_transform) in targets.iter() {
+            let distance = info.target_position.distance(target_transform.translation);
+            if distance < selector.max_distance && distance < nearest_distance {
+                nearest_distance = distance;
+                nearest_entity = Some(target_entity);
+            }
+        }
+        
+        dynamic_target.target = nearest_entity;
+        commands.entity(entity).remove::<SelectNearestTargetOnSpawn>();
+    }
+}
+
+
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
@@ -176,6 +223,7 @@ pub fn plugin(app: &mut App) {
             handle_attach_to_caster,
             handle_lifetime,
             handle_lifetime_from_cursor,
+            handle_select_nearest_target_on_spawn,
         ),
     );
 }

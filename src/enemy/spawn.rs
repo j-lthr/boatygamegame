@@ -6,10 +6,11 @@ use crate::init::DespawnOnReset;
 use crate::{
     common::Faction, event::SpawnEvent, utils::normal_dist_1d
 };
+use crate::common::Targetable;
 
 #[derive(Event)]
 pub struct SpawnEnemyEvent {
-    pub enemy_id: String,
+    pub enemy: Enemy,
     pub position: Vec3,
     pub target: Entity,
 }
@@ -28,7 +29,7 @@ pub struct SpawnerTarget;
 
 impl FromWorld for SpawnerState {
     fn from_world(_world: &mut World) -> Self {
-        let mut timer = Timer::from_seconds(10.0, TimerMode::Repeating);
+        let mut timer = Timer::from_seconds(15.0, TimerMode::Repeating);
 
         SpawnerState {
             wave_timer: timer,
@@ -65,11 +66,11 @@ pub fn spawn(
     time: Res<Time>,
     target_query: Query<(Entity, &Transform), With<SpawnerTarget>>,
     enemy_query: Query<(), With<SpawnInfo>>,
-    mut spawn_events: EventWriter<SpawnEvent>,
+    mut spawn_events: EventWriter<SpawnEnemyEvent>,
 ) {
 
     let time_scale = if enemy_query.iter().len() == 0 {
-        10.0
+        5.0
     } else {
         1.0
     };
@@ -100,32 +101,20 @@ pub fn spawn(
                 level >= config.min_level && enemy_slots >= config.num_slots
             });
 
-
-
             let enemy = fastrand::choice(eligible_enemies.iter()).unwrap();
 
             enemy_slots -= enemy.config().num_slots;
 
             for (target, target_transform) in target_query {
-                let spawn_pos = random_spawn_pos(target_transform.translation, 30.0, 0.0);
+                let spawn_pos = random_spawn_pos(target_transform.translation, 50.0, 4.0);
 
-                let mut entity = commands.spawn((
-                    Transform::from_translation(spawn_pos),
-                    Faction::Enemy,
-                    SpawnInfo {
+                spawn_events.write(
+                    SpawnEnemyEvent {
+                        enemy: (*enemy).clone(),
+                        position: spawn_pos,
                         target,
-                    },
-                    DropScale {
-                        scale: enemy.config().num_slots
-                    },
-                    DespawnOnReset
-                ));
-
-                enemy.add_to_entity(&mut entity);
-
-                spawn_events.write(SpawnEvent {
-                    entity: entity.id()
-                });
+                    }
+                );
             }
 
         }
@@ -142,7 +131,8 @@ pub fn handle_spawn_enemy_events(
     mut game_spawn_events: EventWriter<SpawnEvent>,
 ) {
     for event in spawn_events.read() {
-        if let Some(enemy) = enemy_registry.get(&event.enemy_id) {
+        let enemy = &event.enemy;
+
             let mut entity = commands.spawn((
                 Transform::from_translation(event.position),
                 Faction::Enemy,
@@ -152,7 +142,8 @@ pub fn handle_spawn_enemy_events(
                 DropScale {
                     scale: enemy.config().num_slots
                 },
-                DespawnOnReset
+                DespawnOnReset,
+                Targetable
             ));
 
             enemy.add_to_entity(&mut entity);
@@ -161,7 +152,7 @@ pub fn handle_spawn_enemy_events(
                 entity: entity.id()
             });
         }
-    }
+
 }
 
 pub fn plugin(app: &mut App) {

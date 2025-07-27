@@ -3,16 +3,16 @@ use bevy::prelude::*;
 use super::components::*;
 use super::registry::*;
 use crate::ability::components::subcast::TimedSubCast;
-use crate::ability::DynamicAbility;
+use crate::ability::{CastConfig, DynamicAbility, SpawnLocation};
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::Lifetime;
-use crate::ability::components::projectile::{
-    DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider,
-};
+use crate::ability::components::projectile::{DamageOnCollision, DespawnOnCollision, Homing, MoveForward, SimpleCollider};
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnEnemyAtCastPosition, RandomSpawnOffset};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
+use crate::ability::components::visual::LifetimeFadeout;
 use crate::common::HealthBundle;
 use crate::loot::DropTableBuilder;
+use crate::modifiers::PROJECTILE_COUNT_MODIFIER;
 use crate::rune::*;
 
 pub fn register_enemies(
@@ -40,8 +40,9 @@ pub fn register_enemies(
         });
 
         let projectile = DynamicAbility::from_components((
-            LinearMovement { base_speed: 30.0 },
+            MoveForward { base_speed: 30.0 },
             Lifetime::fixed(2.0),
+            LifetimeFadeout::new(0.2),
             SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
@@ -57,7 +58,7 @@ pub fn register_enemies(
             (
                 Mesh3d(meshes.add(Sphere::new(1.0))),
                 MeshMaterial3d(material),
-                HealthBundle::new(30, 0),
+                HealthBundle::new(50, 0),
                 FollowTarget::ranged(10.0, 0.0),
                 FirstOrderMovement {
                     speed: 10.0,
@@ -82,7 +83,7 @@ pub fn register_enemies(
             (
                 Mesh3d(meshes.add(Sphere::new(0.5))),
                 MeshMaterial3d(rusher_material),
-                HealthBundle::new(50, 0),
+                HealthBundle::new(30, 0),
                 FollowTarget {
                     mode: FollowMovementMode::ToMeleeRange,
                 },
@@ -105,8 +106,9 @@ pub fn register_enemies(
         });
 
         let projectile = DynamicAbility::from_components((
-            LinearMovement { base_speed: 30.0 },
+            MoveForward { base_speed: 30.0 },
             Lifetime::fixed(2.0),
+            LifetimeFadeout::new(0.2),
             SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
@@ -156,7 +158,7 @@ pub fn register_enemies(
         );
 
         let projectile = DynamicAbility::from_components((
-            LinearMovement { base_speed: 50.0 },
+            MoveForward { base_speed: 50.0 },
             Lifetime::fixed(0.5),
             SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
@@ -203,25 +205,20 @@ pub fn register_enemies(
             (
                 Mesh3d(meshes.add(Sphere::new(0.3))),
                 MeshMaterial3d(minion_material),
-                HealthBundle::new(20, 0),
+                HealthBundle::new(10, 0),
                 FollowTarget {
                     mode: FollowMovementMode::ToMeleeRange,
                 },
                 FirstOrderMovement {
-                    speed: 12.0,
+                    speed: 20.0,
                     jitter: 0.15,
                 },
                 ContactDamage::new(15, 1.5, 1.0).with_self_knockback(8.0),
-                Lifetime::fixed(20.0),
-                normal_drop_table.clone(),
+                DespawnTimer::new(5.0),
             ),
         ).with_num_slots(1);
 
-        registry.register_enemy(minion);
-    }
 
-    // Summoner enemy
-    {
         let summoner_material = materials.add(StandardMaterial {
             emissive: LinearRgba::rgb(20.0, 20.0, 80.0),
             ..Default::default()
@@ -230,20 +227,20 @@ pub fn register_enemies(
         let summoning_ability = DynamicAbility::from_components((
             SubCastOnce::new(
                 DynamicAbility::from_components((
-                    SpawnEnemyAtCastPosition::new("minion"),
+                    SpawnEnemyAtCastPosition::new(minion),
                     RadialSubCastOffset::from_radius_360(2.0),
                     RandomSpawnOffset::new(1.0, 0.5),
                 )),
-                3
+                1
             ),
         ));
 
         let summoner = Enemy::from_components(
             "summoner",
             (
-                Mesh3d(meshes.add(Sphere::new(1.2))),
+                Mesh3d(meshes.add(Sphere::new(2.0))),
                 MeshMaterial3d(summoner_material),
-                HealthBundle::new(60, 2),
+                HealthBundle::new(100, 2),
                 FollowTarget {
                     mode: FollowMovementMode::Ranged { preferred_distance: 15.0, rotation_speed: 0.0 },
                 },
@@ -251,10 +248,87 @@ pub fn register_enemies(
                     speed: 5.0,
                     jitter: 0.1,
                 },
-                SingleAbilityTimed::new(summoning_ability, 3.0),
+                SingleAbilityTimed::new(summoning_ability, 0.75),
                 normal_drop_table.clone(),
             ),
-        ).with_min_level(3).with_num_slots(3);
+        ).with_min_level(7).with_num_slots(7);
+
+        {
+            let material = materials.add(StandardMaterial {
+                emissive: LinearRgba::rgb(100.0, 70.0, 40.0),
+                ..Default::default()
+            });
+
+            let projectile = DynamicAbility::from_components((
+                MoveForward { base_speed: 70.0 },
+                Lifetime::fixed(2.0),
+                SimpleCollider { radius: 1.0 },
+                DespawnOnCollision,
+                DamageOnCollision { base_damage: 40.0 },
+                RadialSubCastOffset::from_degrees_per_cast(1.0, 5.0),
+                Mesh3d(meshes.add(Sphere::new(0.25))),
+                MeshMaterial3d(material.clone()),
+            ));
+
+            let ability = DynamicAbility::from_components((SubCastOnce::new(projectile.clone(), 1),));
+
+            let spinner = Enemy::from_components(
+                "spinner",
+                (
+                    Mesh3d(meshes.add(Sphere::new(0.7))),
+                    MeshMaterial3d(material),
+                    HealthBundle::new(100, 0),
+                    FollowTarget::ranged(30.0, 30.0),
+                    FirstOrderMovement {
+                        speed: 20.0,
+                        jitter: 0.0,
+                    },
+                    SingleAbilityTimed::new(ability, 2.0),
+                    normal_drop_table.clone(),
+                ),
+            ).with_num_slots(4).with_min_level(10);
+
+            registry.register_enemy(spinner);
+        }
+
+        {
+            let material = materials.add(StandardMaterial {
+                emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
+                ..Default::default()
+            });
+
+            let projectile = DynamicAbility::from_components((
+                MoveForward { base_speed: 30.0 },
+                Lifetime::fixed(2.0),
+                LifetimeFadeout::new(0.2),
+                SimpleCollider { radius: 3.0 },
+                DespawnOnCollision,
+                DamageOnCollision { base_damage: 50.0 },
+                RandomSpawnOffset::new(0.0, 0.5),
+                Mesh3d(meshes.add(Sphere::new(3.0))),
+                MeshMaterial3d(material.clone()),
+            ));
+
+            let ability = DynamicAbility::from_components((SubCastOnce::new(projectile.clone(), 5),));
+
+            let ranger = Enemy::from_components(
+                "ranger-boss",
+                (
+                    Mesh3d(meshes.add(Sphere::new(10.0))),
+                    MeshMaterial3d(material),
+                    HealthBundle::new(700, 0),
+                    FollowTarget::ranged(30.0, 0.0),
+                    FirstOrderMovement {
+                        speed: 2.0,
+                        jitter: 0.1,
+                    },
+                    SingleAbilityTimed::new(ability, 0.2),
+                    normal_drop_table.clone(),
+                ),
+            ).with_num_slots(20);
+
+            registry.register_enemy(ranger);
+        }
 
         registry.register_enemy(summoner);
     }

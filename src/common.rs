@@ -120,6 +120,9 @@ impl HealthBundle {
     }
 }
 
+#[derive(Component, Clone)]
+pub struct Targetable;
+
 pub fn handle_inertia(mut player_query: Query<(&mut Transform, &mut Inertia)>) {
     for (mut transform, mut inertia) in &mut player_query {
         let last_timestep_movement = transform.translation - inertia.prev_pos;
@@ -217,19 +220,20 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Update, (update_health_pool, apply_regen));
 }
 
-pub trait BundleInjector {
+pub trait EntityModifier {
     fn add_to_entity(&self, entity: &mut EntityCommands);
 }
 
 #[derive(Clone, Debug)]
-pub struct BundleWrapper<B: Bundle + Clone>(pub B);
+pub struct BundleInjector<B: Bundle + Clone>(pub B);
 
-impl<B: Bundle + Clone> BundleInjector for BundleWrapper<B> {
+impl<B: Bundle + Clone> EntityModifier for BundleInjector<B> {
     fn add_to_entity(&self, entity: &mut EntityCommands) {
         entity.insert(self.0.clone());
     }
 }
 
-pub fn create_bundle_injector<B: Bundle + Clone>(b: B) -> Arc<dyn BundleInjector> {
-    Arc::new(BundleWrapper(b))
+pub fn create_bundle_injector<B: Bundle + Clone>(b: B) -> Arc<dyn EntityModifier> {
+    Arc::new(BundleInjector(b))
 }
+

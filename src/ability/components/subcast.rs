@@ -56,7 +56,8 @@ pub fn handle_sub_cast_once(
     mut commands: Commands,
     sub_casts: Query<(Entity, &SubCastOnce, &CastInfo)>,
     modifiers: Query<&ModifierStack>,
-) {
+    transforms: Query<&Transform>,
+) -> Result {
     for (entity, sub_cast_once, cast_info) in sub_casts.iter() {
         let num_casts = if let Some(modifier_id) = sub_cast_once.modified_by {
             apply_modifier_if_present(
@@ -68,11 +69,13 @@ pub fn handle_sub_cast_once(
             sub_cast_once.num_casts
         };
 
+        let transform = transforms.get(entity)?;
+
         for index in 0..num_casts {
             let mut entity = commands.spawn((
                 *cast_info,
                 SubCastInfo::new(index, num_casts),
-                Transform::from_translation(cast_info.cast_position),
+                Transform::from_translation(transform.translation).with_rotation(transform.rotation),
                 DespawnOnReset
             ));
             sub_cast_once.ability.components.add_to_entity(&mut entity);
@@ -80,6 +83,8 @@ pub fn handle_sub_cast_once(
 
         commands.entity(entity).despawn();
     }
+
+    Ok(())
 }
 
 #[derive(Component, Clone)]
@@ -173,10 +178,11 @@ impl CastOnDespawn {
 pub fn handle_cast_on_despawn(
     trigger: Trigger<OnActiveDespawn>,
     mut commands: Commands,
-    cast_on_despawn: Query<(&CastOnDespawn, &CastInfo, &Transform)>,
+    cast_on_despawn: Query<(Entity, &CastOnDespawn, &CastInfo, &Transform)>,
     modifiers: Query<&ModifierStack>,
-) {
-    if let Ok((cast_on_despawn, cast_info, transform)) = cast_on_despawn.get(trigger.target()) {
+    transforms: Query<&Transform>,
+) -> Result {
+    if let Ok((entity, cast_on_despawn, cast_info, transform)) = cast_on_despawn.get(trigger.target()) {
         let num_casts = if let Some(modifier_id) = cast_on_despawn.modified_by {
             apply_modifier_if_present(
                 modifiers.get(cast_info.caster).ok(),
@@ -192,18 +198,26 @@ pub fn handle_cast_on_despawn(
             ..*cast_info
         };
 
+        let transform = transforms.get(entity)?;
+
+
+
         for index in 0..num_casts {
-            let mut entity = commands.spawn((
+            let mut sub_entity = commands.spawn((
                 cast_info,
                 SubCastInfo::new(index, num_casts),
-                Transform::from_translation(cast_info.cast_position),
+                Transform::from_translation(transform.translation).with_rotation(transform.rotation),
+                DespawnOnReset
             ));
+
             cast_on_despawn
                 .ability
                 .components
-                .add_to_entity(&mut entity);
+                .add_to_entity(&mut sub_entity);
         }
     }
+
+    Ok(())
 }
 
 pub fn plugin(app: &mut bevy::app::App) {

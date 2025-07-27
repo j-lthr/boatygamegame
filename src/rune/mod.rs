@@ -142,6 +142,7 @@ fn handle_rune_animation(time: Res<Time>, query: Query<(&mut Transform, &RuneAni
         let s = f32::sin(animation.speed * time.elapsed_secs());
 
         transform.scale = Vec3::splat(1.0 + s * 0.4);
+        transform.rotation *= Quat::from_rotation_y(animation.speed * time.elapsed_secs());
         //transform.translation.x = 0.5 + s * 0.2;
     }
 }

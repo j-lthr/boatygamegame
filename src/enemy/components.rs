@@ -2,7 +2,7 @@ use std::f32;
 
 use avian3d::prelude::ShapeCaster;
 use bevy::{ecs::spawn, prelude::*};
-
+use bevy::reflect::TupleFieldIter;
 use crate::{ability::{CastDynamicAbility, DynamicAbility}, common::Faction, enemy::spawn::SpawnInfo, event::DamageEvent, utils::normal_dist_1d};
 
 #[derive(Clone)]
@@ -177,11 +177,35 @@ pub fn handle_contact_damage(
     }
 }
 
+#[derive(Component, Clone)]
+pub struct DespawnTimer {
+    pub timer: Timer,
+}
+
+impl DespawnTimer {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Once),
+        }
+    }
+}
+
+pub fn update_despawn_timer(mut commands: Commands, mut query: Query<(Entity, &mut DespawnTimer, &Transform)>, time: Res<Time>) {
+
+    for (entity, mut timer, transform) in &mut query.iter_mut() {
+        timer.timer.tick(time.delta());
+
+        if timer.timer.just_finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
 
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
-        (handle_follow_movement, handle_kinematic_move_events, single_ability_timed, handle_contact_damage),
+        (handle_follow_movement, handle_kinematic_move_events, single_ability_timed, handle_contact_damage, update_despawn_timer),
     );
     app.add_event::<MoveEvent>();
 }

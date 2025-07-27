@@ -2,9 +2,9 @@ use bevy::prelude::*;
 
 use std::sync::Arc;
 use std::time::Duration;
-
+use avian3d::prelude::LinearVelocity;
 use crate::{ability::components::events::OnSpawn, init::DespawnOnReset};
-use crate::common::{BundleInjector, BundleWrapper};
+use crate::common::{EntityModifier, BundleInjector};
 use crate::modifiers::*;
 
 pub mod common;
@@ -82,17 +82,18 @@ pub enum SpawnLocation {
 #[derive(Copy, Clone)]
 pub struct CastConfig {
     pub spawn_location: SpawnLocation,
+    pub inherit_velocity: bool,
 }
 
 impl Default for CastConfig {
     fn default() -> Self {
-        Self { spawn_location: SpawnLocation::Caster }
+        Self { spawn_location: SpawnLocation::Caster, inherit_velocity: true }
     }
 }
 
 #[derive(Clone)]
 pub struct DynamicAbility {
-    components: Arc<dyn BundleInjector + Send + Sync>,
+    components: Arc<dyn EntityModifier + Send + Sync>,
     config: CastConfig,
 }
 
@@ -100,7 +101,7 @@ impl DynamicAbility {
     pub fn from_components(bundle: impl Bundle + Clone) -> Self {
         Self {
             components: Arc::new(
-                BundleWrapper(bundle)
+                BundleInjector(bundle)
             ),
             config: Default::default()
         }
@@ -112,11 +113,25 @@ impl DynamicAbility {
     }
 }
 
+#[derive(Clone, Copy)]
+pub enum AbilityTarget {
+    Entity(Entity),
+    Position(Vec3),
+    None
+}
+
+#[derive(Clone, Copy, Component)]
+pub struct SubCast {
+    pub parent: Entity,
+    num_casts: i32,
+}
+
 #[derive(Event)]
 pub struct CastDynamicAbility {
     ability: DynamicAbility,
     caster: Entity,
-    target: Option<Entity>,
+    target: AbilityTarget,
+    sub_cast: Option<SubCast>,
 }
 
 impl CastDynamicAbility {
@@ -124,12 +139,26 @@ impl CastDynamicAbility {
         Self {
             ability,
             caster,
-            target: None
+            target: AbilityTarget::None,
+            sub_cast: None,
         }
     }
 
+    pub fn with_sub_cast(mut self, parent_ability: Entity, num_casts: i32) -> Self {
+        self.sub_cast = Some (SubCast {
+            parent: parent_ability,
+            num_casts,
+        });
+        self
+    }
+
     pub fn with_target_entity(mut self, target: Entity) -> Self {
-        self.target = Some(target);
+        self.target = AbilityTarget::Entity(target);
+        self
+    }
+
+    pub fn with_target_position(mut self, position: Vec3) -> Self {
+        self.target = AbilityTarget::Position(position);
         self
     }
 }
@@ -155,7 +184,7 @@ pub fn handle_dynamic_ability_casts(
         let config = event.ability.config;
 
         match config.spawn_location {
-            SpawnLocation::Caster => entity.insert(Transform::from_translation(event.params.cast_position)),
+            SpawnLocation::Caster => entity.insert(Transform::from_translation(event.params.cast_position).looking_at(event.params.target_position, Vec3::Y)),
             SpawnLocation::Target => entity.insert(Transform::from_translation(event.params.target_position)),
         };
 
@@ -167,16 +196,33 @@ pub fn handle_dynamic_ability_casts(
 pub fn event_handler_dynamic_ability_casts(
     mut cast_events: EventReader<CastDynamicAbility>,
     time: Res<Time>,
-    query: Query<&Transform>,
+    query: Query<(&Transform, Option<&LinearVelocity>)>,
     mut commands: Commands,
 ) -> Result<()> {
     for event in cast_events.read() {
 
+        let (caster_transform, caster_velocity) = query.get(event.caster)?;
+
+        let (target_position, target_entity) = match event.target {
+            AbilityTarget::Entity(target) => {
+                let (target_transform, target_velocity) = query.get(target)?;
+
+                (target_transform.translation, Some(target))
+            },
+            AbilityTarget::Position(pos) => {
+                (pos, None)
+            },
+            AbilityTarget::None => {
+                (caster_transform.translation, None)
+            }
+        };
+
+
         let cast_params = CastInfo {
             caster: event.caster,
-            cast_position: query.get(event.caster)?.translation,
-            target_position: query.get(event.target.ok_or("no target entity transform")?)?.translation,
-            target_entity: event.target,
+            cast_position: caster_transform.translation,
+            target_position,
+            target_entity,
             cast_time: time.elapsed_secs_f64(),
         };
 
@@ -185,9 +231,15 @@ pub fn event_handler_dynamic_ability_casts(
         let config = event.ability.config;
 
         match config.spawn_location {
-            SpawnLocation::Caster => entity.insert(Transform::from_translation(cast_params.cast_position)),
+            SpawnLocation::Caster => entity.insert(Transform::from_translation(cast_params.cast_position).looking_at(cast_params.target_position, Vec3::Y)),
             SpawnLocation::Target => entity.insert(Transform::from_translation(cast_params.target_position)),
         };
+
+        if config.inherit_velocity {
+            if let Some(caster_velocity) = caster_velocity {
+                entity.insert(caster_velocity.clone());
+            }
+        }
 
         event.ability.components.add_to_entity(&mut entity);
     }

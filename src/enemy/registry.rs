@@ -2,11 +2,11 @@ use super::components::*;
 use crate::ability::DynamicAbility;
 use crate::ability::components::common::Lifetime;
 use crate::ability::components::projectile::{
-    DamageOnCollision, DespawnOnCollision, LinearMovement, SimpleCollider,
+    DamageOnCollision, DespawnOnCollision, MoveForward, SimpleCollider,
 };
 use crate::ability::components::spawn::RadialSubCastOffset;
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
-use crate::common::{BundleInjector, BundleWrapper, HealthBundle};
+use crate::common::{EntityModifier, BundleInjector, HealthBundle};
 use crate::enemy::spawn::SpawnInfo;
 use crate::loot::DropTableBuilder;
 use avian3d::parry::partitioning::SimdBestFirstVisitor;
@@ -40,10 +40,11 @@ impl Default for EnemyConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct Enemy {
     id: EnemyID,
     config: EnemyConfig,
-    components: Arc<dyn BundleInjector + Send + Sync>,
+    components: Arc<dyn EntityModifier + Send + Sync>,
 }
 
 impl Enemy {
@@ -59,7 +60,7 @@ impl Enemy {
         Self {
             id: EnemyID(id),
             config: Default::default(),
-            components: Arc::new(BundleWrapper(bundle)),
+            components: Arc::new(BundleInjector(bundle)),
         }
     }
 

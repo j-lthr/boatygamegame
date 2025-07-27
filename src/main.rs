@@ -54,7 +54,7 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .add_plugins(PhysicsPlugins::default())
+        .add_plugins(PhysicsPlugins::default().with_length_unit(1.0))
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(ObjPlugin)
         .add_plugins((
@@ -71,6 +71,7 @@ fn main() {
             input::plugin,
             localization::plugin,
             common::plugin,
+            fx::plugin
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
