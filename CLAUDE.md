@@ -8,6 +8,12 @@ This is a Rust-based 3D action game built with the Bevy game engine. The game fe
 
 ## Development Commands
 
+### Comments by User
+- always use the release profile
+- avoid code duplication whenever possible
+- you're a professional game developer
+- prefer imports over fully qualified names (use `SubCastInfo::new()` instead of `components::subcast::SubCastInfo::new()`)
+
 ### Build and Run
 - `cargo run` - Build and run the game in development mode
 - `cargo build --release` - Build optimized release version
