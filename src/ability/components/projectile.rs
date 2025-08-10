@@ -4,7 +4,7 @@ use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::ability::components::events::{OnActiveDespawn, OnCollision};
-use crate::ability::CastInfo;
+use crate::ability::CastBy;
 use crate::ability::components::common::DynamicTarget;
 use crate::common;
 use crate::common::Faction;
@@ -42,12 +42,12 @@ pub struct Homing {
 
 /// System to move entities with MoveForward
 pub fn handle_forward_movement(
-    mut movement_query: Query<(&mut Transform, &MoveForward, &CastInfo)>,
+    mut movement_query: Query<(&mut Transform, &MoveForward, &CastBy)>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
-    for (mut transform, movement, cast_info) in &mut movement_query {
-        let speed = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), PROJECTILE_SPEED_MODIFIER, movement.base_speed);
+    for (mut transform, movement, cast_by) in &mut movement_query {
+        let speed = apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), PROJECTILE_SPEED_MODIFIER, movement.base_speed);
         let fwd = transform.forward();
         transform.translation += fwd * speed * time.delta_secs();
     }
@@ -56,12 +56,12 @@ pub fn handle_forward_movement(
 /// System to rotate entities with HomingMovement toward target_position
 pub fn handle_homing_movement(
     transforms: Query<&Transform, Without<Homing>>,
-    mut homing_query: Query<(&mut Transform, &Homing, &CastInfo, &DynamicTarget)>,
+    mut homing_query: Query<(&mut Transform, &Homing, &CastBy, &DynamicTarget)>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
     for (mut transform, homing, cast_info, target) in &mut homing_query {
-        let turn_speed = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), HOMING_STRENGTH_MODIFIER, homing.base_turn_speed);
+        let turn_speed = apply_modifier_if_present(modifiers.get(cast_info.entity).ok(), HOMING_STRENGTH_MODIFIER, homing.base_turn_speed);
 
         if let Some(target_pos) = target.target.and_then(|e| transforms.get(e).ok()).map(|t|t.translation) {
             // Calculate rotation needed
@@ -76,45 +76,10 @@ pub fn handle_homing_movement(
     }
 }
 
-/// System for collision detection with SimpleCollider
-pub fn handle_simple_collision(
-    mut commands: Commands,
-    collider_query: Query<(Entity, &Transform, &SimpleCollider, &CastInfo)>,
-    target_query: Query<(Entity, &Transform, &common::HealthPool), Without<SimpleCollider>>,
-    faction_query: Query<&Faction>,
-) {
-    for (collider_entity, collider_transform, collider, cast_info) in collider_query {
-        for (entity, target_transform, _living_opt) in &target_query {
-            // Skip self-damage
-            if entity == cast_info.caster {
-                continue;
-            }
-
-            if let (Ok(source_faction), Ok(target_faction)) = (
-                faction_query.get(cast_info.caster),
-                faction_query.get(entity),
-            ) {
-                if source_faction == target_faction {
-                    continue;
-                }
-            }
-
-            let distance = collider_transform
-                .translation
-                .distance(target_transform.translation);
-
-            if distance < collider.radius {
-                commands.entity(collider_entity).trigger(OnCollision { target: entity });
-                break;
-            }
-        }
-    }
-}
-
 /// Observer system to handle collision damage
 pub fn handle_collision_damage(
     trigger: Trigger<OnCollision>,
-    damage_on_collision_query: Query<(&DamageOnCollision, &CastInfo, &Transform, &MoveForward)>,
+    damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &MoveForward)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     modifiers: Query<&ModifierStack>,
     target_transforms: Query<&Transform, Without<DamageOnCollision>>,
@@ -125,13 +90,13 @@ pub fn handle_collision_damage(
     if let Ok((damage_component, cast_info, collider_transform, movement)) = damage_on_collision_query.get(collider_entity) {
         if let Ok(target_transform) = target_transforms.get(collision_event.target) {
             
-            damage_events.write(event::DamageEvent {
+            /*damage_events.write(event::DamageEvent {
                 target: collision_event.target,
                 source: Some(cast_info.caster),
                 damage: apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), DAMAGE_MODIFIER, damage_component.base_damage) as i32,
                 position: target_transform.translation,
                 impact_velocity: None,
-            });
+            });*/
         }
     }
 }
@@ -157,7 +122,6 @@ pub fn plugin(app: &mut bevy::app::App) {
         (
             handle_forward_movement,
             handle_homing_movement,
-            handle_simple_collision,
         )
     );
     app.add_observer(handle_collision_damage);

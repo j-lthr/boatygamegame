@@ -91,8 +91,7 @@ fn main() {
                 common::emit_death_events,
                 common::handle_npc_death,
                 common::handle_velocity_averaging,
-            )
-                .run_if(in_state(GameState::Playing)),
+            ).run_if(in_state(GameState::Playing)),
         )
         .add_systems(
             Update,

@@ -7,12 +7,13 @@ use crate::ability::components::common::{DynamicTarget, Lifetime, LifetimeFromCu
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, MoveForward, SimpleCollider, Homing
 };
-use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset, SpawnAtCastPosition, SpawnAtTargetPosition};
+use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset};
 use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
 use crate::ability::SpawnLocation;
-use crate::ability::{AttemptCastEvent, CastConfig, CastEvent, CastInfo, DynamicAbility};
+use crate::ability::{AttemptCastEvent, CastConfig, CastEvent, DynamicAbility};
+use crate::ability::slots::{AbilitySlots, AbilityKeymap, AbilityTargeting, SlottedAbility, SlotId};
 use crate::common::{Health, HealthBundle, HealthPool, Targetable};
 use crate::common::{Inertia, VelocityEWA};
 use crate::event::SpawnEvent;
@@ -27,7 +28,6 @@ use bevy::core_pipeline::motion_blur::MotionBlur;
 use bevy::core_pipeline::post_process::ChromaticAberration;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 
-use crate::ability::AbilitySlot;
 use crate::ability::components::visual::LifetimeFadeout;
 use crate::common::Faction;
 use crate::enemy::spawn::SpawnerTarget;
@@ -97,9 +97,26 @@ pub fn spawn_player(
         //CastOnDespawn::new(subcast_ability, 5)
     ));
 
-    let ability = DynamicAbility::from_components((
+    let projectile_ability = DynamicAbility::from_components((
         SubCastOnce::new(projectile, 1).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
+
+    // Create abilities for the slots
+    let abilities = vec![
+        SlottedAbility::new(
+            projectile_ability,
+            AbilityTargeting::NearestEnemyToCursor { max_range: 20.0 },
+            0.5, // 0.5 second cooldown
+        ),
+        SlottedAbility::new(
+            mortar_blast.clone(),
+            AbilityTargeting::Cursor,
+            2.0, // 2 second cooldown
+        ),
+    ];
+
+    // Create custom keymap
+    let keymap = AbilityKeymap::new();
 
     // Player spawn point (invisible, camera will follow this)
     let player = commands
@@ -111,18 +128,10 @@ pub fn spawn_player(
                 base_color: player_color,
                 ..default()
             })),
-            AbilitySlot {
-                cooldown: Timer::from_seconds(3.0, TimerMode::Once),
-                name: "Dash",
-                ability: Dash { range: 10.0 },
-            },
+            AbilitySlots::with_abilities(abilities),
+            keymap,
             HealthBundle::new(50, 1),
                     RigidBody::Kinematic,
-            AbilitySlot {
-                cooldown: Timer::from_seconds(0.5, TimerMode::Once),
-                name: "Shotgun",
-                ability,
-            },
             Collector {
                 collect_radius: 1.0,
                 magnet_radius: 25.0,
@@ -331,30 +340,18 @@ pub fn shoot_gun(
     mouse_input: Res<ButtonInput<MouseButton>>,
     player_query: Query<(Entity, &Transform), With<Player>>,
     cursor_query: Query<&Transform, With<Cursor>>,
-    mut shotgun_action: EventWriter<AttemptCastEvent<DynamicAbility>>,
     time: Res<Time>,
 ) {
     if let Ok((player, player_transform)) = player_query.single() {
         if mouse_input.pressed(MouseButton::Left) {
             if let Ok(cursor_transform) = cursor_query.single() {
-                shotgun_action.write(AttemptCastEvent {
-                    caster: player,
-                    params: CastInfo {
-                        caster: player,
-                        target_position: cursor_transform
-                            .translation
-                            .with_y(player_transform.translation.y),
-                        target_entity: None,
-                        cast_position: player_transform.translation,
-                        cast_time: time.elapsed_secs_f64(),
-                    },
-                });
+
             }
         }
     }
 }
 
-pub fn player_vfx(
+/*pub fn player_vfx(
     mut player_query: Query<(&mut Transform, &AbilitySlot<DynamicAbility>), With<Player>>,
     mut dash_cast_events: EventReader<CastEvent<Dash>>,
     time: Res<Time>,
@@ -373,10 +370,10 @@ pub fn player_vfx(
             }
         }
     }
-}
+}*/
 
 pub fn plugin(app: &mut App) {
     app.add_systems(GameInit, spawn_player);
     app.add_systems(Startup, spawn_camera);
-    app.add_systems(Update, player_vfx);
+   // app.add_systems(Update, player_vfx);
 }

@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-
-use crate::ability::CastInfo;
+use crate::ability::CastBy;
 use crate::common;
 use crate::event;
 use crate::modifiers::*;
@@ -13,23 +12,23 @@ pub struct BlastDamage {
 
 pub fn handle_blast_damage(
     mut commands: Commands,
-    mut explosion_query: Query<(Entity, &BlastDamage, &CastInfo, &Transform)>,
+    mut explosion_query: Query<(Entity, &BlastDamage, &CastBy, &Transform)>,
     target_query: Query<(Entity, &Transform, &common::HealthPool)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&common::Faction>,
     modifiers: Query<&ModifierStack>
 ) {
-    for (explosion_entity, blast, cast_info, explosion_transform) in explosion_query.iter_mut() {
+    for (explosion_entity, blast, cast_by, explosion_transform) in explosion_query.iter_mut() {
         // Apply area damage
         for (target_entity, target_transform, _living) in target_query.iter() {
             // Skip self-damage
-            if target_entity == cast_info.caster {
+            if target_entity == cast_by.entity {
                 continue;
             }
 
             // Check faction compatibility to prevent friendly fire
             if let (Ok(source_faction), Ok(target_faction)) = (
-                faction_query.get(cast_info.caster),
+                faction_query.get(cast_by.entity),
                 faction_query.get(target_entity),
             ) {
                 if source_faction == target_faction {
@@ -41,7 +40,7 @@ pub fn handle_blast_damage(
                 .translation
                 .distance(target_transform.translation);
 
-                let modifiers = modifiers.get(cast_info.caster).ok();
+                let modifiers = modifiers.get(cast_by.entity).ok();
 
             let radius = apply_modifier_if_present(modifiers, AOE_RADIUS_MODIFIER, blast.base_radius);
             let damage = apply_modifier_if_present(modifiers, DAMAGE_MODIFIER, blast.base_damage as f32) as i32;
@@ -54,7 +53,7 @@ pub fn handle_blast_damage(
                 // Emit damage event instead of directly modifying health
                 damage_events.write(event::DamageEvent {
                     target: target_entity,
-                    source: Some(cast_info.caster),
+                    source: Some(cast_by.entity),
                     damage: actual_damage,
                     position: target_transform.translation,
                     impact_velocity: None,
@@ -117,13 +116,13 @@ pub fn handle_blast_visual(
         &mut Transform,
         &mut BlastVisual,
         &mut MeshMaterial3d<StandardMaterial>,
-        &CastInfo
+        &CastBy
     )>,
     modifiers: Query<&ModifierStack>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
-    for (entity, mut transform, mut visual, material, cast_info) in explosion_visual_query.iter_mut() {
+    for (entity, mut transform, mut visual, material, cast_by) in explosion_visual_query.iter_mut() {
         visual.lifetime -= time.delta_secs();
 
         if visual.lifetime <= 0.0 {
@@ -154,7 +153,7 @@ pub fn handle_blast_visual(
             emissive_rgb.blue * (brightness),
         );
 
-        let max_scale = apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), AOE_RADIUS_MODIFIER, visual.max_scale);
+        let max_scale = apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), AOE_RADIUS_MODIFIER, visual.max_scale);
 
         transform.scale = Vec3::splat(scale_progress * max_scale);
 

@@ -1,45 +1,10 @@
 use bevy::prelude::*;
 
-use crate::ability::{CastInfo, components::subcast::SubCastInfo};
+use crate::ability::{components::subcast::SubCastInfo, CastBy};
 use crate::enemy::registry::Enemy;
 use crate::utils::{normal_dist_1d, normal_dist_2d};
 use crate::enemy::spawn::{SpawnEnemyEvent, SpawnInfo};
 
-#[derive(Component, Clone)]
-pub struct SpawnAtCastPosition;
-
-pub fn handle_spawn_at_cast_position(
-    mut commands: Commands,
-    query: Query<(Entity, &mut Transform, &CastInfo), With<SpawnAtCastPosition>>,
-) {
-    for (entity, mut transform, cast_info) in query {
-        transform.translation = cast_info.cast_position;
-        commands.entity(entity).remove::<SpawnAtCastPosition>();
-
-        info!(
-            "Spawned entity at cast position: {:?}",
-            transform.translation
-        );
-    }
-}
-
-#[derive(Component, Clone)]
-pub struct SpawnAtTargetPosition;
-
-pub fn handle_spawn_at_target_position(
-    mut commands: Commands,
-    query: Query<(Entity, &mut Transform, &CastInfo), With<SpawnAtTargetPosition>>,
-) {
-    for (entity, mut transform, cast_info) in query {
-        transform.translation = cast_info.target_position;
-        commands.entity(entity).remove::<SpawnAtTargetPosition>();
-
-        info!(
-            "Spawned entity at target position: {:?}",
-            transform.translation
-        );
-    }
-}
 
 #[derive(Clone)]
 pub enum RadialSubCastType {
@@ -87,10 +52,9 @@ pub fn handle_radial_sub_cast_offset(
         &mut Transform,
         &RadialSubCastOffset,
         &SubCastInfo,
-        &CastInfo,
     )>,
 ) {
-    for (entity, mut transform, radial_offset, subcast_info, cast_info) in query {
+    for (entity, mut transform, radial_offset, subcast_info) in query {
 
 
         let total_angle = match radial_offset.ty {
@@ -161,12 +125,12 @@ impl SpawnEnemyAtCastPosition {
 pub fn handle_spawn_enemy_at_cast_position(
     mut commands: Commands,
     mut spawn_events: EventWriter<SpawnEnemyEvent>,
-    query: Query<(Entity, &Transform, &CastInfo, &SpawnEnemyAtCastPosition)>,
+    query: Query<(Entity, &Transform, &CastBy, &SpawnEnemyAtCastPosition)>,
     spawn_info_query: Query<&SpawnInfo>,
 ) {
-    for (entity, transform, cast_info, spawn_enemy) in query {
+    for (entity, transform, cast_by, spawn_enemy) in query {
         // Get the target from the original caster (summoner)
-        if let Ok(spawn_info) = spawn_info_query.get(cast_info.caster) {
+        if let Ok(spawn_info) = spawn_info_query.get(cast_by.entity) {
             spawn_events.write(SpawnEnemyEvent {
                 enemy: spawn_enemy.enemy.clone(),
                 position: transform.translation,
@@ -182,9 +146,7 @@ pub fn plugin(app: &mut bevy::app::App) {
     app.add_systems(
         Update,
         (
-            handle_spawn_at_target_position, 
-            handle_radial_sub_cast_offset, 
-            handle_spawn_at_cast_position,
+            handle_radial_sub_cast_offset,
             handle_spawn_enemy_at_cast_position,
             handle_random_spawn_offset,
         ).chain(),

@@ -2,9 +2,9 @@ use super::events::OnActiveDespawn;
 use bevy::prelude::*;
 
 use super::projectile::MoveForward;
-use crate::ability::CastInfo;
+use crate::ability::{resolve_target, CastBy, IntendedTarget};
 use crate::ability::components::events::OnSpawn;
-use crate::common::Targetable;
+use crate::common::{Faction, Targetable};
 use crate::modifiers::*;
 
 #[derive(Component, Clone)]
@@ -12,11 +12,11 @@ pub struct AttachToCaster;
 
 pub fn handle_attach_to_caster(
     caster_query: Query<&Transform, Without<AttachToCaster>>,
-    query: Query<(&mut Transform, &CastInfo), With<AttachToCaster>>,
+    query: Query<(&mut Transform, &CastBy), With<AttachToCaster>>,
 ) {
-    for (mut transform, cast_info) in query {
+    for (mut transform, cast_by) in query {
         transform.translation = caster_query
-            .get(cast_info.caster)
+            .get(cast_by.entity)
             .map(|caster_transform| caster_transform.translation)
             .unwrap_or(Vec3::ZERO);
     }
@@ -92,7 +92,7 @@ impl Lifetime {
         }
     }
 
-    pub fn set_dynamic_duration(&mut self, duration: f32) -> Result<(), &'static str> {
+    pub fn set_dynamic_duration(&mut self, duration: f32) -> Result {
         match self.phase {
             LifetimePhase::JustSpawned(LifetimeSource::Dynamic) => {
                 self.phase = LifetimePhase::Alive {
@@ -101,18 +101,18 @@ impl Lifetime {
                 };
                 Ok(())
             }
-            _ => Err("Can only set duration for dynamic lifetime sources"),
+            _ => Err("Can only set duration for dynamic lifetime sources".into()),
         }
     }
 }
 
 pub fn handle_lifetime(
     mut commands: Commands,
-    query: Query<(Entity, &mut Lifetime, &CastInfo)>,
+    query: Query<(Entity, &mut Lifetime, &CastBy)>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
-    for (entity, mut lifetime, cast_info) in query {
+    for (entity, mut lifetime, cast_by) in query {
         match &mut lifetime.phase {
             LifetimePhase::JustSpawned(lifetime_source) => {
                 if let LifetimeSource::Fixed {
@@ -122,7 +122,7 @@ pub fn handle_lifetime(
                 {
                     let duration = if let Some(modified_by) = modified_by {
                         apply_modifier_if_present(
-                            modifiers.get(cast_info.caster).ok(),
+                            modifiers.get(cast_by.entity).ok(),
                             *modified_by,
                             *base_duration,
                         )
@@ -156,14 +156,18 @@ pub struct LifetimeFromCursor;
 
 pub fn handle_lifetime_from_cursor(
     mut query: Query<
-        (&mut Lifetime, &CastInfo, &Transform, &MoveForward),
+        (&mut Lifetime, &IntendedTarget, &Transform, &MoveForward),
         Added<LifetimeFromCursor>,
     >,
+    mut transforms: Query<&Transform>,
 ) -> Result {
 
-    for (mut lifetime, cast_info, transform, linear_movement) in query.iter_mut() {
-        let distance = transform.translation.distance(cast_info.target_position);
+    for (mut lifetime, target, transform, linear_movement) in query.iter_mut() {
+
+        let position = resolve_target(transforms.transmute_lens(), *target)?.position;
+        let distance = transform.translation.distance(position);
         let duration = distance / linear_movement.base_speed;
+
         lifetime.set_dynamic_duration(duration)?;
     }
 
@@ -194,17 +198,20 @@ impl SelectNearestTargetOnSpawn {
 
 fn handle_select_nearest_target_on_spawn(
     mut commands: Commands,
-    mut query: Query<(Entity, &Transform, &mut DynamicTarget, &CastInfo, &SelectNearestTargetOnSpawn)>,
-    targets: Query<(Entity, &Transform), (With<Targetable>, Without<SelectNearestTargetOnSpawn>)>,
-) {
-    for (entity, transform, mut dynamic_target, info, selector) in query.iter_mut() {
+    mut query: Query<(Entity, &Transform, Option<&Faction>, &mut DynamicTarget, &IntendedTarget, &SelectNearestTargetOnSpawn)>,
+    targets: Query<(Entity, &Transform, Option<&Faction>), (With<Targetable>, Without<SelectNearestTargetOnSpawn>)>,
+    mut transforms: Query<&GlobalTransform>
+) -> Result {
+    for (entity, transform, faction, mut dynamic_target, intended_target, selector) in query.iter_mut() {
         // Find nearest target
         let mut nearest_entity = None;
         let mut nearest_distance = f32::INFINITY;
         
-        for (target_entity, target_transform) in targets.iter() {
-            let distance = info.target_position.distance(target_transform.translation);
-            if distance < selector.max_distance && distance < nearest_distance {
+        let target = resolve_target(transforms.transmute_lens(), *intended_target)?;
+        
+        for (target_entity, target_transform, target_faction) in targets.iter() {
+            let distance = target.position.distance(target_transform.translation);
+            if distance < selector.max_distance && distance < nearest_distance && (faction.is_none() || target_faction.is_none() || faction != target_faction) {
                 nearest_distance = distance;
                 nearest_entity = Some(target_entity);
             }
@@ -213,6 +220,8 @@ fn handle_select_nearest_target_on_spawn(
         dynamic_target.target = nearest_entity;
         commands.entity(entity).remove::<SelectNearestTargetOnSpawn>();
     }
+    
+    Ok(())
 }
 
 

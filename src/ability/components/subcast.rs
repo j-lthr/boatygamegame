@@ -1,14 +1,14 @@
+use bevy::prelude::*;
 use crate::ability::components::events::OnActiveDespawn;
 
 use super::common::Lifetime;
 use crate::{
-    ability::*,
+    ability::{CastBy, CastDynamicAbility, DynamicAbility, IntendedTarget},
+    init::DespawnOnReset,
     modifiers::{ModifierID, ModifierStack, apply_modifier_if_present},
 };
 
-pub trait CastMap: Send + Sync {
-    fn map_cast(&self, cast: &CastInfo) -> &dyn Iterator<Item = CastInfo>;
-}
+
 
 #[derive(Component)]
 pub struct SubCastInfo {
@@ -17,7 +17,7 @@ pub struct SubCastInfo {
 }
 
 impl SubCastInfo {
-    fn new(index: i32, num_casts: i32) -> Self {
+    pub fn new(index: i32, num_casts: i32) -> Self {
         Self { index, num_casts }
     }
 
@@ -54,14 +54,15 @@ impl SubCastOnce {
 
 pub fn handle_sub_cast_once(
     mut commands: Commands,
-    sub_casts: Query<(Entity, &SubCastOnce, &CastInfo)>,
+    sub_casts: Query<(Entity, &SubCastOnce, &CastBy)>,
     modifiers: Query<&ModifierStack>,
     transforms: Query<&Transform>,
+    mut cast_events: EventWriter<CastDynamicAbility>,
 ) -> Result {
-    for (entity, sub_cast_once, cast_info) in sub_casts.iter() {
+    for (entity, sub_cast_once, cast_by) in sub_casts.iter() {
         let num_casts = if let Some(modifier_id) = sub_cast_once.modified_by {
             apply_modifier_if_present(
-                modifiers.get(cast_info.caster).ok(),
+                modifiers.get(cast_by.entity).ok(),
                 modifier_id,
                 sub_cast_once.num_casts as f32,
             ) as i32
@@ -72,13 +73,11 @@ pub fn handle_sub_cast_once(
         let transform = transforms.get(entity)?;
 
         for index in 0..num_casts {
-            let mut entity = commands.spawn((
-                *cast_info,
-                SubCastInfo::new(index, num_casts),
-                Transform::from_translation(transform.translation).with_rotation(transform.rotation),
-                DespawnOnReset
-            ));
-            sub_cast_once.ability.components.add_to_entity(&mut entity);
+            cast_events.write(
+                CastDynamicAbility::at_caster(sub_cast_once.ability.clone(), cast_by.entity)
+                    .with_target_position(transform.translation)
+                    .with_sub_cast(entity, num_casts, index)
+            );
         }
 
         commands.entity(entity).despawn();
@@ -123,24 +122,19 @@ impl TimedSubCast {
 pub fn handle_timed_sub_cast(
     mut commands: Commands,
     time: Res<Time>,
-    mut sub_casts: Query<(Entity, &mut TimedSubCast, &CastInfo, &Transform)>,
+    mut sub_casts: Query<(Entity, &mut TimedSubCast, &CastBy, &Transform)>,
+    mut cast_events: EventWriter<CastDynamicAbility>,
 ) {
-    for (entity, mut timed_sub_cast, cast_info, transform) in sub_casts.iter_mut() {
+    for (entity, mut timed_sub_cast, cast_by, transform) in sub_casts.iter_mut() {
         timed_sub_cast.timer.tick(time.delta());
 
         if timed_sub_cast.timer.finished() {
-            let cast_info = CastInfo {
-                cast_position: transform.translation,
-                ..*cast_info
-            };
-
             for index in 0..timed_sub_cast.num_casts_per_interval {
-                let mut entity = commands.spawn((
-                    cast_info,
-                    SubCastInfo::new(index, timed_sub_cast.num_casts_per_interval),
-                    Transform::from_translation(cast_info.cast_position),
-                ));
-                timed_sub_cast.ability.components.add_to_entity(&mut entity);
+                cast_events.write(
+                    CastDynamicAbility::at_caster(timed_sub_cast.ability.clone(), cast_by.entity)
+                        .with_target_position(transform.translation)
+                        .with_sub_cast(entity, timed_sub_cast.num_casts_per_interval, index)
+                );
             }
 
             if timed_sub_cast.num_repeats > 0 {
@@ -178,14 +172,15 @@ impl CastOnDespawn {
 pub fn handle_cast_on_despawn(
     trigger: Trigger<OnActiveDespawn>,
     mut commands: Commands,
-    cast_on_despawn: Query<(Entity, &CastOnDespawn, &CastInfo, &Transform)>,
+    cast_on_despawn: Query<(Entity, &CastOnDespawn, &CastBy, &Transform)>,
     modifiers: Query<&ModifierStack>,
     transforms: Query<&Transform>,
+    mut cast_events: EventWriter<CastDynamicAbility>,
 ) -> Result {
-    if let Ok((entity, cast_on_despawn, cast_info, transform)) = cast_on_despawn.get(trigger.target()) {
+    if let Ok((entity, cast_on_despawn, cast_by, transform)) = cast_on_despawn.get(trigger.target()) {
         let num_casts = if let Some(modifier_id) = cast_on_despawn.modified_by {
             apply_modifier_if_present(
-                modifiers.get(cast_info.caster).ok(),
+                modifiers.get(cast_by.entity).ok(),
                 modifier_id,
                 cast_on_despawn.num_casts as f32,
             ) as i32
@@ -193,27 +188,14 @@ pub fn handle_cast_on_despawn(
             cast_on_despawn.num_casts
         };
 
-        let cast_info = CastInfo {
-            cast_position: transform.translation,
-            ..*cast_info
-        };
-
         let transform = transforms.get(entity)?;
 
-
-
         for index in 0..num_casts {
-            let mut sub_entity = commands.spawn((
-                cast_info,
-                SubCastInfo::new(index, num_casts),
-                Transform::from_translation(transform.translation).with_rotation(transform.rotation),
-                DespawnOnReset
-            ));
-
-            cast_on_despawn
-                .ability
-                .components
-                .add_to_entity(&mut sub_entity);
+            cast_events.write(
+                CastDynamicAbility::at_caster(cast_on_despawn.ability.clone(), cast_by.entity)
+                    .with_target_position(transform.translation)
+                    .with_sub_cast(entity, num_casts, index)
+            );
         }
     }
 

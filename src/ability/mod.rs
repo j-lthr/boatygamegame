@@ -3,7 +3,9 @@ use bevy::prelude::*;
 use std::sync::Arc;
 use std::time::Duration;
 use avian3d::prelude::LinearVelocity;
+use bevy::ecs::system::QueryLens;
 use crate::{ability::components::events::OnSpawn, init::DespawnOnReset};
+use crate::ability::components::subcast::SubCastInfo;
 use crate::common::{EntityModifier, BundleInjector};
 use crate::modifiers::*;
 
@@ -11,6 +13,7 @@ pub mod common;
 pub mod dash;
 pub mod missile_launcher;
 pub mod slam;
+pub mod slots;
 pub mod components;
 
 pub trait Ability: Clone + Send + Sync + 'static {
@@ -76,7 +79,7 @@ pub fn handle_cast_attempts<T: Ability>(
 
 #[derive(Copy, Clone)]
 pub enum SpawnLocation {
-    Caster,
+    Source,
     Target
 }
 #[derive(Copy, Clone)]
@@ -87,7 +90,7 @@ pub struct CastConfig {
 
 impl Default for CastConfig {
     fn default() -> Self {
-        Self { spawn_location: SpawnLocation::Caster, inherit_velocity: true }
+        Self { spawn_location: SpawnLocation::Source, inherit_velocity: true }
     }
 }
 
@@ -113,24 +116,59 @@ impl DynamicAbility {
     }
 }
 
-#[derive(Clone, Copy)]
-pub enum AbilityTarget {
+
+#[derive(Clone, Copy, Component)]
+pub struct CastBy {
+    pub entity: Entity,
+}
+
+#[derive(Clone, Copy, Component)]
+pub enum IntendedTarget {
     Entity(Entity),
     Position(Vec3),
     None
 }
 
+pub struct ResolvedTarget {
+    pub entity: Option<Entity>,
+    pub position: Vec3,
+}
+
+pub fn resolve_target(transforms: QueryLens<&GlobalTransform>, target: IntendedTarget) -> Result<ResolvedTarget> {
+
+
+
+    match target {
+        IntendedTarget::Entity(entity) => {
+            Ok(ResolvedTarget {
+                entity: Some(entity),
+                position: transforms.query_inner().get(entity)?.translation()
+            })
+        },
+
+        IntendedTarget::Position(position) => {
+            Ok(ResolvedTarget {
+                entity: None,
+                position
+            })
+        }
+        IntendedTarget::None => Err("no target specified".into()),
+    }
+}
+
+
 #[derive(Clone, Copy, Component)]
 pub struct SubCast {
-    pub parent: Entity,
+    parent: Entity,
     num_casts: i32,
+    cast_index: i32,
 }
 
 #[derive(Event)]
 pub struct CastDynamicAbility {
     ability: DynamicAbility,
     caster: Entity,
-    target: AbilityTarget,
+    target: IntendedTarget,
     sub_cast: Option<SubCast>,
 }
 
@@ -139,105 +177,81 @@ impl CastDynamicAbility {
         Self {
             ability,
             caster,
-            target: AbilityTarget::None,
+            target: IntendedTarget::None,
             sub_cast: None,
         }
     }
 
-    pub fn with_sub_cast(mut self, parent_ability: Entity, num_casts: i32) -> Self {
+    pub fn with_sub_cast(mut self, parent_ability: Entity, num_casts: i32, cast_index: i32) -> Self {
         self.sub_cast = Some (SubCast {
             parent: parent_ability,
             num_casts,
+            cast_index,
         });
         self
     }
 
     pub fn with_target_entity(mut self, target: Entity) -> Self {
-        self.target = AbilityTarget::Entity(target);
+        self.target = IntendedTarget::Entity(target);
         self
     }
 
     pub fn with_target_position(mut self, position: Vec3) -> Self {
-        self.target = AbilityTarget::Position(position);
+        self.target = IntendedTarget::Position(position);
         self
     }
 }
 
-
-
-#[derive(Copy, Clone, Component)]
-pub struct CastInfo {
-    pub caster: Entity,
-    pub cast_position: Vec3,
-    pub target_position: Vec3,
-    pub target_entity: Option<Entity>,
-    pub cast_time: f64,
-}
-
-pub fn handle_dynamic_ability_casts(
-    mut cast_events: EventReader<CastEvent<DynamicAbility>>,
-    mut commands: Commands,
-) {
-    for event in cast_events.read() {
-        let mut entity = commands.spawn((event.params, DespawnOnReset));
-
-        let config = event.ability.config;
-
-        match config.spawn_location {
-            SpawnLocation::Caster => entity.insert(Transform::from_translation(event.params.cast_position).looking_at(event.params.target_position, Vec3::Y)),
-            SpawnLocation::Target => entity.insert(Transform::from_translation(event.params.target_position)),
-        };
-
-        event.ability.components.add_to_entity(&mut entity);
-    }
-}
-
-
 pub fn event_handler_dynamic_ability_casts(
     mut cast_events: EventReader<CastDynamicAbility>,
-    time: Res<Time>,
     query: Query<(&Transform, Option<&LinearVelocity>)>,
     mut commands: Commands,
 ) -> Result<()> {
     for event in cast_events.read() {
 
-        let (caster_transform, caster_velocity) = query.get(event.caster)?;
+        let root_entity = if let Some(sub_cast) = event.sub_cast {
+            sub_cast.parent
+        } else {
+            event.caster
+        };
 
-        let (target_position, target_entity) = match event.target {
-            AbilityTarget::Entity(target) => {
-                let (target_transform, target_velocity) = query.get(target)?;
+        let (root_transform, root_velocity) = query.get(root_entity)?;
 
-                (target_transform.translation, Some(target))
+        let (target_position) = match event.target {
+            IntendedTarget::Entity(target) => {
+                let (target_transform, _) = query.get(target)?;
+
+                target_transform.translation
             },
-            AbilityTarget::Position(pos) => {
-                (pos, None)
+            IntendedTarget::Position(pos) => {
+                pos
             },
-            AbilityTarget::None => {
-                (caster_transform.translation, None)
+            IntendedTarget::None => {
+                root_transform.translation
             }
         };
 
+        let mut entity = commands.spawn((
+            event.target, 
+            DespawnOnReset,
+            CastBy { entity: event.caster }
+        ));
 
-        let cast_params = CastInfo {
-            caster: event.caster,
-            cast_position: caster_transform.translation,
-            target_position,
-            target_entity,
-            cast_time: time.elapsed_secs_f64(),
-        };
-
-        let mut entity = commands.spawn((cast_params, DespawnOnReset));
+        // Add SubCastInfo if this is a sub-cast
+        if let Some(sub_cast) = event.sub_cast {
+            entity.insert(SubCastInfo::new(sub_cast.cast_index, sub_cast.num_casts));
+        }
 
         let config = event.ability.config;
 
         match config.spawn_location {
-            SpawnLocation::Caster => entity.insert(Transform::from_translation(cast_params.cast_position).looking_at(cast_params.target_position, Vec3::Y)),
-            SpawnLocation::Target => entity.insert(Transform::from_translation(cast_params.target_position)),
+            SpawnLocation::Source => entity.insert(Transform::from_translation(root_transform.translation)),
+            SpawnLocation::Target => entity.insert(Transform::from_translation(target_position)),
         };
 
         if config.inherit_velocity {
-            if let Some(caster_velocity) = caster_velocity {
-                entity.insert(caster_velocity.clone());
+            if let Some(root_velocity) = root_velocity {
+                entity.insert(root_velocity.clone());
             }
         }
 
@@ -247,13 +261,6 @@ pub fn event_handler_dynamic_ability_casts(
     Ok(())
 }
 
-impl Ability for DynamicAbility {
-    type CastParams = CastInfo;
-
-    fn add_systems(app: &mut bevy::app::App) {
-        app.add_systems(Update, handle_dynamic_ability_casts);
-    }
-}
 
 fn register_ability<T: Ability>(app: &mut App) {
     app.add_event::<AttemptCastEvent<T>>();
@@ -265,10 +272,8 @@ fn register_ability<T: Ability>(app: &mut App) {
 pub fn plugin(app: &mut App) {
     app.add_plugins((
         register_ability::<dash::Dash>,
-        register_ability::<slam::Slam>,
-        register_ability::<missile_launcher::MissileLauncher>,
-        register_ability::<DynamicAbility>,
         components::plugin,
+        slots::plugin,
     ));
 
     app.add_event::<CastDynamicAbility>();
