@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use avian3d::prelude::LinearVelocity;
 use bevy::ecs::system::QueryLens;
-use crate::{ability::components::events::OnSpawn, init::DespawnOnReset};
+use crate::init::DespawnOnReset;
 use crate::ability::components::subcast::SubCastInfo;
 use crate::common::{EntityModifier, BundleInjector};
 use crate::modifiers::*;
@@ -217,7 +217,7 @@ pub fn event_handler_dynamic_ability_casts(
 
         let (root_transform, root_velocity) = query.get(root_entity)?;
 
-        let (target_position) = match event.target {
+        let target_position  = match event.target {
             IntendedTarget::Entity(target) => {
                 let (target_transform, _) = query.get(target)?;
 

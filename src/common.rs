@@ -1,6 +1,4 @@
-use std::f64::INFINITY;
 use std::sync::Arc;
-use std::time::Instant;
 
 use crate::event;
 use crate::event::DeathEvent;

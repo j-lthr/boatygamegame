@@ -1,4 +1,4 @@
-use std::{f32, time::Duration};
+use std::f32;
 
 use bevy::prelude::*;
 
@@ -29,7 +29,7 @@ pub struct SpawnerTarget;
 
 impl FromWorld for SpawnerState {
     fn from_world(_world: &mut World) -> Self {
-        let mut timer = Timer::from_seconds(15.0, TimerMode::Repeating);
+        let timer = Timer::from_seconds(15.0, TimerMode::Repeating);
 
         SpawnerState {
             wave_timer: timer,
@@ -60,7 +60,7 @@ pub fn random_spawn_pos(center: Vec3, radius_avg: f32, radius_std: f32) -> Vec3 
 }
 
 pub fn spawn(
-    mut commands: Commands,
+    _commands: Commands,
     mut state: ResMut<SpawnerState>,
     enemy_registry: Res<EnemyRegistry>,
     time: Res<Time>,
@@ -127,7 +127,7 @@ pub fn spawn(
 pub fn handle_spawn_enemy_events(
     mut commands: Commands,
     mut spawn_events: EventReader<SpawnEnemyEvent>,
-    enemy_registry: Res<EnemyRegistry>,
+    _enemy_registry: Res<EnemyRegistry>,
     mut game_spawn_events: EventWriter<SpawnEvent>,
 ) {
     for event in spawn_events.read() {

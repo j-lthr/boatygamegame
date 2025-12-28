@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use crate::ability::components::common::Lifetime;
-use crate::ability::components::visual::LifetimeFadeout;
 use crate::player::Player;
-use crate::ui::common::FadeAnimation;
 use crate::utils::{normal_dist_1d, normal_dist_2d};
 
 #[derive(Resource)]
@@ -80,7 +77,7 @@ pub fn handle_stars(mut commands: Commands, query: Query<(Entity, &mut Transform
             commands.entity(entity).despawn();
         }
 
-        let d2p = (player_transform.translation - transform.translation).with_y(0.0);
+        let _d2p = (player_transform.translation - transform.translation).with_y(0.0);
 
         //transform.translation += d2p.cross(Vec3::Y) * time.delta_secs() * d2p.length() * 0.002 * (0.1 * time.elapsed_secs()).sin();
     }

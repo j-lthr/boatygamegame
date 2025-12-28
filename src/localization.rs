@@ -1,9 +1,8 @@
 use bevy::prelude::*;
-use fluent::{FluentBundle, FluentResource};
 use fluent_templates::{static_loader, LanguageIdentifier, Loader};
 use std::collections::HashMap;
 use unic_langid::langid;
-use crate::modifiers::{Modifier, ModifierType, ModifierID};
+use crate::modifiers::{Modifier, ModifierType};
 
 const US_ENGLISH: LanguageIdentifier = langid!("en-US");
 const GERMAN: LanguageIdentifier = langid!("de-DE");

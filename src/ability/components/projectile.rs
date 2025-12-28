@@ -1,15 +1,10 @@
-use std::time::Duration;
 
-use bevy::audio::Volume;
 use bevy::prelude::*;
 
 use crate::ability::components::events::{OnActiveDespawn, OnCollision};
 use crate::ability::CastBy;
 use crate::ability::components::common::DynamicTarget;
-use crate::common;
-use crate::common::Faction;
 use crate::event;
-use crate::fx;
 use crate::modifiers::*;
 
 // Component for linear movement
@@ -80,15 +75,15 @@ pub fn handle_homing_movement(
 pub fn handle_collision_damage(
     trigger: Trigger<OnCollision>,
     damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &MoveForward)>,
-    mut damage_events: EventWriter<event::DamageEvent>,
-    modifiers: Query<&ModifierStack>,
+    _damage_events: EventWriter<event::DamageEvent>,
+    _modifiers: Query<&ModifierStack>,
     target_transforms: Query<&Transform, Without<DamageOnCollision>>,
 ) {
     let collider_entity = trigger.target();
     let collision_event = trigger.event();
     
-    if let Ok((damage_component, cast_info, collider_transform, movement)) = damage_on_collision_query.get(collider_entity) {
-        if let Ok(target_transform) = target_transforms.get(collision_event.target) {
+    if let Ok((_damage_component, _cast_info, _collider_transform, _movement)) = damage_on_collision_query.get(collider_entity) {
+        if let Ok(_target_transform) = target_transforms.get(collision_event.target) {
             
             /*damage_events.write(event::DamageEvent {
                 target: collision_event.target,

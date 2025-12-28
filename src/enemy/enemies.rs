@@ -3,16 +3,15 @@ use bevy::prelude::*;
 use super::components::*;
 use super::registry::*;
 use crate::ability::components::subcast::TimedSubCast;
-use crate::ability::{CastConfig, DynamicAbility, SpawnLocation};
+use crate::ability::DynamicAbility;
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::Lifetime;
-use crate::ability::components::projectile::{DamageOnCollision, DespawnOnCollision, Homing, MoveForward, SimpleCollider};
+use crate::ability::components::projectile::{DamageOnCollision, DespawnOnCollision, MoveForward, SimpleCollider};
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnEnemyAtCastPosition, RandomSpawnOffset};
-use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
+use crate::ability::components::subcast::SubCastOnce;
 use crate::ability::components::visual::LifetimeFadeout;
 use crate::common::HealthBundle;
 use crate::loot::DropTableBuilder;
-use crate::modifiers::PROJECTILE_COUNT_MODIFIER;
 use crate::rune::*;
 
 pub fn register_enemies(

@@ -3,19 +3,17 @@ use bevy::prelude::*;
 use std::f32;
 use avian3d::prelude::{LinearVelocity, RigidBody};
 use crate::ability::components::blast::BlastBundle;
-use crate::ability::components::common::{DynamicTarget, Lifetime, LifetimeFromCursor, SelectNearestTargetOnSpawn};
+use crate::ability::components::common::{DynamicTarget, Lifetime, SelectNearestTargetOnSpawn};
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, MoveForward, SimpleCollider, Homing
 };
 use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset};
-use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
+use crate::ability::components::subcast::SubCastOnce;
 use crate::ability::dash::Dash;
 use crate::ability::dash::DashParams;
-use crate::ability::SpawnLocation;
-use crate::ability::{AttemptCastEvent, CastConfig, CastEvent, DynamicAbility};
-use crate::ability::slots::{AbilitySlots, AbilityKeymap, AbilityTargeting, SlottedAbility, SlotId};
-use crate::common::{Health, HealthBundle, HealthPool, Targetable};
-use crate::common::{Inertia, VelocityEWA};
+use crate::ability::{AttemptCastEvent, DynamicAbility};
+use crate::ability::slots::{AbilitySlots, AbilityKeymap, AbilityTargeting, SlottedAbility};
+use crate::common::{HealthBundle, Targetable};
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
 use crate::init::GameInit;
@@ -214,13 +212,13 @@ pub fn handle_movement(
     mut player_query: Query<(Entity, &mut Transform, &mut LinearVelocity, &Player, Option<&ModifierStack>)>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    scroll_wheel: Res<AccumulatedMouseScroll>,
+    _scroll_wheel: Res<AccumulatedMouseScroll>,
     mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
-    time: Res<Time>,
+    _time: Res<Time>,
 ) {
     if let (
-        Ok((player_entity, mut player_transform, mut linear_velocity, player, modifier_stack)),
-        Ok((_camera_transform, mut camera)),
+        Ok((player_entity, _player_transform, mut linear_velocity, player, modifier_stack)),
+        Ok((_camera_transform, _camera)),
     ) = (player_query.single_mut(), camera_query.single_mut())
     {
         let mut velocity = Vec3::ZERO;
@@ -340,11 +338,11 @@ pub fn shoot_gun(
     mouse_input: Res<ButtonInput<MouseButton>>,
     player_query: Query<(Entity, &Transform), With<Player>>,
     cursor_query: Query<&Transform, With<Cursor>>,
-    time: Res<Time>,
+    _time: Res<Time>,
 ) {
-    if let Ok((player, player_transform)) = player_query.single() {
+    if let Ok((_player, _player_transform)) = player_query.single() {
         if mouse_input.pressed(MouseButton::Left) {
-            if let Ok(cursor_transform) = cursor_query.single() {
+            if let Ok(_cursor_transform) = cursor_query.single() {
 
             }
         }

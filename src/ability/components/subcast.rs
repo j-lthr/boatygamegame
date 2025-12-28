@@ -1,10 +1,8 @@
 use bevy::prelude::*;
 use crate::ability::components::events::OnActiveDespawn;
 
-use super::common::Lifetime;
 use crate::{
-    ability::{CastBy, CastDynamicAbility, DynamicAbility, IntendedTarget},
-    init::DespawnOnReset,
+    ability::{CastBy, CastDynamicAbility, DynamicAbility},
     modifiers::{ModifierID, ModifierStack, apply_modifier_if_present},
 };
 
@@ -171,13 +169,13 @@ impl CastOnDespawn {
 
 pub fn handle_cast_on_despawn(
     trigger: Trigger<OnActiveDespawn>,
-    mut commands: Commands,
+    _commands: Commands,
     cast_on_despawn: Query<(Entity, &CastOnDespawn, &CastBy, &Transform)>,
     modifiers: Query<&ModifierStack>,
     transforms: Query<&Transform>,
     mut cast_events: EventWriter<CastDynamicAbility>,
 ) -> Result {
-    if let Ok((entity, cast_on_despawn, cast_by, transform)) = cast_on_despawn.get(trigger.target()) {
+    if let Ok((entity, cast_on_despawn, cast_by, _transform)) = cast_on_despawn.get(trigger.target()) {
         let num_casts = if let Some(modifier_id) = cast_on_despawn.modified_by {
             apply_modifier_if_present(
                 modifiers.get(cast_by.entity).ok(),

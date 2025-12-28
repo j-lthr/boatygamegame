@@ -1,8 +1,6 @@
 use std::f32;
 
-use avian3d::prelude::ShapeCaster;
-use bevy::{ecs::spawn, prelude::*};
-use bevy::reflect::TupleFieldIter;
+use bevy::prelude::*;
 use crate::{ability::{CastDynamicAbility, DynamicAbility}, common::Faction, enemy::spawn::SpawnInfo, event::DamageEvent, utils::normal_dist_1d};
 
 #[derive(Clone, Debug)]
@@ -192,7 +190,7 @@ impl DespawnTimer {
 
 pub fn update_despawn_timer(mut commands: Commands, mut query: Query<(Entity, &mut DespawnTimer, &Transform)>, time: Res<Time>) {
 
-    for (entity, mut timer, transform) in &mut query.iter_mut() {
+    for (entity, mut timer, _transform) in &mut query.iter_mut() {
         timer.timer.tick(time.delta());
 
         if timer.timer.just_finished() {

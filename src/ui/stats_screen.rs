@@ -1,7 +1,6 @@
 use crate::localization::LocalizationResource;
 use crate::modifiers::ModifierStack;
 use crate::player::Player;
-use crate::state::GameState;
 use bevy::prelude::*;
 
 #[derive(Component)]

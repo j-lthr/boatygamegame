@@ -201,7 +201,7 @@ fn handle_select_nearest_target_on_spawn(
     targets: Query<(Entity, &Transform, Option<&Faction>), (With<Targetable>, Without<SelectNearestTargetOnSpawn>)>,
     mut transforms: Query<&GlobalTransform>
 ) -> Result {
-    for (entity, transform, faction, mut dynamic_target, intended_target, selector) in query.iter_mut() {
+    for (entity, _transform, faction, mut dynamic_target, intended_target, selector) in query.iter_mut() {
         // Find nearest target
         let mut nearest_entity = None;
         let mut nearest_distance = f32::INFINITY;
