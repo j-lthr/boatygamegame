@@ -93,7 +93,7 @@ pub fn register_enemies(
                 ContactDamage::new(25, 2.0, 1.0).with_self_knockback(10.0),
                 normal_drop_table.clone(),
             ),
-        ).with_num_slots(1);;
+        ).with_num_slots(1);
 
         registry.register_enemy(rusher);
     }

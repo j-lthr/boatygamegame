@@ -27,7 +27,7 @@ pub fn handle_stats_screen_visibility(
         (false, true) => {
             // Hide screen
             for entity in existing_screen.iter() {
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
             }
         }
         _ => {} // No change needed
