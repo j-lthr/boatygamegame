@@ -209,8 +209,15 @@ impl AbilityKeymap {
 /// Event for requesting ability cast from a slot
 #[derive(Event, Debug)]
 pub struct TriggerAbilitySlot {
-    pub caster: Entity,
     pub slot_id: SlotId,
+}
+
+impl TriggerAbilitySlot {
+    pub fn from_id(id: SlotId) -> Self {
+        Self {
+            slot_id: id,
+        }
+    }
 }
 
 /// System to update ability cooldowns
@@ -226,10 +233,10 @@ pub fn update_ability_cooldowns(mut ability_slots: Query<&mut AbilitySlots>, tim
 
 /// System to handle keyboard and mouse input for abilities
 pub fn handle_ability_input(
+    mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse: Res<ButtonInput<MouseButton>>,
     player_query: Query<(Entity, &AbilityKeymap), With<Player>>,
-    mut trigger_events: EventWriter<TriggerAbilitySlot>,
 ) {
     let Ok((player_entity, keymap)) = player_query.single() else {
         return;
@@ -239,20 +246,14 @@ pub fn handle_ability_input(
     // Handle keyboard inputs
     for key in keyboard.get_just_pressed() {
         if let Some(slot_id) = keymap.get_slot_for_key(key) {
-            trigger_events.write(TriggerAbilitySlot {
-                caster: player_entity,
-                slot_id,
-            });
+            commands.entity(player_entity).trigger(TriggerAbilitySlot::from_id(slot_id));
         }
     }
 
     // Handle mouse inputs
     for button in mouse.get_just_pressed() {
         if let Some(slot_id) = keymap.get_slot_for_mouse(button) {
-            trigger_events.write(TriggerAbilitySlot {
-                caster: player_entity,
-                slot_id,
-            });
+            commands.entity(player_entity).trigger(TriggerAbilitySlot::from_id(slot_id));
         }
     }
 }
@@ -300,7 +301,7 @@ pub fn handle_ability_slot_trigger(
 
     dbg!(&event);
 
-    let Ok(mut slots) = ability_slots.get_mut(event.caster) else {
+    let Ok(mut slots) = ability_slots.get_mut(trigger.target()) else {
         return;
     };
     let Some(slotted_ability) = slots.get_ability_mut(event.slot_id) else {
@@ -321,7 +322,7 @@ pub fn handle_ability_slot_trigger(
             if let Ok(cursor_transform) = cursor_query.single() {
                 let cursor_pos = cursor_transform.translation;
                 cast_events.write(
-                    CastDynamicAbility::at_caster(slotted_ability.ability.clone(), event.caster)
+                    CastDynamicAbility::at_caster(slotted_ability.ability.clone(), trigger.target())
                         .with_target_position(cursor_pos),
                 );
             }
@@ -333,7 +334,7 @@ pub fn handle_ability_slot_trigger(
                     cast_events.write(
                         CastDynamicAbility::at_caster(
                             slotted_ability.ability.clone(),
-                            event.caster,
+                            trigger.target(),
                         )
                         .with_target_entity(entity),
                     );
@@ -342,7 +343,7 @@ pub fn handle_ability_slot_trigger(
                     cast_events.write(
                         CastDynamicAbility::at_caster(
                             slotted_ability.ability.clone(),
-                            event.caster,
+                            trigger.target(),
                         )
                         .with_target_position(pos),
                     );
@@ -350,7 +351,7 @@ pub fn handle_ability_slot_trigger(
                 IntendedTarget::None => {
                     cast_events.write(CastDynamicAbility::at_caster(
                         slotted_ability.ability.clone(),
-                        event.caster,
+                        trigger.target(),
                     ));
                 }
             }
@@ -358,7 +359,7 @@ pub fn handle_ability_slot_trigger(
         AbilityTargeting::SelfCast => {
             cast_events.write(CastDynamicAbility::at_caster(
                 slotted_ability.ability.clone(),
-                event.caster,
+                trigger.target(),
             ));
         }
     };

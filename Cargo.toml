@@ -15,4 +15,4 @@ bevy_obj = "0.16.1"
 
 [dependencies.bevy]
 version = "0.16.0"
-features = ["mp3", "wav", "configurable_error_handler"]
+features = ["mp3", "wav", "configurable_error_handler", "track_location"]

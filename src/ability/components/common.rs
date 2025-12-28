@@ -3,7 +3,6 @@ use bevy::prelude::*;
 
 use super::projectile::MoveForward;
 use crate::ability::{resolve_target, CastBy, IntendedTarget};
-use crate::ability::components::events::OnSpawn;
 use crate::common::{Faction, Targetable};
 use crate::modifiers::*;
 
