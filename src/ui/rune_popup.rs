@@ -59,7 +59,7 @@ pub fn handle_rune_pickup_ui(
                 ..default()
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-            BorderColor(event.rune.color.into()),
+            BorderColor(event.rune.color),
             BorderRadius::all(Val::Px(8.0)),
             //MoveAnimation::new(Vec2::new(100.0, -30.0), start_pos), // Move right and slightly up
             FadeAnimation::fade_out(3.0), // Fade out over 3 seconds
@@ -108,15 +108,14 @@ pub fn compact_popups(
         let target_y = popup_manager.base_y + (slot_index as f32 * popup_manager.slot_height);
         
         // Smoothly move to new position if needed
-        if let Val::Px(current_y) = node.top {
-            if (current_y - target_y).abs() > 5.0 {
+        if let Val::Px(current_y) = node.top
+            && (current_y - target_y).abs() > 5.0 {
                 // Update the movement animation to head towards the new target
                 let current_pos = Vec2::new(50.0, current_y);
                 let target_pos = Vec2::new(50.0, target_y);
                 let direction = (target_pos - current_pos).normalize_or_zero();
                 move_anim.velocity = direction * 200.0; // Fast compacting movement
             }
-        }
     }
 }
 

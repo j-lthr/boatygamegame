@@ -126,8 +126,8 @@ pub fn update_missiles(
 
         if let MissileTarget::Entity(target_entity) = missile.target {
             // Switch from entity tracking to position lock when we've used up the lock_time_ratio
-            if let Ok(target_transform) = target_query.get(target_entity) {
-                if target_transform
+            if let Ok(target_transform) = target_query.get(target_entity)
+                && target_transform
                     .translation
                     .distance(missile_transform.translation)
                     < missile.lock_distance
@@ -135,7 +135,6 @@ pub fn update_missiles(
                     // Lock onto the current position of the target
                     missile.target = MissileTarget::Locked(target_transform.translation);
                 }
-            }
         }
 
         // Get target position
@@ -243,11 +242,10 @@ pub fn handle_explosions(
                 if let (Ok(source_faction), Ok(target_faction)) = (
                     faction_query.get(explosion.source),
                     faction_query.get(target_entity),
-                ) {
-                    if source_faction == target_faction {
+                )
+                    && source_faction == target_faction {
                         continue;
                     }
-                }
 
                 let distance = explosion.position.distance(target_transform.translation);
                 if distance <= explosion.radius {

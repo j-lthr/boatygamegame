@@ -38,11 +38,10 @@ pub fn collide(
             if let (Ok(source_faction), Ok(target_faction)) = (
                 faction_query.get(projectile.source),
                 faction_query.get(entity),
-            ) {
-                if source_faction == target_faction {
+            )
+                && source_faction == target_faction {
                     continue;
                 }
-            }
 
             let distance = projectile_transform
                 .translation

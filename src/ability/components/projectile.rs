@@ -82,8 +82,8 @@ pub fn handle_collision_damage(
     let collider_entity = trigger.target();
     let collision_event = trigger.event();
     
-    if let Ok((_damage_component, _cast_info, _collider_transform, _movement)) = damage_on_collision_query.get(collider_entity) {
-        if let Ok(_target_transform) = target_transforms.get(collision_event.target) {
+    if let Ok((_damage_component, _cast_info, _collider_transform, _movement)) = damage_on_collision_query.get(collider_entity)
+        && let Ok(_target_transform) = target_transforms.get(collision_event.target) {
             
             /*damage_events.write(event::DamageEvent {
                 target: collision_event.target,
@@ -93,7 +93,6 @@ pub fn handle_collision_damage(
                 impact_velocity: None,
             });*/
         }
-    }
 }
 
 /// Observer system to handle despawning on collision

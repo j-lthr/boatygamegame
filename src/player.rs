@@ -340,13 +340,11 @@ pub fn shoot_gun(
     cursor_query: Query<&Transform, With<Cursor>>,
     _time: Res<Time>,
 ) {
-    if let Ok((_player, _player_transform)) = player_query.single() {
-        if mouse_input.pressed(MouseButton::Left) {
-            if let Ok(_cursor_transform) = cursor_query.single() {
+    if let Ok((_player, _player_transform)) = player_query.single()
+        && mouse_input.pressed(MouseButton::Left)
+            && let Ok(_cursor_transform) = cursor_query.single() {
 
             }
-        }
-    }
 }
 
 /*pub fn player_vfx(

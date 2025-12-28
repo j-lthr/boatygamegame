@@ -135,14 +135,13 @@ pub fn animate_fade_effects(
         slam_effect.radius += 3.0 * time.delta_secs();
         transform.scale = Vec3::splat(slam_effect.radius / 2.0);
 
-        if let Ok(material_handle) = material_query.get(entity) {
-            if let Some(material) = materials.get_mut(&material_handle.0) {
+        if let Ok(material_handle) = material_query.get(entity)
+            && let Some(material) = materials.get_mut(&material_handle.0) {
                 material.base_color.set_alpha(slam_effect.alpha.max(0.0));
                 let emissive_intensity = slam_effect.alpha.max(0.0) * 5.0;
                 material.emissive =
                     Color::srgb(emissive_intensity, emissive_intensity * 0.3, 0.0).into();
             }
-        }
 
         if slam_effect.alpha <= 0.0 {
             commands.entity(entity).despawn();

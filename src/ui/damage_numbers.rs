@@ -85,18 +85,14 @@ pub fn update_damage_numbers(
         // Convert world position to screen position
         if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
             (camera_3d_query.single(), camera_2d_query.single())
-        {
-            if let Ok(viewport_position) =
+            && let Ok(viewport_position) =
                 camera_3d.world_to_viewport(camera_3d_transform, world_pos)
-            {
-                if let Ok(world_pos_2d) =
+                && let Ok(world_pos_2d) =
                     camera_2d.viewport_to_world_2d(camera_2d_transform, viewport_position)
                 {
                     transform.translation = Vec3::new(world_pos_2d.x, world_pos_2d.y, 0.0);
                     transform.scale = Vec3::splat(1.0 / (1.2 - progress))
                 }
-            }
-        }
     }
 }
 

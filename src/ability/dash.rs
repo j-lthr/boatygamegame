@@ -133,8 +133,8 @@ pub fn animate_dash_trails(
         // Fade out the trail
         let alpha = 1.0 - trail.progress;
 
-        if let Ok(material_handle) = material_query.get(entity) {
-            if let Some(material) = materials.get_mut(&material_handle.0) {
+        if let Ok(material_handle) = material_query.get(entity)
+            && let Some(material) = materials.get_mut(&material_handle.0) {
                 material.base_color.set_alpha(alpha);
                 let emissive_intensity = alpha * 0.5;
                 material.emissive = Color::srgb(
@@ -144,7 +144,6 @@ pub fn animate_dash_trails(
                 )
                 .into();
             }
-        }
 
         // Scale down the trail over time
         let scale = 1.0 - (trail.progress * 0.5);

@@ -249,11 +249,10 @@ pub fn event_handler_dynamic_ability_casts(
             SpawnLocation::Target => entity.insert(Transform::from_translation(target_position)),
         };
 
-        if config.inherit_velocity {
-            if let Some(root_velocity) = root_velocity {
-                entity.insert(root_velocity.clone());
+        if config.inherit_velocity
+            && let Some(root_velocity) = root_velocity {
+                entity.insert(*root_velocity);
             }
-        }
 
         event.ability.components.add_to_entity(&mut entity);
     }

@@ -44,7 +44,7 @@ impl Enemy {
         self.components.add_to_entity(entity);
     }
 
-    pub fn from_components(id: &'static str, bundle: impl Bundle + Clone + Send + std::fmt::Debug) -> Self {
+    pub fn from_components(id: &'static str, bundle: impl Bundle + Clone + std::fmt::Debug) -> Self {
         Self {
             id: EnemyID(id),
             config: Default::default(),

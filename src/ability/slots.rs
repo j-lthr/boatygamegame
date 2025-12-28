@@ -223,10 +223,8 @@ impl TriggerAbilitySlot {
 /// System to update ability cooldowns
 pub fn update_ability_cooldowns(mut ability_slots: Query<&mut AbilitySlots>, time: Res<Time>) {
     for mut slots in ability_slots.iter_mut() {
-        for slot in slots.slots.iter_mut() {
-            if let Some(ability) = slot {
-                ability.update_cooldown(time.delta());
-            }
+        for ability in slots.slots.iter_mut().flatten() {
+            ability.update_cooldown(time.delta());
         }
     }
 }

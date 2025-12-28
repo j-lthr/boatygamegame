@@ -157,9 +157,9 @@ pub fn handle_damage_events(
             // Check if entity died
             if living.current_health <= 0 {
                 // Check if this was an enemy (not player) and killed by player for scoring
-                if player_query.get(damage_event.target).is_err() {
-                    if let Some(source) = damage_event.source {
-                        if player_query.get(source).is_ok() {
+                if player_query.get(damage_event.target).is_err()
+                    && let Some(source) = damage_event.source
+                        && player_query.get(source).is_ok() {
                             // Player killed an enemy - update score!
                             score.kills += 1;
                             score.combo += 1;
@@ -171,8 +171,6 @@ pub fn handle_damage_events(
                             let points_earned = base_points + combo_bonus;
                             score.current += points_earned;
                         }
-                    }
-                }
             }
         }
     }

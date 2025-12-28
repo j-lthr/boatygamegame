@@ -30,11 +30,10 @@ pub fn handle_blast_damage(
             if let (Ok(source_faction), Ok(target_faction)) = (
                 faction_query.get(cast_by.entity),
                 faction_query.get(target_entity),
-            ) {
-                if source_faction == target_faction {
+            )
+                && source_faction == target_faction {
                     continue;
                 }
-            }
 
             let distance = explosion_transform
                 .translation

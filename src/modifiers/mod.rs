@@ -94,9 +94,7 @@ impl ModifierStack {
     }
 
     pub fn add_modifier(&mut self, stat: Modifier) {
-        if !self.stack.contains_key(&stat.id) {
-            self.stack.insert(stat.id, Default::default());
-        }
+        self.stack.entry(stat.id).or_insert_with(|| Default::default());
 
         let modifier = self.stack.get_mut(&stat.id).unwrap();
         match stat.typ {
