@@ -6,13 +6,13 @@ use crate::utils::{normal_dist_1d, normal_dist_2d};
 use crate::enemy::spawn::{SpawnEnemyEvent, SpawnInfo};
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum RadialSubCastType {
     TotalAngle(f32),
     AnglePerCast(f32),
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct RadialSubCastOffset {
     /// Radius from the center of the cast position
     pub radius: f32,
@@ -73,7 +73,7 @@ pub fn handle_radial_sub_cast_offset(
     }
 }
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Copy, Clone, Debug)]
 pub struct RandomSpawnOffset {
     pub position_stddev: f32,
     pub rotation_stddev: f32,
@@ -109,7 +109,7 @@ pub fn handle_random_spawn_offset(
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct SpawnEnemyAtCastPosition {
     pub enemy: Enemy,
 }

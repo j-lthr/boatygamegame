@@ -81,7 +81,7 @@ pub fn spawn_player(
         Lifetime::fixed(0.5),
         LifetimeFadeout::new(0.1),
         //LifetimeFromCursor,
-        SimpleCollider {
+        (SimpleCollider {
             radius: 1.0,
         },
         DespawnOnCollision,
@@ -91,7 +91,7 @@ pub fn spawn_player(
         DynamicTarget::new(),
         SelectNearestTargetOnSpawn::new(20.0),
         RadialSubCastOffset::from_degrees_per_cast(0.0, 10.0),
-        RandomSpawnOffset::new(0.0, 0.01),
+        RandomSpawnOffset::new(0.0, 0.01)),
         Mesh3d(meshes.add(Sphere::new(0.1))),
         MeshMaterial3d(bullet_mat.clone()),
         //CastOnDespawn::new(subcast_ability, 5)

@@ -9,14 +9,14 @@ use crate::player;
 use crate::state;
 use bevy::prelude::*;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct HealthPool {
     pub current_health: i32,
     pub max_health: i32,
     pub regen: i32,
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct Health {
     pub base_health: i32,
     pub base_regen: i32,
@@ -98,7 +98,7 @@ pub fn update_health_pool(query: Query<(&mut HealthPool, &Health, Option<&Modifi
     }
 }
 
-#[derive(Bundle, Clone)]
+#[derive(Bundle, Clone, Debug)]
 pub struct HealthBundle {
     health: Health,
     pool: HealthPool,
@@ -220,20 +220,20 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Update, (update_health_pool, apply_regen));
 }
 
-pub trait EntityModifier {
+pub trait EntityModifier : std::fmt::Debug {
     fn add_to_entity(&self, entity: &mut EntityCommands);
 }
 
 #[derive(Clone, Debug)]
-pub struct BundleInjector<B: Bundle + Clone>(pub B);
+pub struct BundleInjector<B: Bundle + Clone + std::fmt::Debug>(pub B);
 
-impl<B: Bundle + Clone> EntityModifier for BundleInjector<B> {
+impl<B: Bundle + Clone + std::fmt::Debug> EntityModifier for BundleInjector<B> {
     fn add_to_entity(&self, entity: &mut EntityCommands) {
         entity.insert(self.0.clone());
     }
 }
 
-pub fn create_bundle_injector<B: Bundle + Clone>(b: B) -> Arc<dyn EntityModifier> {
+pub fn create_bundle_injector<B: Bundle + Clone + std::fmt::Debug>(b: B) -> Arc<dyn EntityModifier> {
     Arc::new(BundleInjector(b))
 }
 

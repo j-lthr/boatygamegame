@@ -5,7 +5,7 @@ use bevy::{ecs::spawn, prelude::*};
 use bevy::reflect::TupleFieldIter;
 use crate::{ability::{CastDynamicAbility, DynamicAbility}, common::Faction, enemy::spawn::SpawnInfo, event::DamageEvent, utils::normal_dist_1d};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FollowMovementMode {
     ToMeleeRange,
     Ranged {
@@ -14,7 +14,7 @@ pub enum FollowMovementMode {
     },
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct FollowTarget {
     pub mode: FollowMovementMode,
 }
@@ -36,7 +36,7 @@ pub struct MoveEvent {
     entity: Entity,
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct FirstOrderMovement {
     pub speed: f32,
     pub jitter: f32,
@@ -93,7 +93,7 @@ pub fn handle_kinematic_move_events(
 }
 
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct SingleAbilityTimed {
     ability: DynamicAbility,
     timer: Timer, 
@@ -118,7 +118,7 @@ pub fn single_ability_timed(query: Query<(Entity, &mut SingleAbilityTimed, &Spaw
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct ContactDamage {
     pub damage: i32,
     pub radius: f32,
@@ -177,7 +177,7 @@ pub fn handle_contact_damage(
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct DespawnTimer {
     pub timer: Timer,
 }

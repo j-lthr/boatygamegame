@@ -77,12 +77,12 @@ pub fn handle_cast_attempts<T: Ability>(
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum SpawnLocation {
     Source,
     Target
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct CastConfig {
     pub spawn_location: SpawnLocation,
     pub inherit_velocity: bool,
@@ -94,14 +94,14 @@ impl Default for CastConfig {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DynamicAbility {
-    components: Arc<dyn EntityModifier + Send + Sync>,
+    components: Arc<dyn EntityModifier + Send + Sync >,
     config: CastConfig,
 }
 
 impl DynamicAbility {
-    pub fn from_components(bundle: impl Bundle + Clone) -> Self {
+    pub fn from_components(bundle: impl Bundle + Clone + std::fmt::Debug) -> Self {
         Self {
             components: Arc::new(
                 BundleInjector(bundle)

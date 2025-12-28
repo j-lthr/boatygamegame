@@ -13,29 +13,29 @@ use crate::fx;
 use crate::modifiers::*;
 
 // Component for linear movement
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct MoveForward {
     pub base_speed: f32,
 }
 
 // Component for simple collision detection
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct SimpleCollider {
     pub radius: f32,
 }
 
 // Component for damage on collision
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct DamageOnCollision {
     pub base_damage: f32,
 }
 
 // Component for despawning on collision
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct DespawnOnCollision;
 
 // Component for homing movement - needs DynamicTarget to work
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct Homing {
     pub base_turn_speed: f32,
 }

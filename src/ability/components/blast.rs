@@ -4,7 +4,7 @@ use crate::common;
 use crate::event;
 use crate::modifiers::*;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct BlastDamage {
     pub base_radius: f32,
     pub base_damage: i32,
@@ -65,7 +65,7 @@ pub fn handle_blast_damage(
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct BlastVisual {
     max_scale: f32,
     lifetime: f32,
@@ -73,7 +73,7 @@ pub struct BlastVisual {
     emissive_color: Color,
 }
 
-#[derive(Bundle, Clone)]
+#[derive(Bundle, Clone, Debug)]
 pub struct BlastBundle {
     mesh: Mesh3d,
     mesh_material: MeshMaterial3d<StandardMaterial>,

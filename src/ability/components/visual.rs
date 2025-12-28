@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use super::common::Lifetime;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct LifetimeFadeout {
     pub fade_duration: f32,
 }

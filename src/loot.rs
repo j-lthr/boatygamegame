@@ -8,6 +8,7 @@ use crate::{
     rune::{Rune, RuneSpawnEvent},
 };
 
+#[derive(Debug)]
 pub struct RuneDrop<T: Rune> {
     pub rune: T,
 }
@@ -21,13 +22,13 @@ impl<T: Rune> EventSource<Vec3> for RuneDrop<T> {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct DropTable {
     entries: Vec<(f32, Arc<dyn EventSource<Vec3>>)>,
     total_chance: f32,
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct DropScale {
     pub scale: i32
 }
@@ -84,6 +85,7 @@ impl DropTable {
     }
 }
 
+#[derive(Debug)]
 pub struct DropTableBuilder {
     weighted_items: Vec<(f32, Arc<dyn EventSource<Vec3>>)>,
     total_chance: f32,

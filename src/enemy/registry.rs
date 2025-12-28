@@ -14,7 +14,7 @@ use bevy::prelude::*;
 use crate::rune::*;
 use std::sync::Arc;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct EnemyID(&'static str);
 
 impl EnemyID {
@@ -23,7 +23,7 @@ impl EnemyID {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct EnemyConfig {
     pub min_level: i32,
     pub max_level: Option<i32>,
@@ -40,7 +40,7 @@ impl Default for EnemyConfig {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Enemy {
     id: EnemyID,
     config: EnemyConfig,
@@ -56,7 +56,7 @@ impl Enemy {
         self.components.add_to_entity(entity);
     }
 
-    pub fn from_components(id: &'static str, bundle: impl Bundle + Clone + Send) -> Self {
+    pub fn from_components(id: &'static str, bundle: impl Bundle + Clone + Send + std::fmt::Debug) -> Self {
         Self {
             id: EnemyID(id),
             config: Default::default(),

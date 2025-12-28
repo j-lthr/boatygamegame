@@ -22,7 +22,7 @@ pub fn handle_attach_to_caster(
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum LifetimeSource {
     Fixed {
         base_duration: f32,
@@ -31,14 +31,14 @@ pub enum LifetimeSource {
     Dynamic,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum LifetimePhase {
     JustSpawned(LifetimeSource),
     Alive { duration: f32, elapsed: f32 },
     JustDied,
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Debug)]
 pub struct Lifetime {
     phase: LifetimePhase,
 }
@@ -174,7 +174,7 @@ pub fn handle_lifetime_from_cursor(
     Ok(())
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct DynamicTarget {
     pub target: Option<Entity>,
 }
@@ -185,7 +185,7 @@ impl DynamicTarget {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct SelectNearestTargetOnSpawn {
     max_distance: f32,
 }

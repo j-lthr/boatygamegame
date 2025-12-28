@@ -30,7 +30,7 @@ impl SubCastInfo {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct SubCastOnce {
     pub ability: DynamicAbility,
     pub num_casts: i32,
@@ -86,7 +86,7 @@ pub fn handle_sub_cast_once(
     Ok(())
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct TimedSubCast {
     pub ability: DynamicAbility,
     pub num_casts_per_interval: i32,
