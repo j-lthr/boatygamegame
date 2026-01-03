@@ -15,7 +15,7 @@ use crate::input::Cursor;
 use crate::modifiers::*;
 use crate::rune::Collector;
 
-use avian3d::prelude::{Collider, LinearVelocity, RigidBody};
+use avian3d::prelude::{Collider, LinearVelocity, LockedAxes, RigidBody};
 use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
 use std::f32;
@@ -79,12 +79,13 @@ pub fn spawn_player(
         LifetimeFadeout::new(0.1),
         Collider::sphere(0.1),
         InitialVelocity::forward(50.0),
+        Homing {base_turn_speed: 1.0},
         //LifetimeFromCursor,
         (
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
             DynamicTarget::new(),
-            SelectNearestTargetOnSpawn::new(20.0),
+            SelectNearestTargetOnSpawn::new(3.0),
             RadialSubCastOffset::from_degrees_per_cast(0.0, 10.0),
             RandomSpawnOffset::new(0.0, 0.01),
         ),
@@ -143,6 +144,7 @@ pub fn spawn_player(
                 spawn_rate: 100.0,
             },
             Targetable,
+            LockedAxes::new().lock_translation_y(),
         ))
         .id();
 

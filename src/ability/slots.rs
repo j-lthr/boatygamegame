@@ -297,16 +297,12 @@ pub fn handle_ability_slot_trigger(
 ) {
     let event = trigger.event();
 
-    dbg!(&event);
-
     let Ok(mut slots) = ability_slots.get_mut(trigger.target()) else {
         return;
     };
     let Some(slotted_ability) = slots.get_ability_mut(event.slot_id) else {
         return;
     };
-
-    dbg!(&slotted_ability);
 
     // Check if ability is ready (not on cooldown)
     if !slotted_ability.is_ready() {

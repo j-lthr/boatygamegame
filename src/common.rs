@@ -39,7 +39,7 @@ impl HealthPool {
     }
 }
 
-#[derive(Component, PartialEq, Eq)]
+#[derive(Component, PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Faction {
     Friendly,
     Enemy,

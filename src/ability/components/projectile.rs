@@ -1,4 +1,4 @@
-use avian3d::prelude::LinearVelocity;
+use avian3d::prelude::{CollisionStarted, LinearVelocity, OnCollisionStart};
 use bevy::prelude::*;
 
 use crate::ability::CastBy;
@@ -22,7 +22,6 @@ impl InitialVelocity {
         }
     }
 }
-
 
 // Component for damage on collision
 #[derive(Component, Clone, Debug)]
@@ -64,11 +63,11 @@ pub fn handle_forward_movement(
 /// System to rotate entities with HomingMovement toward target_position
 pub fn handle_homing_movement(
     transforms: Query<&Transform, Without<Homing>>,
-    mut homing_query: Query<(&mut Transform, &Homing, &CastBy, &DynamicTarget)>,
+    mut homing_query: Query<(&mut Transform, &Homing, &CastBy, &DynamicTarget, &mut LinearVelocity)>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
-    for (mut transform, homing, cast_info, target) in &mut homing_query {
+    for (mut transform, homing, cast_info, target, mut velocity) in &mut homing_query {
         let turn_speed = apply_modifier_if_present(
             modifiers.get(cast_info.entity).ok(),
             HOMING_STRENGTH_MODIFIER,
@@ -81,40 +80,44 @@ pub fn handle_homing_movement(
             .map(|t| t.translation)
         {
             // Calculate rotation needed
-            let target_rotation = Transform::from_translation(transform.translation)
-                .looking_at(target_pos, Vec3::Y)
-                .rotation;
+            let target_direction = (target_pos - transform.translation).normalize();
 
+            let current_direction = velocity.0.normalize();
+
+            
             // Slerp toward target rotation
             let max_rotation = turn_speed * time.delta_secs();
-            transform.rotation = transform.rotation.slerp(target_rotation, max_rotation);
+
+
+            velocity.0 = current_direction.lerp(target_direction, max_rotation).normalize() * velocity.0.length();
+            transform.look_to(velocity.0, Vec3::Y);
         }
     }
 }
 
 /// Observer system to handle collision damage
 pub fn handle_collision_damage(
-    trigger: Trigger<OnCollision>,
-    damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &InitialVelocity)>,
-    _damage_events: EventWriter<event::DamageEvent>,
-    _modifiers: Query<&ModifierStack>,
+    trigger: Trigger<OnCollisionStart>,
+    damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &LinearVelocity)>,
+    mut damage_events: EventWriter<event::DamageEvent>,
+    modifiers: Query<&ModifierStack>,
     target_transforms: Query<&Transform, Without<DamageOnCollision>>,
 ) {
-    let collider_entity = trigger.target();
-    let collision_event = trigger.event();
+    let damage_source_entity = trigger.target();
+    let damaged_entity = trigger.event().collider;
 
-    if let Ok((_damage_component, _cast_info, _collider_transform, _movement)) =
-        damage_on_collision_query.get(collider_entity)
-        && let Ok(_target_transform) = target_transforms.get(collision_event.target)
+    if let Ok((damage_component, cast_by, collider_transform, movement)) =
+        damage_on_collision_query.get(damage_source_entity)
+        && let Ok(target_transform) = target_transforms.get(damaged_entity)
     {
 
-        /*damage_events.write(event::DamageEvent {
-            target: collision_event.target,
-            source: Some(cast_info.caster),
-            damage: apply_modifier_if_present(modifiers.get(cast_info.caster).ok(), DAMAGE_MODIFIER, damage_component.base_damage) as i32,
+        damage_events.write(event::DamageEvent {
+            target: damaged_entity,
+            source: Some(cast_by.entity),
+            damage: apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), DAMAGE_MODIFIER, damage_component.base_damage) as i32,
             position: target_transform.translation,
-            impact_velocity: None,
-        });*/
+            impact_velocity: Some(movement.0),
+        });
     }
 }
 

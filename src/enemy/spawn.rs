@@ -1,5 +1,7 @@
 use std::f32;
 
+use avian3d::dynamics::solver::xpbd::PositionConstraint;
+use avian3d::prelude::{CollisionEventsEnabled, LockedAxes, RigidBody};
 use bevy::prelude::*;
 
 use crate::init::DespawnOnReset;
@@ -137,7 +139,9 @@ pub fn handle_spawn_enemy_events(
                     scale: enemy.config().num_slots
                 },
                 DespawnOnReset,
-                Targetable
+                Targetable,
+                RigidBody::Dynamic,
+                LockedAxes::new().lock_translation_y(),
             ));
 
             enemy.add_to_entity(&mut entity);

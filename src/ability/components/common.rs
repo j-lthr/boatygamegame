@@ -218,6 +218,10 @@ fn handle_select_nearest_target_on_spawn(
         
         dynamic_target.target = nearest_entity;
         commands.entity(entity).remove::<SelectNearestTargetOnSpawn>();
+
+        if let Some(ne) =nearest_entity {
+            commands.entity(ne).log_components();
+        }
     }
     
     Ok(())

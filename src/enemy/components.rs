@@ -1,7 +1,7 @@
 use std::f32;
 
 use bevy::prelude::*;
-use crate::{ability::{CastDynamicAbility, DynamicAbility}, common::Faction, enemy::spawn::SpawnInfo, event::DamageEvent, utils::normal_dist_1d};
+use crate::{ability::{CastDynamicAbility, DynamicAbility}, common::{Faction, Health}, enemy::spawn::SpawnInfo, event::DamageEvent, utils::normal_dist_1d};
 
 #[derive(Clone, Debug)]
 pub enum FollowMovementMode {
@@ -142,7 +142,7 @@ impl ContactDamage {
 
 pub fn handle_contact_damage(
     mut contact_query: Query<(Entity, &mut ContactDamage, &mut Transform, &Faction)>,
-    target_query: Query<(Entity, &Transform, &Faction), Without<ContactDamage>>,
+    target_query: Query<(Entity, &Transform, &Faction, &Health), Without<ContactDamage>>,
     mut damage_events: EventWriter<DamageEvent>,
     time: Res<Time>,
 ) {
@@ -150,10 +150,13 @@ pub fn handle_contact_damage(
         contact_damage.cooldown.tick(time.delta());
         
         if contact_damage.cooldown.finished() {
-            for (target_entity, target_transform, target_faction) in &target_query {
+            for (target_entity, target_transform, target_faction, _) in &target_query {
                 if contact_entity != target_entity && contact_faction != target_faction {
                     let distance = contact_transform.translation.distance(target_transform.translation);
                     if distance < contact_damage.radius {
+
+                        info!("Contact Damage");
+
                         damage_events.write(DamageEvent {
                             target: target_entity,
                             source: Some(contact_entity),
