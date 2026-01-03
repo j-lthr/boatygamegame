@@ -1,18 +1,12 @@
-use bevy::input::mouse::AccumulatedMouseScroll;
-use bevy::prelude::*;
-use std::f32;
-use avian3d::prelude::{LinearVelocity, RigidBody};
+use crate::ability::DynamicAbility;
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::{DynamicTarget, Lifetime, SelectNearestTargetOnSpawn};
 use crate::ability::components::projectile::{
-    DamageOnCollision, DespawnOnCollision, MoveForward, SimpleCollider, Homing
+    DamageOnCollision, DespawnOnCollision, Homing, InitialVelocity,
 };
 use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset};
 use crate::ability::components::subcast::SubCastOnce;
-use crate::ability::dash::Dash;
-use crate::ability::dash::DashParams;
-use crate::ability::{AttemptCastEvent, DynamicAbility};
-use crate::ability::slots::{AbilitySlots, AbilityKeymap, AbilityTargeting, SlottedAbility};
+use crate::ability::slots::{AbilityKeymap, AbilitySlots, AbilityTargeting, SlottedAbility};
 use crate::common::{HealthBundle, Targetable};
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
@@ -20,6 +14,11 @@ use crate::init::GameInit;
 use crate::input::Cursor;
 use crate::modifiers::*;
 use crate::rune::Collector;
+
+use avian3d::prelude::{Collider, LinearVelocity, RigidBody};
+use bevy::input::mouse::AccumulatedMouseScroll;
+use bevy::prelude::*;
+use std::f32;
 
 use bevy::core_pipeline::bloom::Bloom;
 use bevy::core_pipeline::motion_blur::MotionBlur;
@@ -32,12 +31,13 @@ use crate::enemy::spawn::SpawnerTarget;
 use crate::fx::stars::StarEffect;
 
 // Component to mark the player
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Player {
     pub base_speed: f32,
 }
 
-#[derive(Component)]
+
+#[derive(Component, Debug)]
 pub struct PlayerCamera {
     pub ground_offset: f32,
     pub height_offset: f32,
@@ -74,22 +74,20 @@ pub fn spawn_player(
     ));
 
     let projectile = DynamicAbility::from_components((
-        MoveForward { base_speed: 50.0 },
-        Homing { base_turn_speed: 0.0 },
+        RigidBody::Dynamic,
         Lifetime::fixed(0.5),
         LifetimeFadeout::new(0.1),
+        Collider::sphere(0.1),
+        InitialVelocity::forward(50.0),
         //LifetimeFromCursor,
-        (SimpleCollider {
-            radius: 1.0,
-        },
-        DespawnOnCollision,
-        DamageOnCollision {
-            base_damage: 10.0,
-        },
-        DynamicTarget::new(),
-        SelectNearestTargetOnSpawn::new(20.0),
-        RadialSubCastOffset::from_degrees_per_cast(0.0, 10.0),
-        RandomSpawnOffset::new(0.0, 0.01)),
+        (
+            DespawnOnCollision,
+            DamageOnCollision { base_damage: 10.0 },
+            DynamicTarget::new(),
+            SelectNearestTargetOnSpawn::new(20.0),
+            RadialSubCastOffset::from_degrees_per_cast(0.0, 10.0),
+            RandomSpawnOffset::new(0.0, 0.01),
+        ),
         Mesh3d(meshes.add(Sphere::new(0.1))),
         MeshMaterial3d(bullet_mat.clone()),
         //CastOnDespawn::new(subcast_ability, 5)
@@ -119,31 +117,32 @@ pub fn spawn_player(
     // Player spawn point (invisible, camera will follow this)
     let player = commands
         .spawn((
-                   (Transform::from_xyz(0.0, 0.0, 0.0), // Eye level height
-            Player { base_speed: 15.0 },
-            Mesh3d(meshes.add(Sphere::new(0.5))),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: player_color,
-                ..default()
-            })),
-            AbilitySlots::with_abilities(abilities),
-            keymap,
-            HealthBundle::new(50, 1),
-                    RigidBody::Kinematic,
-            Collector {
-                collect_radius: 1.0,
-                magnet_radius: 25.0,
-                magnet_force: 2000.0,
-            },),
+            (
+                Transform::from_xyz(0.0, 0.0, 0.0), // Eye level height
+                Player { base_speed: 15.0 },
+                Mesh3d(meshes.add(Sphere::new(0.5))),
+                MeshMaterial3d(materials.add(StandardMaterial {
+                    base_color: player_color,
+                    ..default()
+                })),
+                AbilitySlots::with_abilities(abilities),
+                keymap,
+                HealthBundle::new(50, 1),
+                RigidBody::Kinematic,
+                Collector {
+                    collect_radius: 1.0,
+                    magnet_radius: 25.0,
+                    magnet_force: 2000.0,
+                },
+            ),
             ModifierStack::default(),
             SpawnerTarget,
             Faction::Friendly,
             DespawnOnReset,
             StarEffect {
-                spawn_radius: 200.0,
                 spawn_rate: 100.0,
             },
-            Targetable
+            Targetable,
         ))
         .id();
 
@@ -160,7 +159,7 @@ pub fn spawn_camera(mut commands: Commands) {
             ..default()
         },
         Projection::from(PerspectiveProjection {
-            fov: 90.0_f32.to_radians(),
+            fov: 105.0_f32.to_radians(),
             ..default()
         }),
         Transform::from_xyz(0.0, 10.0, -6.0).looking_at(Vec3::ZERO, Vec3::Z),
@@ -188,13 +187,12 @@ pub fn spawn_camera(mut commands: Commands) {
         //     lerp_factor: 5.0,
         // }
 
-
         // Atmosphere::EARTH,
-           /*AtmosphereSettings {
-               aerial_view_lut_max_distance: 3.2e5,
-               scene_units_to_m: 1e+4,
-               ..Default::default()
-           },*/
+        /*AtmosphereSettings {
+            aerial_view_lut_max_distance: 3.2e5,
+            scene_units_to_m: 1e+4,
+            ..Default::default()
+        },*/
     ));
 
     commands.spawn((
@@ -209,11 +207,16 @@ pub fn spawn_camera(mut commands: Commands) {
 
 /// System to handle player movement with WASD keys (camera-relative)
 pub fn handle_movement(
-    mut player_query: Query<(Entity, &mut Transform, &mut LinearVelocity, &Player, Option<&ModifierStack>)>,
+    mut player_query: Query<(
+        Entity,
+        &mut Transform,
+        &mut LinearVelocity,
+        &Player,
+        Option<&ModifierStack>,
+    )>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     _scroll_wheel: Res<AccumulatedMouseScroll>,
-    mut dash_action: EventWriter<AttemptCastEvent<Dash>>,
     _time: Res<Time>,
 ) {
     if let (
@@ -222,7 +225,6 @@ pub fn handle_movement(
     ) = (player_query.single_mut(), camera_query.single_mut())
     {
         let mut velocity = Vec3::ZERO;
-
 
         // Get camera's forward and right vectors, but keep them horizontal for ground movement
         //let forward = camera_transform.forward();
@@ -249,42 +251,6 @@ pub fn handle_movement(
             velocity -= right_horizontal;
         }
 
-        let dash = keyboard_input.pressed(KeyCode::Space);
-
-        // for event in evr_gamepad.read() {
-        //     match event {
-        //         GamepadEvent::Connection(_) => {},
-        //         GamepadEvent::Button(GamepadButtonChangedEvent{button, value, ..}) => {
-        //             match button {
-        //                 GamepadButton::RightTrigger => {
-        //                     dash = *value > 0.0;
-        //                 },
-        //                 _ => {}
-        //             }
-        //         },
-        //         GamepadEvent::Axis(GamepadAxisChangedEvent {axis, value, ..}) => {
-        //             match axis {
-        //                 GamepadAxis::LeftStickX => {
-        //                     velocity.x = *value;
-        //                 },
-        //                 GamepadAxis::LeftStickY => {
-        //                     velocity.y = *value;
-        //                 }
-        //                 _ => {}
-        //             }
-        //         },
-        //     }
-        // }
-
-       // camera.height_offset /= (0.1 * scroll_wheel.delta.y).exp2();
-
-        if dash && velocity.length() > 1e-6 {
-            dash_action.write(AttemptCastEvent {
-                caster: player_entity,
-                params: DashParams::Directional(velocity),
-            });
-        }
-
         let speed =
             apply_modifier_if_present(modifier_stack, PLAYER_SPEED_MODIFIER, player.base_speed);
 
@@ -298,10 +264,8 @@ pub fn handle_camera(
     window: Single<&Window>,
     time: Res<Time>,
 ) {
-    if let (
-        Ok((player_transform, _player)),
-        Ok((mut camera_transform, camera)),
-    ) = (player_query.single(), camera_query.single_mut())
+    if let (Ok((player_transform, _player)), Ok((mut camera_transform, camera))) =
+        (player_query.single(), camera_query.single_mut())
     {
         let mouse_pos = window
             .cursor_position()
@@ -342,9 +306,8 @@ pub fn shoot_gun(
 ) {
     if let Ok((_player, _player_transform)) = player_query.single()
         && mouse_input.pressed(MouseButton::Left)
-            && let Ok(_cursor_transform) = cursor_query.single() {
-
-            }
+        && let Ok(_cursor_transform) = cursor_query.single()
+    {}
 }
 
 /*pub fn player_vfx(
@@ -371,5 +334,5 @@ pub fn shoot_gun(
 pub fn plugin(app: &mut App) {
     app.add_systems(GameInit, spawn_player);
     app.add_systems(Startup, spawn_camera);
-   // app.add_systems(Update, player_vfx);
+    // app.add_systems(Update, player_vfx);
 }

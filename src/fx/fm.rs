@@ -153,6 +153,7 @@ impl Decodable for FMSound {
     }
 }
 
+/* 
 pub const GUN_SOUND: FMSoundConfig = FMSoundConfig {
     carrier_freq: 440.0,   // A2 note
     modulator_freq: 220.0, // A3 note
@@ -217,3 +218,5 @@ pub const DASH_SOUND: FMSoundConfig = FMSoundConfig {
     noise_level: 0.1,  // More noise for "whoosh" effect
     noise_decay: 0.12, // Noise fades slightly slower
 };
+
+*/

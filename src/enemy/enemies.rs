@@ -6,7 +6,7 @@ use crate::ability::components::subcast::TimedSubCast;
 use crate::ability::DynamicAbility;
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::Lifetime;
-use crate::ability::components::projectile::{DamageOnCollision, DespawnOnCollision, MoveForward, SimpleCollider};
+use crate::ability::components::projectile::{DamageOnCollision, DespawnOnCollision, InitialVelocity};
 use crate::ability::components::spawn::{RadialSubCastOffset, SpawnEnemyAtCastPosition, RandomSpawnOffset};
 use crate::ability::components::subcast::SubCastOnce;
 use crate::ability::components::visual::LifetimeFadeout;
@@ -39,10 +39,9 @@ pub fn register_enemies(
         });
 
         let projectile = DynamicAbility::from_components((
-            MoveForward { base_speed: 30.0 },
+            InitialVelocity::forward(30.0),
             Lifetime::fixed(2.0),
             LifetimeFadeout::new(0.2),
-            SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
             RadialSubCastOffset::from_degrees_per_cast(1.0, 5.0),
@@ -105,10 +104,9 @@ pub fn register_enemies(
         });
 
         let projectile = DynamicAbility::from_components((
-            MoveForward { base_speed: 30.0 },
+            InitialVelocity::forward(30.0),
             Lifetime::fixed(2.0),
             LifetimeFadeout::new(0.2),
-            SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
             RadialSubCastOffset::from_radius_360(1.0),
@@ -157,9 +155,8 @@ pub fn register_enemies(
         );
 
         let projectile = DynamicAbility::from_components((
-            MoveForward { base_speed: 50.0 },
+            InitialVelocity::forward(70.0),
             Lifetime::fixed(0.5),
-            SimpleCollider { radius: 1.0 },
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
             RadialSubCastOffset::from_radius_360(1.0),
@@ -259,9 +256,8 @@ pub fn register_enemies(
             });
 
             let projectile = DynamicAbility::from_components((
-                MoveForward { base_speed: 70.0 },
+                InitialVelocity::forward(70.0),
                 Lifetime::fixed(2.0),
-                SimpleCollider { radius: 1.0 },
                 DespawnOnCollision,
                 DamageOnCollision { base_damage: 40.0 },
                 RadialSubCastOffset::from_degrees_per_cast(1.0, 5.0),
@@ -297,10 +293,9 @@ pub fn register_enemies(
             });
 
             let projectile = DynamicAbility::from_components((
-                MoveForward { base_speed: 30.0 },
+                InitialVelocity::forward(30.0),
                 Lifetime::fixed(2.0),
                 LifetimeFadeout::new(0.2),
-                SimpleCollider { radius: 3.0 },
                 DespawnOnCollision,
                 DamageOnCollision { base_damage: 50.0 },
                 RandomSpawnOffset::new(0.0, 0.5),

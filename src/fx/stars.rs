@@ -8,13 +8,12 @@ pub struct StarAssets {
     pub material: Handle<StandardMaterial>,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct StarEffect {
     pub spawn_rate: f32,
-    pub spawn_radius: f32,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Star {
     pub timer: Timer,
     pub scale: f32,

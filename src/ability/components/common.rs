@@ -1,7 +1,7 @@
 use super::events::OnActiveDespawn;
 use bevy::prelude::*;
 
-use super::projectile::MoveForward;
+use super::projectile::InitialVelocity;
 use crate::ability::{resolve_target, CastBy, IntendedTarget};
 use crate::common::{Faction, Targetable};
 use crate::modifiers::*;
@@ -155,7 +155,7 @@ pub struct LifetimeFromCursor;
 
 pub fn handle_lifetime_from_cursor(
     mut query: Query<
-        (&mut Lifetime, &IntendedTarget, &Transform, &MoveForward),
+        (&mut Lifetime, &IntendedTarget, &Transform, &InitialVelocity),
         Added<LifetimeFromCursor>,
     >,
     mut transforms: Query<&Transform>,

@@ -38,16 +38,10 @@ impl FromWorld for SpawnerState {
     }
 }
 
-#[derive(Clone, Copy)]
-pub enum SpawnRequirement {
-    MinWave(i32),
-}
-
 #[derive(Clone, Copy, Component)]
 pub struct SpawnInfo {
     pub target: Entity,
 }
-
 
 pub fn random_spawn_pos(center: Vec3, radius_avg: f32, radius_std: f32) -> Vec3 {
     let spawn_radius = normal_dist_1d(radius_avg, radius_std).abs();

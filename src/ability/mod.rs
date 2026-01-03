@@ -9,10 +9,6 @@ use crate::ability::components::subcast::SubCastInfo;
 use crate::common::{EntityModifier, BundleInjector};
 use crate::modifiers::*;
 
-pub mod common;
-pub mod dash;
-pub mod missile_launcher;
-pub mod slam;
 pub mod slots;
 pub mod components;
 
@@ -85,12 +81,13 @@ pub enum SpawnLocation {
 #[derive(Copy, Clone, Debug)]
 pub struct CastConfig {
     pub spawn_location: SpawnLocation,
+    pub inherit_transform: bool,
     pub inherit_velocity: bool,
 }
 
 impl Default for CastConfig {
     fn default() -> Self {
-        Self { spawn_location: SpawnLocation::Source, inherit_velocity: true }
+        Self { spawn_location: SpawnLocation::Source, inherit_velocity: true, inherit_transform: true}
     }
 }
 
@@ -122,7 +119,7 @@ pub struct CastBy {
     pub entity: Entity,
 }
 
-#[derive(Clone, Copy, Component)]
+#[derive(Clone, Copy, Component, Debug)]
 pub enum IntendedTarget {
     Entity(Entity),
     Position(Vec3),
@@ -157,14 +154,14 @@ pub fn resolve_target(transforms: QueryLens<&GlobalTransform>, target: IntendedT
 }
 
 
-#[derive(Clone, Copy, Component)]
+#[derive(Clone, Copy, Component, Debug)]
 pub struct SubCast {
     parent: Entity,
     num_casts: i32,
     cast_index: i32,
 }
 
-#[derive(Event)]
+#[derive(Event, Debug)]
 pub struct CastDynamicAbility {
     ability: DynamicAbility,
     caster: Entity,
@@ -207,6 +204,8 @@ pub fn event_handler_dynamic_ability_casts(
     query: Query<(&Transform, Option<&LinearVelocity>)>,
     mut commands: Commands,
 ) -> Result<()> {
+
+
     for event in cast_events.read() {
 
         let root_entity = if let Some(sub_cast) = event.sub_cast {
@@ -220,7 +219,6 @@ pub fn event_handler_dynamic_ability_casts(
         let target_position  = match event.target {
             IntendedTarget::Entity(target) => {
                 let (target_transform, _) = query.get(target)?;
-
                 target_transform.translation
             },
             IntendedTarget::Position(pos) => {
@@ -244,10 +242,21 @@ pub fn event_handler_dynamic_ability_casts(
 
         let config = event.ability.config;
 
-        match config.spawn_location {
-            SpawnLocation::Source => entity.insert(Transform::from_translation(root_transform.translation)),
-            SpawnLocation::Target => entity.insert(Transform::from_translation(target_position)),
+        let position = match config.spawn_location {
+            SpawnLocation::Source => root_transform.translation,
+            SpawnLocation::Target => target_position,
         };
+
+        let mut transform = Transform::from_translation(position);
+
+        //transform.look_to(target_position - root_transform.translation, Vec3::Y);
+        
+        if config.inherit_transform {
+            transform.rotation = root_transform.rotation;
+        }
+
+        entity.insert(transform);
+
 
         if config.inherit_velocity
             && let Some(root_velocity) = root_velocity {
@@ -270,7 +279,6 @@ fn register_ability<T: Ability>(app: &mut App) {
 
 pub fn plugin(app: &mut App) {
     app.add_plugins((
-        register_ability::<dash::Dash>,
         components::plugin,
         slots::plugin,
     ));

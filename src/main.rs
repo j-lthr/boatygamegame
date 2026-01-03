@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::ecs::error::{GLOBAL_ERROR_HANDLER, error};
 use bevy::prelude::*;
@@ -24,7 +22,6 @@ mod loot;
 mod modifiers;
 mod player;
 mod procedural;
-mod projectile;
 mod rune;
 mod state;
 mod ui;
@@ -98,9 +95,6 @@ fn main() {
             (
                 player::handle_camera,
                 common::handle_inertia,
-                projectile::handle_movement,
-                projectile::collide,
-                projectile::cleanup,
             ),
         )
         .add_systems(GameInit, play_main_music)

@@ -77,8 +77,8 @@ pub fn handle_sub_cast_once(
                     .with_sub_cast(entity, num_casts, index)
             );
         }
-
-        commands.entity(entity).despawn();
+        
+        commands.entity(entity).remove::<SubCastOnce>();
     }
 
     Ok(())

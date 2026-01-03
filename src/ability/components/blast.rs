@@ -129,10 +129,8 @@ pub fn handle_blast_visual(
             continue;
         }
 
-        // Calculate animation progress (0.0 = start, 1.0 = end)
         let progress = 1.0 - (visual.lifetime / visual.max_lifetime);
 
-        // Scale up quickly, then fade
         let scale_progress = (progress * 3.0).min(1.0);
         let fade_progress = if progress > 0.7 {
             (progress - 0.7) / 0.3
@@ -155,10 +153,6 @@ pub fn handle_blast_visual(
         let max_scale = apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), AOE_RADIUS_MODIFIER, visual.max_scale);
 
         transform.scale = Vec3::splat(scale_progress * max_scale);
-
-        // Fade out the explosion (you might need to update the material alpha)
-        // This is a simplified approach - you may want to create separate materials
-        // or use a shader for better control
     }
 }
 
