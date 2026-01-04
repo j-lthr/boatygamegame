@@ -44,7 +44,13 @@ pub struct Homing {
 /// System to move entities with MoveForward
 pub fn handle_initial_velocity(
     mut commands: Commands,
-    mut movement_query: Query<(Entity, &Transform, &InitialVelocity, &CastBy, &mut LinearVelocity)>,
+    mut movement_query: Query<(
+        Entity,
+        &Transform,
+        &InitialVelocity,
+        &CastBy,
+        &mut LinearVelocity,
+    )>,
     modifiers: Query<&ModifierStack>,
 ) {
     for (entity, transform, movement, cast_by, mut velocity) in &mut movement_query {
@@ -56,16 +62,20 @@ pub fn handle_initial_velocity(
 
         velocity.0 += speed * (transform.rotation * movement.direction);
 
-        commands
-            .entity(entity)
-            .remove::<InitialVelocity>();
+        commands.entity(entity).remove::<InitialVelocity>();
     }
 }
 
 /// System to rotate entities with HomingMovement toward target_position
 pub fn handle_homing_movement(
     transforms: Query<&Transform, Without<Homing>>,
-    mut homing_query: Query<(&mut Transform, &Homing, &CastBy, &DynamicTarget, &mut LinearVelocity)>,
+    mut homing_query: Query<(
+        &mut Transform,
+        &Homing,
+        &CastBy,
+        &DynamicTarget,
+        &mut LinearVelocity,
+    )>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
@@ -86,12 +96,13 @@ pub fn handle_homing_movement(
 
             let current_direction = velocity.0.normalize();
 
-            
             // Slerp toward target rotation
             let max_rotation = turn_speed * time.delta_secs();
 
-
-            velocity.0 = current_direction.lerp(target_direction, max_rotation).normalize() * velocity.0.length();
+            velocity.0 = current_direction
+                .lerp(target_direction, max_rotation)
+                .normalize()
+                * velocity.0.length();
             transform.look_to(velocity.0, Vec3::Y);
         }
     }
@@ -100,7 +111,13 @@ pub fn handle_homing_movement(
 /// Observer system to handle collision damage
 pub fn handle_collision_damage(
     trigger: Trigger<OnCollisionStart>,
-    damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &LinearVelocity, &Faction)>,
+    damage_on_collision_query: Query<(
+        &DamageOnCollision,
+        &CastBy,
+        &Transform,
+        &LinearVelocity,
+        &Faction,
+    )>,
     mut damage_events: EventWriter<event::DamageEvent>,
     modifiers: Query<&ModifierStack>,
     target_transforms: Query<(&Transform, &Faction), Without<DamageOnCollision>>,
@@ -112,12 +129,15 @@ pub fn handle_collision_damage(
         damage_on_collision_query.get(damage_source_entity)
         && let Ok((target_transform, target_faction)) = target_transforms.get(damaged_entity)
     {
-
         if target_faction != source_faction {
             damage_events.write(event::DamageEvent {
                 target: damaged_entity,
                 source: Some(cast_by.entity),
-                damage: apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), DAMAGE_MODIFIER, damage_component.base_damage) as i32,
+                damage: apply_modifier_if_present(
+                    modifiers.get(cast_by.entity).ok(),
+                    DAMAGE_MODIFIER,
+                    damage_component.base_damage,
+                ) as i32,
                 position: target_transform.translation,
                 impact_velocity: Some(movement.0),
             });
@@ -140,7 +160,13 @@ pub fn handle_collision_despawn(
 }
 
 pub fn plugin(app: &mut bevy::app::App) {
-    app.add_systems(Update, (handle_initial_velocity.after(handle_radial_sub_cast_offset), handle_homing_movement));
+    app.add_systems(
+        Update,
+        (
+            handle_initial_velocity.after(handle_radial_sub_cast_offset),
+            handle_homing_movement,
+        ),
+    );
     app.add_observer(handle_collision_damage);
     app.add_observer(handle_collision_despawn);
 }

@@ -88,13 +88,14 @@ pub struct ModifierStack {
 }
 
 impl ModifierStack {
-  
     pub fn get(&self, id: ModifierID) -> Option<CompoundModifier> {
         self.stack.get(&id).cloned()
     }
 
     pub fn add_modifier(&mut self, stat: Modifier) {
-        self.stack.entry(stat.id).or_insert_with(|| Default::default());
+        self.stack
+            .entry(stat.id)
+            .or_insert_with(|| Default::default());
 
         let modifier = self.stack.get_mut(&stat.id).unwrap();
         match stat.typ {
@@ -105,15 +106,21 @@ impl ModifierStack {
     }
 
     pub fn add_multiplicative_modifier(&mut self, id: ModifierID, value: f32) {
-        self.add_modifier(Modifier { id, typ: ModifierType::Multiplicative(value) });
+        self.add_modifier(Modifier {
+            id,
+            typ: ModifierType::Multiplicative(value),
+        });
     }
 
     pub fn add_additive_modifier(&mut self, id: ModifierID, value: f32) {
-        self.add_modifier(Modifier { id, typ: ModifierType::Additive(value) });
+        self.add_modifier(Modifier {
+            id,
+            typ: ModifierType::Additive(value),
+        });
     }
 
     pub fn list_compound_mods(&self) -> Vec<Modifier> {
-        let mut list = vec!();
+        let mut list = vec![];
 
         for (id, compound_mod) in &self.stack {
             if compound_mod.flat_added != 0.0 {
@@ -123,7 +130,10 @@ impl ModifierStack {
                 list.push(Modifier::additive(*id, compound_mod.additive_factor));
             }
             if compound_mod.multiplicative_factor != 1.0 {
-                list.push(Modifier::multiplicative(*id, compound_mod.multiplicative_factor));
+                list.push(Modifier::multiplicative(
+                    *id,
+                    compound_mod.multiplicative_factor,
+                ));
             }
         }
 
@@ -131,8 +141,14 @@ impl ModifierStack {
     }
 }
 
-pub fn apply_modifier_if_present(query_result: Option<&ModifierStack>, id: ModifierID, base_value: f32) -> f32 {
-    let modifier = query_result.and_then(|stack| stack.get(id)).unwrap_or_default();
+pub fn apply_modifier_if_present(
+    query_result: Option<&ModifierStack>,
+    id: ModifierID,
+    base_value: f32,
+) -> f32 {
+    let modifier = query_result
+        .and_then(|stack| stack.get(id))
+        .unwrap_or_default();
 
     modifier.apply_to_base_value(base_value)
 }

@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::common::HealthPool;
 use crate::player::Player;
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct PlayerHealthBar;
@@ -73,9 +73,7 @@ pub fn setup_player_health_ui(mut commands: Commands, asset_server: Res<AssetSer
                     ..default()
                 },
                 TextColor(Color::srgb(1.0, 1.0, 1.0)),
-                Node {
-                    ..default()
-                },
+                Node { ..default() },
                 PlayerHealthText,
             ));
         });
@@ -88,29 +86,31 @@ pub fn update_player_health_display(
     mut health_text_query: Query<&mut Text, With<PlayerHealthText>>,
     time: Res<Time>,
 ) {
-    if let (Ok(health_pool), Ok(mut health_display)) = 
-        (player_query.single(), health_display_query.single_mut()) {
-        
+    if let (Ok(health_pool), Ok(mut health_display)) =
+        (player_query.single(), health_display_query.single_mut())
+    {
         let target_health = health_pool.current_health as f32;
         let target_max = health_pool.max_health as f32;
         let lerp_factor = (health_display.lerp_speed * time.delta_secs()).min(1.0);
-        
+
         // Lerp displayed values towards actual values
-        health_display.current_displayed_health = health_display.current_displayed_health
+        health_display.current_displayed_health = health_display
+            .current_displayed_health
             .lerp(target_health, lerp_factor);
-        health_display.current_displayed_max = health_display.current_displayed_max
+        health_display.current_displayed_max = health_display
+            .current_displayed_max
             .lerp(target_max, lerp_factor);
-        
+
         let health_fraction = if health_display.current_displayed_max > 0.0 {
             health_display.current_displayed_health / health_display.current_displayed_max
         } else {
             0.0
         };
-        
+
         // Update health bar
         if let Ok((mut fill_node, mut fill_color)) = health_fill_query.single_mut() {
             fill_node.width = Val::Percent((health_fraction * 100.0).max(0.0));
-            
+
             // White until 20%, then red
             if health_fraction > 0.2 {
                 fill_color.0 = Color::srgb(1.0, 1.0, 1.0); // White
@@ -118,7 +118,7 @@ pub fn update_player_health_display(
                 fill_color.0 = Color::srgb(0.8, 0.2, 0.2); // Red
             }
         }
-        
+
         // Update health text (show actual values, not lerped for precision)
         if let Ok(mut health_text) = health_text_query.single_mut() {
             health_text.0 = format!("{} / {}", target_health as i32, target_max as i32);

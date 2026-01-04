@@ -4,11 +4,9 @@ use avian3d::dynamics::solver::xpbd::PositionConstraint;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::init::DespawnOnReset;
-use crate::{
-    common::Faction, event::SpawnEvent, utils::normal_dist_1d
-};
 use crate::common::Targetable;
+use crate::init::DespawnOnReset;
+use crate::{common::Faction, event::SpawnEvent, utils::normal_dist_1d};
 
 #[derive(Event)]
 pub struct SpawnEnemyEvent {
@@ -64,7 +62,6 @@ pub fn spawn(
     enemy_query: Query<(), With<SpawnInfo>>,
     mut spawn_events: EventWriter<SpawnEnemyEvent>,
 ) {
-
     let time_scale = if enemy_query.iter().len() == 0 {
         5.0
     } else {
@@ -76,21 +73,16 @@ pub fn spawn(
     let level = state.wave_index + 1;
     let mut enemy_slots = level;
 
-    
     if state.wave_timer.just_finished() {
-        
         // if state.wave_index < 3 || state.wave_index == 32  {
         //     let mut current_duration = state.wave_timer.duration().as_secs();
         //     current_duration -= 1;
         //     state.wave_timer.set_duration(Duration::from_secs(current_duration));
         // }
 
-
-
         let mut eligible_enemies: Vec<_> = enemy_registry.enemies().collect();
 
         while enemy_slots > 0 {
-
             eligible_enemies.retain(|enemy| {
                 let config = enemy.config();
 
@@ -104,15 +96,12 @@ pub fn spawn(
             for (target, target_transform) in target_query {
                 let spawn_pos = random_spawn_pos(target_transform.translation, 50.0, 4.0);
 
-                spawn_events.write(
-                    SpawnEnemyEvent {
-                        enemy: (*enemy).clone(),
-                        position: spawn_pos,
-                        target,
-                    }
-                );
+                spawn_events.write(SpawnEnemyEvent {
+                    enemy: (*enemy).clone(),
+                    position: spawn_pos,
+                    target,
+                });
             }
-
         }
 
         state.wave_index += 1;
@@ -129,29 +118,28 @@ pub fn handle_spawn_enemy_events(
     for event in spawn_events.read() {
         let enemy = &event.enemy;
 
-            let mut entity = commands.spawn((
-                Transform::from_translation(event.position),
-                Faction::Enemy,
-                SpawnInfo {
-                    target: event.target,
-                },
-                DropScale {
-                    scale: enemy.config().num_slots
-                },
-                DespawnOnReset,
-                Targetable,
-                RigidBody::Dynamic,
-                LockedAxes::new().lock_translation_y(),
-                ActiveCollisionHooks::FILTER_PAIRS
-            ));
+        let mut entity = commands.spawn((
+            Transform::from_translation(event.position),
+            Faction::Enemy,
+            SpawnInfo {
+                target: event.target,
+            },
+            DropScale {
+                scale: enemy.config().num_slots,
+            },
+            DespawnOnReset,
+            Targetable,
+            RigidBody::Dynamic,
+            LockedAxes::new().lock_translation_y(),
+            ActiveCollisionHooks::FILTER_PAIRS,
+        ));
 
-            enemy.add_to_entity(&mut entity);
+        enemy.add_to_entity(&mut entity);
 
-            game_spawn_events.write(SpawnEvent {
-                entity: entity.id()
-            });
-        }
-
+        game_spawn_events.write(SpawnEvent {
+            entity: entity.id(),
+        });
+    }
 }
 
 pub fn plugin(app: &mut App) {

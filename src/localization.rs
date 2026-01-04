@@ -1,8 +1,8 @@
+use crate::modifiers::{Modifier, ModifierType};
 use bevy::prelude::*;
-use fluent_templates::{static_loader, LanguageIdentifier, Loader};
+use fluent_templates::{LanguageIdentifier, Loader, static_loader};
 use std::collections::HashMap;
 use unic_langid::langid;
-use crate::modifiers::{Modifier, ModifierType};
 
 const US_ENGLISH: LanguageIdentifier = langid!("en-US");
 const GERMAN: LanguageIdentifier = langid!("de-DE");
@@ -25,7 +25,6 @@ pub struct LocalizationResource {
 
 impl Default for LocalizationResource {
     fn default() -> Self {
-
         Self {
             current_language: US_ENGLISH,
         }
@@ -33,7 +32,11 @@ impl Default for LocalizationResource {
 }
 
 impl LocalizationResource {
-    pub fn get_text(&self, key: &str, args: Option<&HashMap<String, fluent::FluentValue>>) -> String {
+    pub fn get_text(
+        &self,
+        key: &str,
+        args: Option<&HashMap<String, fluent::FluentValue>>,
+    ) -> String {
         LOCALES.lookup_with_args(&self.current_language, key, args.unwrap_or(&HashMap::new()))
     }
 
@@ -53,13 +56,14 @@ impl LocalizationResource {
 
     pub fn format_stat(&self, stat: Modifier) -> String {
         let stat_key = format!("stat-{}", stat.id.as_str());
-        
+
         let (type_str, value) = match stat.typ {
             ModifierType::FlatAdded(v) => ("flat-added", format!("{:.0}", v)),
             ModifierType::Additive(v) => ("additive", format!("{:.0}%", v * 100.0)),
-            ModifierType::Multiplicative(v) => ("multiplicative", format!("{:.0}%", (v - 1.0) * 100.0)),
+            ModifierType::Multiplicative(v) => {
+                ("multiplicative", format!("{:.0}%", (v - 1.0) * 100.0))
+            }
         };
-
 
         let mut args = HashMap::<String, fluent::FluentValue>::new();
         args.insert("type".to_string(), type_str.into());
@@ -84,7 +88,10 @@ fn handle_language_toggle(
             ref lang if *lang == LADAKHI => "ལ་དྭགས་སྐད",
             _ => "Unknown",
         };
-        info!("Language switched to: {} ({:?})", lang_name, localization.current_language);
+        info!(
+            "Language switched to: {} ({:?})",
+            lang_name, localization.current_language
+        );
     }
 }
 

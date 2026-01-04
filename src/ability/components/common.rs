@@ -6,7 +6,7 @@ use bevy::prelude::*;
 
 use super::projectile::InitialVelocity;
 use crate::ability::components::projectile::handle_initial_velocity;
-use crate::ability::{resolve_target, CastBy, IntendedTarget};
+use crate::ability::{CastBy, IntendedTarget, resolve_target};
 use crate::common::{Faction, Targetable};
 use crate::modifiers::*;
 
@@ -161,7 +161,7 @@ pub struct LifetimeFromCursor {
 
 impl LifetimeFromCursor {
     pub fn new() -> LifetimeFromCursor {
-        LifetimeFromCursor{ 
+        LifetimeFromCursor {
             max_distance: f32::INFINITY,
         }
     }
@@ -173,19 +173,25 @@ impl LifetimeFromCursor {
 }
 
 pub fn handle_lifetime_from_cursor(
-    mut query: Query<
-        (Entity, &mut Lifetime, &IntendedTarget, &Transform, &LinearVelocity, &LifetimeFromCursor),
-    >,
+    mut query: Query<(
+        Entity,
+        &mut Lifetime,
+        &IntendedTarget,
+        &Transform,
+        &LinearVelocity,
+        &LifetimeFromCursor,
+    )>,
     mut transforms: Query<&GlobalTransform>,
     mut commands: Commands,
 ) -> Result {
-
     for (entity, mut lifetime, target, transform, linear_vel, lfc) in query.iter_mut() {
-
         let position = resolve_target(transforms.transmute_lens(), *target)?.position;
-        let distance = transform.translation.distance(position).min(lfc.max_distance);
+        let distance = transform
+            .translation
+            .distance(position)
+            .min(lfc.max_distance);
         let duration = distance / linear_vel.0.length();
-     
+
         lifetime.set_dynamic_duration(duration)?;
 
         commands.entity(entity).remove::<LifetimeFromCursor>();
@@ -218,36 +224,52 @@ impl SelectNearestTargetOnSpawn {
 
 fn handle_select_nearest_target_on_spawn(
     mut commands: Commands,
-    mut query: Query<(Entity, &Transform, Option<&Faction>, &mut DynamicTarget, &IntendedTarget, &SelectNearestTargetOnSpawn)>,
-    targets: Query<(Entity, &Transform, Option<&Faction>), (With<Targetable>, Without<SelectNearestTargetOnSpawn>)>,
-    mut transforms: Query<&GlobalTransform>
+    mut query: Query<(
+        Entity,
+        &Transform,
+        Option<&Faction>,
+        &mut DynamicTarget,
+        &IntendedTarget,
+        &SelectNearestTargetOnSpawn,
+    )>,
+    targets: Query<
+        (Entity, &Transform, Option<&Faction>),
+        (With<Targetable>, Without<SelectNearestTargetOnSpawn>),
+    >,
+    mut transforms: Query<&GlobalTransform>,
 ) -> Result {
-    for (entity, _transform, faction, mut dynamic_target, intended_target, selector) in query.iter_mut() {
+    for (entity, _transform, faction, mut dynamic_target, intended_target, selector) in
+        query.iter_mut()
+    {
         // Find nearest target
         let mut nearest_entity = None;
         let mut nearest_distance = f32::INFINITY;
-        
+
         let target = resolve_target(transforms.transmute_lens(), *intended_target)?;
-        
+
         for (target_entity, target_transform, target_faction) in targets.iter() {
             let distance = target.position.distance(target_transform.translation);
-            if distance < selector.max_distance && distance < nearest_distance && (faction.is_none() || target_faction.is_none() || faction != target_faction) {
+            if distance < selector.max_distance
+                && distance < nearest_distance
+                && (faction.is_none() || target_faction.is_none() || faction != target_faction)
+            {
                 nearest_distance = distance;
                 nearest_entity = Some(target_entity);
             }
         }
-        
-        dynamic_target.target = nearest_entity;
-        commands.entity(entity).remove::<SelectNearestTargetOnSpawn>();
 
-        if let Some(ne) =nearest_entity {
+        dynamic_target.target = nearest_entity;
+        commands
+            .entity(entity)
+            .remove::<SelectNearestTargetOnSpawn>();
+
+        if let Some(ne) = nearest_entity {
             commands.entity(ne).log_components();
         }
     }
-    
+
     Ok(())
 }
-
 
 pub fn plugin(app: &mut App) {
     app.add_systems(
@@ -260,4 +282,3 @@ pub fn plugin(app: &mut App) {
         ),
     );
 }
-

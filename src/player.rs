@@ -1,5 +1,7 @@
 use crate::ability::components::blast::BlastBundle;
-use crate::ability::components::common::{DynamicTarget, Lifetime, LifetimeFromCursor, SelectNearestTargetOnSpawn};
+use crate::ability::components::common::{
+    DynamicTarget, Lifetime, LifetimeFromCursor, SelectNearestTargetOnSpawn,
+};
 use crate::ability::components::dash::TransportCaster;
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, Homing, InitialVelocity,
@@ -18,12 +20,12 @@ use crate::input::Cursor;
 use crate::modifiers::*;
 use crate::rune::Collector;
 
+use avian3d::prelude::*;
 use avian3d::prelude::{
     Collider, ColliderConstructor, CollisionEventsEnabled, LinearVelocity, LockedAxes, RigidBody,
 };
 use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
-use avian3d::prelude::*;
 
 use std::f32;
 
@@ -116,7 +118,7 @@ pub fn spawn_player(
         LifetimeFromCursor::new().with_max_distance(10.0),
         TransportCaster,
         InitialVelocity::forward(100.0),
-        CastOnDespawn::new(mortar_blast.clone(), 1)
+        CastOnDespawn::new(mortar_blast.clone(), 1),
     ));
 
     // Create abilities for the slots
@@ -131,11 +133,7 @@ pub fn spawn_player(
             AbilityTargeting::Cursor,
             2.0, // 2 second cooldown
         ),
-        SlottedAbility::new(
-            dash_ability,
-            AbilityTargeting::Cursor,
-            2.0
-        )
+        SlottedAbility::new(dash_ability, AbilityTargeting::Cursor, 2.0),
     ];
 
     // Create custom keymap
@@ -167,7 +165,7 @@ pub fn spawn_player(
                     magnet_radius: 25.0,
                     magnet_force: 2000.0,
                 },
-                ActiveCollisionHooks::FILTER_PAIRS
+                ActiveCollisionHooks::FILTER_PAIRS,
             ),
             ModifierStack::default(),
             SpawnerTarget,

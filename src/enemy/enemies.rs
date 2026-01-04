@@ -5,14 +5,18 @@ use bevy::prelude::*;
 
 use super::components::*;
 use super::registry::*;
-use crate::ability::components::subcast::TimedSubCast;
 use crate::ability::CastConfig;
 use crate::ability::DynamicAbility;
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::Lifetime;
-use crate::ability::components::projectile::{DamageOnCollision, DespawnOnCollision, InitialVelocity};
-use crate::ability::components::spawn::{RadialSubCastOffset, SpawnEnemyAtCastPosition, RandomSpawnOffset};
+use crate::ability::components::projectile::{
+    DamageOnCollision, DespawnOnCollision, InitialVelocity,
+};
+use crate::ability::components::spawn::{
+    RadialSubCastOffset, RandomSpawnOffset, SpawnEnemyAtCastPosition,
+};
 use crate::ability::components::subcast::SubCastOnce;
+use crate::ability::components::subcast::TimedSubCast;
 use crate::ability::components::visual::LifetimeFadeout;
 use crate::common::HealthBundle;
 use crate::loot::DropTableBuilder;
@@ -36,8 +40,6 @@ pub fn register_enemies(
         .with_chance(0.3)
         .build();
 
-   
-
     {
         let rusher_material = materials.add(StandardMaterial {
             emissive: LinearRgba::rgb(70.0, 70.0, 1.0),
@@ -59,12 +61,13 @@ pub fn register_enemies(
                 ContactDamage::new(25, 2.0, 1.0).with_self_knockback(10.0),
                 normal_drop_table.clone(),
             ),
-        ).with_num_slots(1);
+        )
+        .with_num_slots(1);
 
         registry.register_enemy(rusher);
     }
 
-     {
+    {
         let material = materials.add(StandardMaterial {
             emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
             ..Default::default()
@@ -81,9 +84,8 @@ pub fn register_enemies(
             RadialSubCastOffset::from_degrees_per_cast(1.5, 5.0),
             Mesh3d(meshes.add(Sphere::new(0.25))),
             MeshMaterial3d(material.clone()),
-            LockedAxes::new().lock_translation_y()
+            LockedAxes::new().lock_translation_y(),
         ));
-        
 
         let ability = DynamicAbility::from_components((SubCastOnce::new(projectile.clone(), 3),));
 
@@ -102,7 +104,8 @@ pub fn register_enemies(
                 SingleAbilityTimed::new(ability, 1.0),
                 normal_drop_table.clone(),
             ),
-        ).with_num_slots(2);
+        )
+        .with_num_slots(2);
 
         registry.register_enemy(ranger);
     }
@@ -195,7 +198,6 @@ pub fn register_enemies(
     //         ),
     //     ).with_min_level(5).with_num_slots(5);
 
-
     //     registry.register_enemy(star_blaster);
     // }
 
@@ -223,7 +225,6 @@ pub fn register_enemies(
     //             DespawnTimer::new(5.0),
     //         ),
     //     ).with_num_slots(1);
-
 
     //     let summoner_material = materials.add(StandardMaterial {
     //         emissive: LinearRgba::rgb(20.0, 20.0, 80.0),

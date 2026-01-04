@@ -1,4 +1,3 @@
-
 use bevy::{
     audio::{PlaybackMode, Volume},
     prelude::*,
@@ -78,7 +77,9 @@ pub fn handle_music_control_events(
         info!("Received {:?}.", event);
 
         for mp_entity in query {
-            commands.entity(mp_entity).insert(FadeOut{start: time.elapsed_secs_f64()});
+            commands.entity(mp_entity).insert(FadeOut {
+                start: time.elapsed_secs_f64(),
+            });
         }
 
         commands.spawn((
@@ -89,7 +90,7 @@ pub fn handle_music_control_events(
                 ..Default::default()
             },
             FadeIn {
-                start: time.elapsed_secs_f64()
+                start: time.elapsed_secs_f64(),
             },
             MusicPlayer,
         ));

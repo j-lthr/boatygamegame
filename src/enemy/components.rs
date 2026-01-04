@@ -1,7 +1,13 @@
 use std::f32;
 
+use crate::{
+    ability::{CastDynamicAbility, DynamicAbility},
+    common::{Faction, Health},
+    enemy::spawn::SpawnInfo,
+    event::DamageEvent,
+    utils::normal_dist_1d,
+};
 use bevy::prelude::*;
-use crate::{ability::{CastDynamicAbility, DynamicAbility}, common::{Faction, Health}, enemy::spawn::SpawnInfo, event::DamageEvent, utils::normal_dist_1d};
 
 #[derive(Clone, Debug)]
 pub enum FollowMovementMode {
@@ -25,7 +31,7 @@ impl FollowTarget {
                 preferred_distance,
                 rotation_speed,
             },
-            look_at_target: true
+            look_at_target: true,
         }
     }
 
@@ -41,7 +47,7 @@ impl FollowTarget {
 pub struct MoveEvent {
     velocity: Vec3,
     entity: Entity,
-    rotation: Option<Quat>
+    rotation: Option<Quat>,
 }
 
 #[derive(Component, Clone, Debug)]
@@ -80,15 +86,16 @@ pub fn handle_follow_target(
                 }
                 .normalize(),
                 entity: follower_entity,
-                rotation: 
-                if follow_target.look_at_target {
-                   Some(follower_transform.looking_at(target_transform.translation, Vec3::Y).rotation)
-                 } else {
+                rotation: if follow_target.look_at_target {
+                    Some(
+                        follower_transform
+                            .looking_at(target_transform.translation, Vec3::Y)
+                            .rotation,
+                    )
+                } else {
                     None
-                 }
+                },
             });
-
-            
         }
     }
 }
@@ -109,16 +116,13 @@ pub fn handle_kinematic_move_events(
                 transform.rotation = rotation;
             }
         }
-
-        
     }
 }
-
 
 #[derive(Component, Clone, Debug)]
 pub struct SingleAbilityTimed {
     ability: DynamicAbility,
-    timer: Timer, 
+    timer: Timer,
 }
 
 impl SingleAbilityTimed {
@@ -130,12 +134,20 @@ impl SingleAbilityTimed {
     }
 }
 
-pub fn single_ability_timed(mut commands: Commands, query: Query<(Entity, &mut SingleAbilityTimed, &SpawnInfo)>, mut events: EventWriter<CastDynamicAbility>, time: Res<Time>) {
+pub fn single_ability_timed(
+    mut commands: Commands,
+    query: Query<(Entity, &mut SingleAbilityTimed, &SpawnInfo)>,
+    mut events: EventWriter<CastDynamicAbility>,
+    time: Res<Time>,
+) {
     for (caster, mut sat, spawn_info) in query {
         sat.timer.tick(time.delta());
 
         if sat.timer.just_finished() {
-            commands.entity(caster).trigger(CastDynamicAbility::at_caster(sat.ability.clone(), caster).with_target_entity(spawn_info.target));
+            commands.entity(caster).trigger(
+                CastDynamicAbility::at_caster(sat.ability.clone(), caster)
+                    .with_target_entity(spawn_info.target),
+            );
         }
     }
 }
@@ -170,15 +182,18 @@ pub fn handle_contact_damage(
     mut damage_events: EventWriter<DamageEvent>,
     time: Res<Time>,
 ) {
-    for (contact_entity, mut contact_damage, mut contact_transform, contact_faction) in &mut contact_query {
+    for (contact_entity, mut contact_damage, mut contact_transform, contact_faction) in
+        &mut contact_query
+    {
         contact_damage.cooldown.tick(time.delta());
-        
+
         if contact_damage.cooldown.finished() {
             for (target_entity, target_transform, target_faction, _) in &target_query {
                 if contact_entity != target_entity && contact_faction != target_faction {
-                    let distance = contact_transform.translation.distance(target_transform.translation);
+                    let distance = contact_transform
+                        .translation
+                        .distance(target_transform.translation);
                     if distance < contact_damage.radius {
-
                         info!("Contact Damage");
 
                         damage_events.write(DamageEvent {
@@ -189,10 +204,13 @@ pub fn handle_contact_damage(
                             impact_velocity: None,
                         });
 
-                        let knockback_direction = (contact_transform.translation - target_transform.translation).normalize_or_zero();
+                        let knockback_direction = (contact_transform.translation
+                            - target_transform.translation)
+                            .normalize_or_zero();
 
-                        contact_transform.translation += contact_damage.self_knockback * knockback_direction;
-                        
+                        contact_transform.translation +=
+                            contact_damage.self_knockback * knockback_direction;
+
                         contact_damage.cooldown.reset();
                         break;
                     }
@@ -215,8 +233,11 @@ impl DespawnTimer {
     }
 }
 
-pub fn update_despawn_timer(mut commands: Commands, mut query: Query<(Entity, &mut DespawnTimer, &Transform)>, time: Res<Time>) {
-
+pub fn update_despawn_timer(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut DespawnTimer, &Transform)>,
+    time: Res<Time>,
+) {
     for (entity, mut timer, _transform) in &mut query.iter_mut() {
         timer.timer.tick(time.delta());
 
@@ -226,11 +247,16 @@ pub fn update_despawn_timer(mut commands: Commands, mut query: Query<(Entity, &m
     }
 }
 
-
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
-        (handle_follow_target, handle_kinematic_move_events, single_ability_timed, handle_contact_damage, update_despawn_timer),
+        (
+            handle_follow_target,
+            handle_kinematic_move_events,
+            single_ability_timed,
+            handle_contact_damage,
+            update_despawn_timer,
+        ),
     );
     app.add_event::<MoveEvent>();
 }

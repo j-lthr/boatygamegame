@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 pub mod components;
-pub mod spawn;
 pub mod registry;
+pub mod spawn;
 
 pub mod enemies;
 

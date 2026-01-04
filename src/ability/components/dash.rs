@@ -1,7 +1,10 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::ability::{CastBy, components::common::{Lifetime, handle_lifetime}};
+use crate::ability::{
+    CastBy,
+    components::common::{Lifetime, handle_lifetime},
+};
 
 #[derive(Clone, Debug)]
 pub enum DashState {
@@ -26,9 +29,7 @@ pub fn handle_transport_caster(
 ) {
     for (entity, dash_transform, mut transport_caster, caster, lifetime) in ability_query {
         if let Ok(mut caster_transform) = caster_query.get_mut(caster.entity) {
-      
             caster_transform.translation = dash_transform.translation;
-
         }
     }
 }

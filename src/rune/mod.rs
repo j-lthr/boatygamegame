@@ -2,14 +2,14 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 
-mod runes;
 mod modifier_rune;
+mod runes;
 
 pub use modifier_rune::*;
 pub use runes::*;
 
-use crate::{common::Inertia, init::DespawnOnReset};
 use crate::ability::components::spawn::RandomSpawnOffset;
+use crate::{common::Inertia, init::DespawnOnReset};
 
 #[derive(Component)]
 pub struct Collector {
@@ -69,7 +69,9 @@ pub fn handle_rune_pickup<T: Rune>(
             } else if distance < collector.magnet_radius {
                 pickup_transform.translation = pickup_transform.translation.lerp(
                     collector_transform.translation,
-                    collector.magnet_force / distance.powi(2) * time.delta_secs() * time.delta_secs(),
+                    collector.magnet_force / distance.powi(2)
+                        * time.delta_secs()
+                        * time.delta_secs(),
                 );
             }
         }
@@ -82,10 +84,7 @@ pub struct RuneAssets<T: Rune> {
     _marker: PhantomData<T>,
 }
 
-pub fn setup_rune_assets<T: Rune>(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn setup_rune_assets<T: Rune>(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mesh_handle = asset_server.load::<Mesh>("models/ico.obj");
 
     commands.insert_resource(RuneAssets {
@@ -132,7 +131,7 @@ pub fn spawn_runes<T: Rune>(
                 prev_pos: spawn_event.position,
                 damping: 0.95,
             },
-            RandomSpawnOffset::new(0.05,0.0)
+            RandomSpawnOffset::new(0.05, 0.0),
         ));
     }
 }

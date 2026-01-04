@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    modifiers::*,
-    rune::{ModifierRune},
-};
+use crate::{modifiers::*, rune::ModifierRune};
 
 pub const SPEED_RUNE: ModifierRune = ModifierRune {
     modifier: Modifier::additive(PLAYER_SPEED_MODIFIER, 0.1),

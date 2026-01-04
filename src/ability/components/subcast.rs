@@ -1,12 +1,10 @@
-use bevy::prelude::*;
 use crate::ability::components::events::OnActiveDespawn;
+use bevy::prelude::*;
 
 use crate::{
     ability::{CastBy, CastDynamicAbility, DynamicAbility},
     modifiers::{ModifierID, ModifierStack, apply_modifier_if_present},
 };
-
-
 
 #[derive(Component)]
 pub struct SubCastInfo {
@@ -73,10 +71,10 @@ pub fn handle_sub_cast_once(
             commands.entity(cast_by.entity).trigger(
                 CastDynamicAbility::at_caster(sub_cast_once.ability.clone(), cast_by.entity)
                     .with_target_position(transform.translation)
-                    .with_sub_cast(entity, num_casts, index)
+                    .with_sub_cast(entity, num_casts, index),
             );
         }
-        
+
         commands.entity(entity).remove::<SubCastOnce>();
     }
 
@@ -129,7 +127,7 @@ pub fn handle_timed_sub_cast(
                 commands.entity(cast_by.entity).trigger(
                     CastDynamicAbility::at_caster(timed_sub_cast.ability.clone(), cast_by.entity)
                         .with_target_position(transform.translation)
-                        .with_sub_cast(entity, timed_sub_cast.num_casts_per_interval, index)
+                        .with_sub_cast(entity, timed_sub_cast.num_casts_per_interval, index),
                 );
             }
 
@@ -173,7 +171,9 @@ pub fn handle_cast_on_despawn(
     transforms: Query<&Transform>,
     mut cast_events: EventWriter<CastDynamicAbility>,
 ) -> Result {
-    if let Ok((entity, cast_on_despawn, cast_by, _transform)) = cast_on_despawn.get(trigger.target()) {
+    if let Ok((entity, cast_on_despawn, cast_by, _transform)) =
+        cast_on_despawn.get(trigger.target())
+    {
         let num_casts = if let Some(modifier_id) = cast_on_despawn.modified_by {
             apply_modifier_if_present(
                 modifiers.get(cast_by.entity).ok(),
@@ -190,7 +190,7 @@ pub fn handle_cast_on_despawn(
             commands.entity(cast_by.entity).trigger(
                 CastDynamicAbility::at_caster(cast_on_despawn.ability.clone(), cast_by.entity)
                     .with_target_position(transform.translation)
-                    .with_sub_cast(entity, num_casts, index)
+                    .with_sub_cast(entity, num_casts, index),
             );
         }
     }

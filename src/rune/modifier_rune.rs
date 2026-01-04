@@ -1,8 +1,7 @@
-
 use bevy::prelude::*;
 
 use crate::{
-    modifiers::{ModifierStack, Modifier},
+    modifiers::{Modifier, ModifierStack},
     rune::{Rune, RuneApplicationEvent},
 };
 

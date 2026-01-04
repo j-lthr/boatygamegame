@@ -1,4 +1,4 @@
-use crate::common::{EntityModifier, BundleInjector};
+use crate::common::{BundleInjector, EntityModifier};
 use bevy::prelude::*;
 use std::sync::Arc;
 
@@ -44,7 +44,10 @@ impl Enemy {
         self.components.add_to_entity(entity);
     }
 
-    pub fn from_components(id: &'static str, bundle: impl Bundle + Clone + std::fmt::Debug) -> Self {
+    pub fn from_components(
+        id: &'static str,
+        bundle: impl Bundle + Clone + std::fmt::Debug,
+    ) -> Self {
         Self {
             id: EnemyID(id),
             config: Default::default(),

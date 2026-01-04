@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 
-
 use crate::{
     event::{DeathEvent, EventSource},
     rune::{Rune, RuneSpawnEvent},
@@ -30,7 +29,7 @@ pub struct DropTable {
 
 #[derive(Component, Clone, Debug)]
 pub struct DropScale {
-    pub scale: i32
+    pub scale: i32,
 }
 
 impl Default for DropScale {
@@ -41,7 +40,6 @@ impl Default for DropScale {
 
 impl DropTable {
     pub fn drop_random(&self, mut commands: Commands, position: Vec3) {
-
         if fastrand::f32() > self.total_chance {
             return; // No drop this time
         }
@@ -56,7 +54,10 @@ impl DropTable {
         }
     }
 
-    fn from_weighted_list(weighted_items: Vec<(f32, Arc<dyn EventSource<Vec3>>)>, total_chance: f32) -> Self {
+    fn from_weighted_list(
+        weighted_items: Vec<(f32, Arc<dyn EventSource<Vec3>>)>,
+        total_chance: f32,
+    ) -> Self {
         if weighted_items.is_empty() {
             return Self {
                 entries: Vec::new(),
@@ -81,7 +82,10 @@ impl DropTable {
             entries.push((cumulative_prob, system));
         }
 
-        Self { entries, total_chance }
+        Self {
+            entries,
+            total_chance,
+        }
     }
 }
 
@@ -111,7 +115,10 @@ impl DropTableBuilder {
     }
 
     pub fn build(self) -> DropTable {
-        debug_assert!(self.total_chance >= 0.0 && self.total_chance <= 1.0, "Total chance must be between 0 and 1.");
+        debug_assert!(
+            self.total_chance >= 0.0 && self.total_chance <= 1.0,
+            "Total chance must be between 0 and 1."
+        );
         DropTable::from_weighted_list(self.weighted_items, self.total_chance)
     }
 }

@@ -56,7 +56,7 @@ pub fn spawn_damage_numbers(
                 initial_position: damage_event.position,
                 rise_speed: 20.0,
             },
-            DespawnOnReset
+            DespawnOnReset,
         ));
     }
 }
@@ -80,19 +80,23 @@ pub fn update_damage_numbers(
 
         // Calculate world position (rising up)
         let world_pos = damage_number.initial_position
-            + Vec3::new(0.0, damage_number.rise_speed * progress, damage_number.rise_speed * progress);
+            + Vec3::new(
+                0.0,
+                damage_number.rise_speed * progress,
+                damage_number.rise_speed * progress,
+            );
 
         // Convert world position to screen position
         if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
             (camera_3d_query.single(), camera_2d_query.single())
             && let Ok(viewport_position) =
                 camera_3d.world_to_viewport(camera_3d_transform, world_pos)
-                && let Ok(world_pos_2d) =
-                    camera_2d.viewport_to_world_2d(camera_2d_transform, viewport_position)
-                {
-                    transform.translation = Vec3::new(world_pos_2d.x, world_pos_2d.y, 0.0);
-                    transform.scale = Vec3::splat(1.0 / (1.2 - progress))
-                }
+            && let Ok(world_pos_2d) =
+                camera_2d.viewport_to_world_2d(camera_2d_transform, viewport_position)
+        {
+            transform.translation = Vec3::new(world_pos_2d.x, world_pos_2d.y, 0.0);
+            transform.scale = Vec3::splat(1.0 / (1.2 - progress))
+        }
     }
 }
 

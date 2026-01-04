@@ -217,7 +217,6 @@ pub fn ability_cast_observer(
     Ok(())
 }
 
-
 pub fn plugin(app: &mut App) {
     app.add_plugins((components::plugin, slots::plugin));
 

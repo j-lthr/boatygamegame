@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 
-use crate::ability::{components::subcast::SubCastInfo, CastBy};
+use crate::ability::{CastBy, components::subcast::SubCastInfo};
 use crate::enemy::registry::Enemy;
-use crate::utils::{normal_dist_1d, normal_dist_2d};
 use crate::enemy::spawn::{SpawnEnemyEvent, SpawnInfo};
-
+use crate::utils::{normal_dist_1d, normal_dist_2d};
 
 #[derive(Clone, Debug)]
 pub enum RadialSubCastType {
@@ -47,25 +46,17 @@ impl RadialSubCastOffset {
 
 pub fn handle_radial_sub_cast_offset(
     mut commands: Commands,
-    query: Query<(
-        Entity,
-        &mut Transform,
-        &RadialSubCastOffset,
-        &SubCastInfo,
-    )>,
+    query: Query<(Entity, &mut Transform, &RadialSubCastOffset, &SubCastInfo)>,
 ) {
     for (entity, mut transform, radial_offset, subcast_info) in query {
-
-
         let total_angle = match radial_offset.ty {
             RadialSubCastType::TotalAngle(a) => a,
             RadialSubCastType::AnglePerCast(a) => a * subcast_info.num_casts() as f32,
         };
 
         let angle = ((subcast_info.index() as f32 - (subcast_info.num_casts() - 1) as f32 / 2.0)
-                / subcast_info.num_casts() as f32)
-                * total_angle;
-
+            / subcast_info.num_casts() as f32)
+            * total_angle;
 
         transform.rotation = Quat::from_rotation_y(angle) * transform.rotation;
         let delta_p = transform.forward() * radial_offset.radius;
@@ -92,17 +83,17 @@ impl RandomSpawnOffset {
 
 pub fn handle_random_spawn_offset(
     mut commands: Commands,
-    query: Query<(
-        Entity,
-        &mut Transform,
-        &RandomSpawnOffset,
-    )>,
+    query: Query<(Entity, &mut Transform, &RandomSpawnOffset)>,
 ) {
     for (entity, mut transform, random_spawn_offset) in query {
-
-
-        let new_position = transform.translation + normal_dist_2d(Vec2::ZERO, random_spawn_offset.position_stddev).xxy().with_y(0.0);
-        let new_rotation = Quat::from_axis_angle(Vec3::Y, normal_dist_1d(0.0, random_spawn_offset.rotation_stddev));
+        let new_position = transform.translation
+            + normal_dist_2d(Vec2::ZERO, random_spawn_offset.position_stddev)
+                .xxy()
+                .with_y(0.0);
+        let new_rotation = Quat::from_axis_angle(
+            Vec3::Y,
+            normal_dist_1d(0.0, random_spawn_offset.rotation_stddev),
+        );
 
         transform.translation = new_position;
         transform.rotation *= new_rotation;
@@ -118,9 +109,7 @@ pub struct SpawnEnemyAtCastPosition {
 
 impl SpawnEnemyAtCastPosition {
     pub fn new(enemy: Enemy) -> Self {
-        Self {
-            enemy,
-        }
+        Self { enemy }
     }
 }
 
@@ -139,7 +128,7 @@ pub fn handle_spawn_enemy_at_cast_position(
                 target: spawn_info.target,
             });
         }
-        
+
         commands.entity(entity).despawn();
     }
 }
@@ -151,6 +140,7 @@ pub fn plugin(app: &mut bevy::app::App) {
             handle_radial_sub_cast_offset,
             handle_spawn_enemy_at_cast_position,
             handle_random_spawn_offset,
-        ).chain(),
+        )
+            .chain(),
     );
 }

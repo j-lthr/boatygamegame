@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::player::Player;
 use crate::utils::{normal_dist_1d, normal_dist_2d};
+use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct StarAssets {
@@ -19,44 +19,56 @@ pub struct Star {
     pub scale: f32,
 }
 
-pub fn setup_stars(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>, mut meshes: ResMut<Assets<Mesh>>) {
-    commands.insert_resource(
-      StarAssets {
-          mesh: meshes.add(Sphere::new(0.1)),
-          material: materials.add(StandardMaterial {
-              emissive: LinearRgba::rgb(20.0,20.0,20.0),
-              ..Default::default()
-          })
-      }
-    );
+pub fn setup_stars(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    commands.insert_resource(StarAssets {
+        mesh: meshes.add(Sphere::new(0.1)),
+        material: materials.add(StandardMaterial {
+            emissive: LinearRgba::rgb(20.0, 20.0, 20.0),
+            ..Default::default()
+        }),
+    });
 }
 
-pub fn spawn_stars(mut commands: Commands, assets: Res<StarAssets>, query: Query<(&Transform, &StarEffect)>, time: Res<Time>) {
+pub fn spawn_stars(
+    mut commands: Commands,
+    assets: Res<StarAssets>,
+    query: Query<(&Transform, &StarEffect)>,
+    time: Res<Time>,
+) {
     for (transform, effect) in query.iter() {
-
         let mut prob = effect.spawn_rate * time.delta_secs();
 
-         while fastrand::f32() < prob {
+        while fastrand::f32() < prob {
+            let pos = transform.translation
+                + normal_dist_2d(Vec2::ZERO, effect.spawn_rate)
+                    .xxy()
+                    .with_y(normal_dist_1d(-20.0, 0.0));
 
-             let pos = transform.translation + normal_dist_2d(Vec2::ZERO, effect.spawn_rate).xxy().with_y(normal_dist_1d(-20.0, 0.0));
+            commands.spawn((
+                Transform::from_translation(pos),
+                Mesh3d(assets.mesh.clone()),
+                MeshMaterial3d(assets.material.clone()),
+                Star {
+                    timer: Timer::from_seconds(10.0, TimerMode::Once),
+                    scale: normal_dist_1d(1.0, 0.2),
+                },
+            ));
 
-             commands.spawn((
-                 Transform::from_translation(pos),
-                 Mesh3d(assets.mesh.clone()),
-                 MeshMaterial3d(assets.material.clone()),
-                 Star {
-                     timer: Timer::from_seconds(10.0, TimerMode::Once),
-                     scale: normal_dist_1d(1.0, 0.2),
-                 }
-             ));
-
-             prob -= 1.0;
-         }
+            prob -= 1.0;
+        }
     }
 }
 
-pub fn handle_stars(mut commands: Commands, query: Query<(Entity, &mut Transform, &mut Star), Without<Player>>, player: Query<&Transform, With<Player>>, time: Res<Time>) -> Result {
-
+pub fn handle_stars(
+    mut commands: Commands,
+    query: Query<(Entity, &mut Transform, &mut Star), Without<Player>>,
+    player: Query<&Transform, With<Player>>,
+    time: Res<Time>,
+) -> Result {
     let player_transform = player.single()?;
 
     for (entity, mut transform, mut star) in query {

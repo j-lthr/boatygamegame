@@ -5,9 +5,9 @@ use crate::event::DeathEvent;
 use crate::modifiers::*;
 use crate::player;
 use crate::state;
+use avian3d::prelude::*;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
-use avian3d::prelude::*;
 
 #[derive(Component, Clone, Debug)]
 pub struct HealthPool {
@@ -48,21 +48,18 @@ pub enum Faction {
 }
 
 #[derive(SystemParam)]
-pub struct FactionCollisionHook<'w,'s> {
-    pub faction_query: Query<'w,'s, &'static Faction>,
+pub struct FactionCollisionHook<'w, 's> {
+    pub faction_query: Query<'w, 's, &'static Faction>,
 }
 
-impl<'w,'s> CollisionHooks for FactionCollisionHook<'w,'s> {
+impl<'w, 's> CollisionHooks for FactionCollisionHook<'w, 's> {
     fn filter_pairs(&self, collider1: Entity, collider2: Entity, _commands: &mut Commands) -> bool {
-        
-        
-
         let Ok([group1, group2]) = self.faction_query.get_many([collider1, collider2]) else {
-           return true;
+            return true;
         };
 
         dbg!((group1, group2));
-        
+
         group1 != group2
     }
 }
@@ -181,18 +178,19 @@ pub fn handle_damage_events(
                 // Check if this was an enemy (not player) and killed by player for scoring
                 if player_query.get(damage_event.target).is_err()
                     && let Some(source) = damage_event.source
-                        && player_query.get(source).is_ok() {
-                            // Player killed an enemy - update score!
-                            score.kills += 1;
-                            score.combo += 1;
-                            score.combo_timer.reset(); // Reset combo timer
+                    && player_query.get(source).is_ok()
+                {
+                    // Player killed an enemy - update score!
+                    score.kills += 1;
+                    score.combo += 1;
+                    score.combo_timer.reset(); // Reset combo timer
 
-                            // Calculate points with combo multiplier
-                            let base_points = 100;
-                            let combo_bonus = (score.combo - 1) * 50; // 50 extra points per combo level
-                            let points_earned = base_points + combo_bonus;
-                            score.current += points_earned;
-                        }
+                    // Calculate points with combo multiplier
+                    let base_points = 100;
+                    let combo_bonus = (score.combo - 1) * 50; // 50 extra points per combo level
+                    let points_earned = base_points + combo_bonus;
+                    score.current += points_earned;
+                }
             }
         }
     }
@@ -238,7 +236,7 @@ pub fn plugin(app: &mut App) {
     app.add_systems(Update, (update_health_pool, apply_regen));
 }
 
-pub trait EntityModifier : std::fmt::Debug {
+pub trait EntityModifier: std::fmt::Debug {
     fn add_to_entity(&self, entity: &mut EntityCommands);
 }
 

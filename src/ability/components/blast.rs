@@ -1,8 +1,8 @@
-use bevy::prelude::*;
 use crate::ability::CastBy;
 use crate::common;
 use crate::event;
 use crate::modifiers::*;
+use bevy::prelude::*;
 
 #[derive(Component, Clone, Debug)]
 pub struct BlastDamage {
@@ -16,7 +16,7 @@ pub fn handle_blast_damage(
     target_query: Query<(Entity, &Transform, &common::HealthPool)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     faction_query: Query<&common::Faction>,
-    modifiers: Query<&ModifierStack>
+    modifiers: Query<&ModifierStack>,
 ) {
     for (explosion_entity, blast, cast_by, explosion_transform) in explosion_query.iter_mut() {
         // Apply area damage
@@ -30,19 +30,22 @@ pub fn handle_blast_damage(
             if let (Ok(source_faction), Ok(target_faction)) = (
                 faction_query.get(cast_by.entity),
                 faction_query.get(target_entity),
-            )
-                && source_faction == target_faction {
-                    continue;
-                }
+            ) && source_faction == target_faction
+            {
+                continue;
+            }
 
             let distance = explosion_transform
                 .translation
                 .distance(target_transform.translation);
 
-                let modifiers = modifiers.get(cast_by.entity).ok();
+            let modifiers = modifiers.get(cast_by.entity).ok();
 
-            let radius = apply_modifier_if_present(modifiers, AOE_RADIUS_MODIFIER, blast.base_radius);
-            let damage = apply_modifier_if_present(modifiers, DAMAGE_MODIFIER, blast.base_damage as f32) as i32;
+            let radius =
+                apply_modifier_if_present(modifiers, AOE_RADIUS_MODIFIER, blast.base_radius);
+            let damage =
+                apply_modifier_if_present(modifiers, DAMAGE_MODIFIER, blast.base_damage as f32)
+                    as i32;
 
             if distance <= radius {
                 // Calculate damage falloff (full damage at center, 25% at edge)
@@ -89,7 +92,8 @@ impl BlastBundle {
         damage: i32,
         fade_duration: f32,
     ) -> Self {
-        let explosion_material = materials.add(StandardMaterial { // Orange with transparency
+        let explosion_material = materials.add(StandardMaterial {
+            // Orange with transparency
             emissive: color.into(),
             ..default()
         });
@@ -103,7 +107,10 @@ impl BlastBundle {
                 max_lifetime: fade_duration,
                 emissive_color: color,
             },
-            blast_damage: BlastDamage { base_radius: radius, base_damage: damage },
+            blast_damage: BlastDamage {
+                base_radius: radius,
+                base_damage: damage,
+            },
         }
     }
 }
@@ -115,13 +122,14 @@ pub fn handle_blast_visual(
         &mut Transform,
         &mut BlastVisual,
         &mut MeshMaterial3d<StandardMaterial>,
-        &CastBy
+        &CastBy,
     )>,
     modifiers: Query<&ModifierStack>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     time: Res<Time>,
 ) {
-    for (entity, mut transform, mut visual, material, cast_by) in explosion_visual_query.iter_mut() {
+    for (entity, mut transform, mut visual, material, cast_by) in explosion_visual_query.iter_mut()
+    {
         visual.lifetime -= time.delta_secs();
 
         if visual.lifetime <= 0.0 {
@@ -150,7 +158,11 @@ pub fn handle_blast_visual(
             emissive_rgb.blue * (brightness),
         );
 
-        let max_scale = apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), AOE_RADIUS_MODIFIER, visual.max_scale);
+        let max_scale = apply_modifier_if_present(
+            modifiers.get(cast_by.entity).ok(),
+            AOE_RADIUS_MODIFIER,
+            visual.max_scale,
+        );
 
         transform.scale = Vec3::splat(scale_progress * max_scale);
     }

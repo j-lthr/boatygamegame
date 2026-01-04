@@ -153,7 +153,7 @@ impl Decodable for FMSound {
     }
 }
 
-/* 
+/*
 pub const GUN_SOUND: FMSoundConfig = FMSoundConfig {
     carrier_freq: 440.0,   // A2 note
     modulator_freq: 220.0, // A3 note

@@ -1,6 +1,5 @@
 pub use bevy::prelude::*;
 
-
 pub fn spawn_watermark(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Text::new(format!("Developer Build v{}", env!("CARGO_PKG_VERSION"))),

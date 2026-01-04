@@ -1,8 +1,8 @@
 use crate::audio::music::PlayMusicEvent;
 use crate::enemy::spawn::SpawnerState;
 use crate::init::{DespawnOnReset, GameInit};
-use crate::state::{GameScore, GameState};
 use crate::localization::LocalizationResource;
+use crate::state::{GameScore, GameState};
 use bevy::prelude::*;
 use std::collections::HashMap;
 
@@ -99,11 +99,10 @@ pub fn setup_game_over_screen(
             ));
         });
 
-        commands.send_event(PlayMusicEvent {
-            track_name: "audio/bg_game_over.wav",
-            mode: bevy::audio::PlaybackMode::Once,
-        });
-
+    commands.send_event(PlayMusicEvent {
+        track_name: "audio/bg_game_over.wav",
+        mode: bevy::audio::PlaybackMode::Once,
+    });
 }
 
 // Handle input on game over screen

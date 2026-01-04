@@ -2,11 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use crate::{
-    common::HealthPool,
-    event::DeathEvent,
-    init::DespawnOnReset,
-};
+use crate::{common::HealthPool, event::DeathEvent, init::DespawnOnReset};
 
 // Enhanced blood particle component with realistic properties
 #[derive(Component)]
@@ -194,13 +190,8 @@ pub fn handle_particle_physics(
 }
 
 /// System to update blood particle rendering based on age and state
-pub fn blood_particle_rendering(
-    mut particle_query: Query<(
-        &mut Transform,
-        &Particle,
-    )>,
-) {
-    for ( mut transform, particle) in &mut particle_query {
+pub fn blood_particle_rendering(mut particle_query: Query<(&mut Transform, &Particle)>) {
+    for (mut transform, particle) in &mut particle_query {
         let age_ratio = (particle.lifetime / particle.max_lifetime).clamp(0.0, 1.0);
 
         // Scale particles slightly based on size factor and age
@@ -229,10 +220,7 @@ pub fn blood_particle_rendering(
 }
 
 /// System to cleanup old blood particles
-pub fn cleanup_blood_particles(
-    mut commands: Commands,
-    particle_query: Query<(Entity, &Particle)>,
-) {
+pub fn cleanup_blood_particles(mut commands: Commands, particle_query: Query<(Entity, &Particle)>) {
     for (entity, particle) in &particle_query {
         if particle.lifetime > particle.max_lifetime {
             commands.entity(entity).despawn();

@@ -1,5 +1,5 @@
-use crate::state::GameScore;
 use crate::localization::LocalizationResource;
+use crate::state::GameScore;
 use bevy::prelude::*;
 use std::collections::HashMap;
 
@@ -9,11 +9,9 @@ pub struct ScoreText;
 #[derive(Component)]
 pub struct ComboText;
 
-
-
 // Setup the score UI
 pub fn setup_score_ui(
-    mut commands: Commands, 
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     localization: Res<LocalizationResource>,
 ) {
@@ -55,8 +53,6 @@ pub fn setup_score_ui(
         },
         ComboText,
     ));
-
-
 }
 
 // Update score display system
@@ -89,7 +85,6 @@ pub fn update_combo_display(
         }
     }
 }
-
 
 pub fn update_combo_system(mut score: ResMut<GameScore>, time: Res<Time>) {
     score.combo_timer.tick(time.delta());

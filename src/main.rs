@@ -52,7 +52,11 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .add_plugins(PhysicsPlugins::default().with_length_unit(1.0).with_collision_hooks::<FactionCollisionHook>())
+        .add_plugins(
+            PhysicsPlugins::default()
+                .with_length_unit(1.0)
+                .with_collision_hooks::<FactionCollisionHook>(),
+        )
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(ObjPlugin)
         .add_plugins((
@@ -69,7 +73,7 @@ fn main() {
             input::plugin,
             localization::plugin,
             common::plugin,
-            fx::plugin
+            fx::plugin,
         ))
         .add_audio_source::<fx::fm::FMSound>()
         .init_state::<state::GameState>()
@@ -89,15 +93,10 @@ fn main() {
                 common::emit_death_events,
                 common::handle_npc_death,
                 common::handle_velocity_averaging,
-            ).run_if(in_state(GameState::Playing)),
+            )
+                .run_if(in_state(GameState::Playing)),
         )
-        .add_systems(
-            Update,
-            (
-                player::handle_camera,
-                common::handle_inertia,
-            ),
-        )
+        .add_systems(Update, (player::handle_camera, common::handle_inertia))
         .add_systems(GameInit, play_main_music)
         .add_systems(
             Update,

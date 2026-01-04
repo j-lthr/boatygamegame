@@ -293,44 +293,34 @@ pub fn handle_ability_slot_trigger(
         return;
     }
 
-    let mut event = CastDynamicAbility::at_caster(
-                        slotted_ability.ability.clone(),
-                        trigger.target(),
-                    );
+    let mut event =
+        CastDynamicAbility::at_caster(slotted_ability.ability.clone(), trigger.target());
 
     // Resolve target and cast based on ability's targeting behavior
 
-    commands.entity(trigger.target()).trigger(
-    match &slotted_ability.targeting {
-        AbilityTargeting::Cursor => {
-            if let Ok(cursor_transform) = cursor_query.single() {
-                let cursor_pos = cursor_transform.translation;
-                event.with_target_position(cursor_pos)
-            } else {
-                warn!("No cursor found, falling back to self-cast");
-                event
-            }
-
-            
-        }
-        AbilityTargeting::NearestEnemyToCursor { max_range } => {
-            let target = resolve_nearest_enemy_to_cursor(&cursor_query, &enemy_query, *max_range);
-            match target {
-                IntendedTarget::Entity(entity) => {
-                    event.with_target_entity(entity)
-                }
-                IntendedTarget::Position(pos) => {
-                    event.with_target_position(pos)
-                }
-                IntendedTarget::None => {
-                   event
+    commands
+        .entity(trigger.target())
+        .trigger(match &slotted_ability.targeting {
+            AbilityTargeting::Cursor => {
+                if let Ok(cursor_transform) = cursor_query.single() {
+                    let cursor_pos = cursor_transform.translation;
+                    event.with_target_position(cursor_pos)
+                } else {
+                    warn!("No cursor found, falling back to self-cast");
+                    event
                 }
             }
-        }
-        AbilityTargeting::SelfCast => {
-            event
-        }
-    });
+            AbilityTargeting::NearestEnemyToCursor { max_range } => {
+                let target =
+                    resolve_nearest_enemy_to_cursor(&cursor_query, &enemy_query, *max_range);
+                match target {
+                    IntendedTarget::Entity(entity) => event.with_target_entity(entity),
+                    IntendedTarget::Position(pos) => event.with_target_position(pos),
+                    IntendedTarget::None => event,
+                }
+            }
+            AbilityTargeting::SelfCast => event,
+        });
 
     // Trigger cooldown
     slotted_ability.trigger_cooldown();

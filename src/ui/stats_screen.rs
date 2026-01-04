@@ -123,8 +123,5 @@ fn spawn_stats_screen(
 }
 
 pub fn plugin(app: &mut App) {
-    app.add_systems(
-        Update,
-        handle_stats_screen_visibility,
-    );
+    app.add_systems(Update, handle_stats_screen_visibility);
 }

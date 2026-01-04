@@ -52,8 +52,10 @@ pub fn update(
                 *vis = Visibility::Hidden;
             } else {
                 *vis = Visibility::default();
-                if let (Ok((camera_3d_transform, camera_3d)), Ok((camera_2d_transform, camera_2d))) =
-                    (camera_3d_query.single(), camera_2d_query.single())
+                if let (
+                    Ok((camera_3d_transform, camera_3d)),
+                    Ok((camera_2d_transform, camera_2d)),
+                ) = (camera_3d_query.single(), camera_2d_query.single())
                 {
                     let _ = camera_3d
                         .world_to_viewport(
