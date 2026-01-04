@@ -15,6 +15,7 @@ pub enum FollowMovementMode {
 #[derive(Component, Clone, Debug)]
 pub struct FollowTarget {
     pub mode: FollowMovementMode,
+    look_at_target: bool,
 }
 
 impl FollowTarget {
@@ -23,7 +24,15 @@ impl FollowTarget {
             mode: FollowMovementMode::Ranged {
                 preferred_distance,
                 rotation_speed,
-            }
+            },
+            look_at_target: true
+        }
+    }
+
+    pub fn melee() -> Self {
+        Self {
+            mode: FollowMovementMode::ToMeleeRange,
+            look_at_target: true,
         }
     }
 }
@@ -32,6 +41,7 @@ impl FollowTarget {
 pub struct MoveEvent {
     velocity: Vec3,
     entity: Entity,
+    rotation: Option<Quat>
 }
 
 #[derive(Component, Clone, Debug)]
@@ -40,18 +50,18 @@ pub struct FirstOrderMovement {
     pub jitter: f32,
 }
 
-pub fn handle_follow_movement(
+pub fn handle_follow_target(
     follower_query: Query<(Entity, &FollowTarget, &Transform, &SpawnInfo)>,
     target_query: Query<&Transform>,
     mut move_events: EventWriter<MoveEvent>,
     time: Res<Time>,
 ) {
-    for (follower_entity, follower_movement, follower_transform, spawn_info) in follower_query {
+    for (follower_entity, follow_target, follower_transform, spawn_info) in follower_query {
         if let Ok(target_transform) = target_query.get(spawn_info.target) {
             let delta = target_transform.translation - follower_transform.translation;
 
             move_events.write(MoveEvent {
-                velocity: match follower_movement.mode {
+                velocity: match follow_target.mode {
                     FollowMovementMode::ToMeleeRange => delta,
                     FollowMovementMode::Ranged {
                         preferred_distance,
@@ -70,7 +80,15 @@ pub fn handle_follow_movement(
                 }
                 .normalize(),
                 entity: follower_entity,
+                rotation: 
+                if follow_target.look_at_target {
+                   Some(follower_transform.looking_at(target_transform.translation, Vec3::Y).rotation)
+                 } else {
+                    None
+                 }
             });
+
+            
         }
     }
 }
@@ -86,7 +104,13 @@ pub fn handle_kinematic_move_events(
 
             transform.translation.x += normal_dist_1d(0.0, 1.0) * movement.jitter;
             transform.translation.z += normal_dist_1d(0.0, 1.0) * movement.jitter;
+
+            if let Some(rotation) = move_event.rotation {
+                transform.rotation = rotation;
+            }
         }
+
+        
     }
 }
 
@@ -106,12 +130,12 @@ impl SingleAbilityTimed {
     }
 }
 
-pub fn single_ability_timed(query: Query<(Entity, &mut SingleAbilityTimed, &SpawnInfo)>, mut events: EventWriter<CastDynamicAbility>, time: Res<Time>) {
+pub fn single_ability_timed(mut commands: Commands, query: Query<(Entity, &mut SingleAbilityTimed, &SpawnInfo)>, mut events: EventWriter<CastDynamicAbility>, time: Res<Time>) {
     for (caster, mut sat, spawn_info) in query {
         sat.timer.tick(time.delta());
 
         if sat.timer.just_finished() {
-            events.write(CastDynamicAbility::at_caster(sat.ability.clone(), caster).with_target_entity(spawn_info.target));
+            commands.entity(caster).trigger(CastDynamicAbility::at_caster(sat.ability.clone(), caster).with_target_entity(spawn_info.target));
         }
     }
 }
@@ -206,7 +230,7 @@ pub fn update_despawn_timer(mut commands: Commands, mut query: Query<(Entity, &m
 pub fn plugin(app: &mut App) {
     app.add_systems(
         Update,
-        (handle_follow_movement, handle_kinematic_move_events, single_ability_timed, handle_contact_damage, update_despawn_timer),
+        (handle_follow_target, handle_kinematic_move_events, single_ability_timed, handle_contact_damage, update_despawn_timer),
     );
     app.add_event::<MoveEvent>();
 }

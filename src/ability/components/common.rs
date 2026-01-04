@@ -1,7 +1,11 @@
+use std::f32;
+
 use super::events::OnActiveDespawn;
+use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
 
 use super::projectile::InitialVelocity;
+use crate::ability::components::projectile::handle_initial_velocity;
 use crate::ability::{resolve_target, CastBy, IntendedTarget};
 use crate::common::{Faction, Targetable};
 use crate::modifiers::*;
@@ -150,24 +154,41 @@ pub fn handle_lifetime(
     }
 }
 
-#[derive(Component, Clone, Copy)]
-pub struct LifetimeFromCursor;
+#[derive(Component, Clone, Copy, Debug)]
+pub struct LifetimeFromCursor {
+    max_distance: f32,
+}
+
+impl LifetimeFromCursor {
+    pub fn new() -> LifetimeFromCursor {
+        LifetimeFromCursor{ 
+            max_distance: f32::INFINITY,
+        }
+    }
+
+    pub fn with_max_distance(mut self, max_distance: f32) -> Self {
+        self.max_distance = max_distance;
+        self
+    }
+}
 
 pub fn handle_lifetime_from_cursor(
     mut query: Query<
-        (&mut Lifetime, &IntendedTarget, &Transform, &InitialVelocity),
-        Added<LifetimeFromCursor>,
+        (Entity, &mut Lifetime, &IntendedTarget, &Transform, &LinearVelocity, &LifetimeFromCursor),
     >,
-    mut transforms: Query<&Transform>,
+    mut transforms: Query<&GlobalTransform>,
+    mut commands: Commands,
 ) -> Result {
 
-    for (mut lifetime, target, transform, linear_movement) in query.iter_mut() {
+    for (entity, mut lifetime, target, transform, linear_vel, lfc) in query.iter_mut() {
 
         let position = resolve_target(transforms.transmute_lens(), *target)?.position;
-        let distance = transform.translation.distance(position);
-        let duration = distance / linear_movement.base_speed;
-
+        let distance = transform.translation.distance(position).min(lfc.max_distance);
+        let duration = distance / linear_vel.0.length();
+     
         lifetime.set_dynamic_duration(duration)?;
+
+        commands.entity(entity).remove::<LifetimeFromCursor>();
     }
 
     Ok(())
@@ -234,7 +255,7 @@ pub fn plugin(app: &mut App) {
         (
             handle_attach_to_caster,
             handle_lifetime,
-            handle_lifetime_from_cursor,
+            handle_lifetime_from_cursor.after(handle_initial_velocity),
             handle_select_nearest_target_on_spawn,
         ),
     );

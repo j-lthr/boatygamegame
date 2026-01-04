@@ -1,10 +1,12 @@
 use avian3d::prelude::Collider;
+use avian3d::prelude::LockedAxes;
 use avian3d::prelude::RigidBody;
 use bevy::prelude::*;
 
 use super::components::*;
 use super::registry::*;
 use crate::ability::components::subcast::TimedSubCast;
+use crate::ability::CastConfig;
 use crate::ability::DynamicAbility;
 use crate::ability::components::blast::BlastBundle;
 use crate::ability::components::common::Lifetime;
@@ -47,11 +49,9 @@ pub fn register_enemies(
             (
                 Mesh3d(meshes.add(Sphere::new(0.5))),
                 MeshMaterial3d(rusher_material),
-                Collider::sphere(1.0),
+                Collider::sphere(0.7),
                 HealthBundle::new(30, 0),
-                FollowTarget {
-                    mode: FollowMovementMode::ToMeleeRange,
-                },
+                FollowTarget::melee(),
                 FirstOrderMovement {
                     speed: 15.0,
                     jitter: 0.2,
@@ -64,44 +64,48 @@ pub fn register_enemies(
         registry.register_enemy(rusher);
     }
 
-    //  {
-    //     let material = materials.add(StandardMaterial {
-    //         emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
-    //         ..Default::default()
-    //     });
+     {
+        let material = materials.add(StandardMaterial {
+            emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
+            ..Default::default()
+        });
 
-    //     let projectile = DynamicAbility::from_components((
-    //         InitialVelocity::forward(30.0),
-    //         Lifetime::fixed(2.0),
-    //         LifetimeFadeout::new(0.2),
-    //         DespawnOnCollision,
-    //         DamageOnCollision { base_damage: 10.0 },
-    //         RadialSubCastOffset::from_degrees_per_cast(1.0, 5.0),
-    //         Mesh3d(meshes.add(Sphere::new(0.25))),
-    //         MeshMaterial3d(material.clone()),
-    //     ));
+        let projectile = DynamicAbility::from_components((
+            RigidBody::Dynamic,
+            Collider::sphere(0.25),
+            InitialVelocity::forward(50.0),
+            Lifetime::fixed(2.0),
+            LifetimeFadeout::new(0.2),
+            DespawnOnCollision,
+            DamageOnCollision { base_damage: 10.0 },
+            RadialSubCastOffset::from_degrees_per_cast(1.5, 5.0),
+            Mesh3d(meshes.add(Sphere::new(0.25))),
+            MeshMaterial3d(material.clone()),
+            LockedAxes::new().lock_translation_y()
+        ));
+        
 
-    //     let ability = DynamicAbility::from_components((SubCastOnce::new(projectile.clone(), 3),));
+        let ability = DynamicAbility::from_components((SubCastOnce::new(projectile.clone(), 3),));
 
-    //     let ranger = Enemy::from_components(
-    //         "small-ranger",
-    //         (
-    //             Mesh3d(meshes.add(Sphere::new(1.0))),
+        let ranger = Enemy::from_components(
+            "small-ranger",
+            (
+                Mesh3d(meshes.add(Sphere::new(1.0))),
+                Collider::sphere(1.1),
+                MeshMaterial3d(material),
+                HealthBundle::new(50, 0),
+                FollowTarget::ranged(10.0, 0.0),
+                FirstOrderMovement {
+                    speed: 10.0,
+                    jitter: 0.1,
+                },
+                SingleAbilityTimed::new(ability, 1.0),
+                normal_drop_table.clone(),
+            ),
+        ).with_num_slots(2);
 
-    //             MeshMaterial3d(material),
-    //             HealthBundle::new(50, 0),
-    //             FollowTarget::ranged(10.0, 0.0),
-    //             FirstOrderMovement {
-    //                 speed: 10.0,
-    //                 jitter: 0.1,
-    //             },
-    //             SingleAbilityTimed::new(ability, 1.0),
-    //             normal_drop_table.clone(),
-    //         ),
-    //     ).with_num_slots(2);
-
-    //     registry.register_enemy(ranger);
-    // }
+        registry.register_enemy(ranger);
+    }
 
     // {
     //     let material = materials.add(StandardMaterial {

@@ -11,7 +11,7 @@ pub struct Cursor;
 pub fn update_cursor(
     windows: Query<&Window>,
     camera: Query<(&Camera, &GlobalTransform), With<Camera3d>>,
-    mut player: Query<&mut Transform, (With<Player>, Without<Cursor>)>,
+    player: Query<&mut Transform, (With<Player>, Without<Cursor>)>,
     mut cursor: Query<(&mut Transform, &mut Visibility), With<Cursor>>,
     time: Res<Time>,
 ) -> Result {
@@ -24,7 +24,7 @@ pub fn update_cursor(
 
         let ray = camera.viewport_to_world(camera_transform, cursor_pos)?;
 
-        let mut player = player.single_mut()?;
+        let player = player.single()?;
 
         if let Some(position) = ray
             .intersect_plane(Vec3::ZERO, InfinitePlane3d { normal: Dir3::Y })
@@ -38,8 +38,6 @@ pub fn update_cursor(
                 .slerp(target_transform.rotation, 10.0 * time.delta_secs());
 
             *visibility = Visibility::Visible;
-
-            player.look_at(cursor_transform.translation, Vec3::Y);
         }
     } else {
         *visibility = Visibility::Hidden;

@@ -127,33 +127,10 @@ impl AbilitySlots {
 }
 
 /// Configurable keymap for ability slots
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Default)]
 pub struct AbilityKeymap {
     bindings: HashMap<KeyCode, SlotId>,
     mouse_bindings: HashMap<MouseButton, SlotId>,
-}
-
-impl Default for AbilityKeymap {
-    fn default() -> Self {
-        let mut bindings = HashMap::new();
-        let mut mouse_bindings = HashMap::new();
-
-        // Default bindings
-        mouse_bindings.insert(MouseButton::Left, SlotId(0));
-        bindings.insert(KeyCode::Space, SlotId(1));
-        bindings.insert(KeyCode::ShiftLeft, SlotId(2));
-        bindings.insert(KeyCode::Tab, SlotId(3));
-
-        // Alternative bindings
-        bindings.insert(KeyCode::KeyQ, SlotId(1));
-        bindings.insert(KeyCode::KeyE, SlotId(2));
-        bindings.insert(KeyCode::KeyF, SlotId(3));
-
-        Self {
-            bindings,
-            mouse_bindings,
-        }
-    }
 }
 
 impl AbilityKeymap {
@@ -214,9 +191,7 @@ pub struct TriggerAbilitySlot {
 
 impl TriggerAbilitySlot {
     pub fn from_id(id: SlotId) -> Self {
-        Self {
-            slot_id: id,
-        }
+        Self { slot_id: id }
     }
 }
 
@@ -240,18 +215,21 @@ pub fn handle_ability_input(
         return;
     };
 
-
     // Handle keyboard inputs
-    for key in keyboard.get_just_pressed() {
+    for key in keyboard.get_pressed() {
         if let Some(slot_id) = keymap.get_slot_for_key(key) {
-            commands.entity(player_entity).trigger(TriggerAbilitySlot::from_id(slot_id));
+            commands
+                .entity(player_entity)
+                .trigger(TriggerAbilitySlot::from_id(slot_id));
         }
     }
 
     // Handle mouse inputs
-    for button in mouse.get_just_pressed() {
+    for button in mouse.get_pressed() {
         if let Some(slot_id) = keymap.get_slot_for_mouse(button) {
-            commands.entity(player_entity).trigger(TriggerAbilitySlot::from_id(slot_id));
+            commands
+                .entity(player_entity)
+                .trigger(TriggerAbilitySlot::from_id(slot_id));
         }
     }
 }
@@ -293,7 +271,7 @@ pub fn handle_ability_slot_trigger(
     mut ability_slots: Query<&mut AbilitySlots>,
     cursor_query: Query<&Transform, With<Cursor>>,
     enemy_query: Query<(Entity, &Transform), (With<Targetable>, Without<Player>)>,
-    mut cast_events: EventWriter<CastDynamicAbility>,
+    mut commands: Commands,
 ) {
     let event = trigger.event();
 
@@ -301,6 +279,11 @@ pub fn handle_ability_slot_trigger(
         return;
     };
     let Some(slotted_ability) = slots.get_ability_mut(event.slot_id) else {
+        warn!(
+            "Entity {} doesn't have an ability in slot {}",
+            trigger.target(),
+            event.slot_id.0
+        );
         return;
     };
 
@@ -310,53 +293,44 @@ pub fn handle_ability_slot_trigger(
         return;
     }
 
+    let mut event = CastDynamicAbility::at_caster(
+                        slotted_ability.ability.clone(),
+                        trigger.target(),
+                    );
+
     // Resolve target and cast based on ability's targeting behavior
+
+    commands.entity(trigger.target()).trigger(
     match &slotted_ability.targeting {
         AbilityTargeting::Cursor => {
             if let Ok(cursor_transform) = cursor_query.single() {
                 let cursor_pos = cursor_transform.translation;
-                cast_events.write(
-                    CastDynamicAbility::at_caster(slotted_ability.ability.clone(), trigger.target())
-                        .with_target_position(cursor_pos),
-                );
+                event.with_target_position(cursor_pos)
+            } else {
+                warn!("No cursor found, falling back to self-cast");
+                event
             }
+
+            
         }
         AbilityTargeting::NearestEnemyToCursor { max_range } => {
             let target = resolve_nearest_enemy_to_cursor(&cursor_query, &enemy_query, *max_range);
             match target {
                 IntendedTarget::Entity(entity) => {
-                    cast_events.write(
-                        CastDynamicAbility::at_caster(
-                            slotted_ability.ability.clone(),
-                            trigger.target(),
-                        )
-                        .with_target_entity(entity),
-                    );
+                    event.with_target_entity(entity)
                 }
                 IntendedTarget::Position(pos) => {
-                    cast_events.write(
-                        CastDynamicAbility::at_caster(
-                            slotted_ability.ability.clone(),
-                            trigger.target(),
-                        )
-                        .with_target_position(pos),
-                    );
+                    event.with_target_position(pos)
                 }
                 IntendedTarget::None => {
-                    cast_events.write(CastDynamicAbility::at_caster(
-                        slotted_ability.ability.clone(),
-                        trigger.target(),
-                    ));
+                   event
                 }
             }
         }
         AbilityTargeting::SelfCast => {
-            cast_events.write(CastDynamicAbility::at_caster(
-                slotted_ability.ability.clone(),
-                trigger.target(),
-            ));
+            event
         }
-    };
+    });
 
     // Trigger cooldown
     slotted_ability.trigger_cooldown();

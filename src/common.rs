@@ -5,7 +5,9 @@ use crate::event::DeathEvent;
 use crate::modifiers::*;
 use crate::player;
 use crate::state;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
+use avian3d::prelude::*;
 
 #[derive(Component, Clone, Debug)]
 pub struct HealthPool {
@@ -43,6 +45,26 @@ impl HealthPool {
 pub enum Faction {
     Friendly,
     Enemy,
+}
+
+#[derive(SystemParam)]
+pub struct FactionCollisionHook<'w,'s> {
+    pub faction_query: Query<'w,'s, &'static Faction>,
+}
+
+impl<'w,'s> CollisionHooks for FactionCollisionHook<'w,'s> {
+    fn filter_pairs(&self, collider1: Entity, collider2: Entity, _commands: &mut Commands) -> bool {
+        
+        
+
+        let Ok([group1, group2]) = self.faction_query.get_many([collider1, collider2]) else {
+           return true;
+        };
+
+        dbg!((group1, group2));
+        
+        group1 != group2
+    }
 }
 
 #[derive(Component)]
@@ -228,8 +250,3 @@ impl<B: Bundle + Clone + std::fmt::Debug> EntityModifier for BundleInjector<B> {
         entity.insert(self.0.clone());
     }
 }
-
-pub fn create_bundle_injector<B: Bundle + Clone + std::fmt::Debug>(b: B) -> Arc<dyn EntityModifier> {
-    Arc::new(BundleInjector(b))
-}
-

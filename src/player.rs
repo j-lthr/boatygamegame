@@ -1,12 +1,15 @@
-use crate::ability::DynamicAbility;
 use crate::ability::components::blast::BlastBundle;
-use crate::ability::components::common::{DynamicTarget, Lifetime, SelectNearestTargetOnSpawn};
+use crate::ability::components::common::{DynamicTarget, Lifetime, LifetimeFromCursor, SelectNearestTargetOnSpawn};
+use crate::ability::components::dash::TransportCaster;
 use crate::ability::components::projectile::{
     DamageOnCollision, DespawnOnCollision, Homing, InitialVelocity,
 };
 use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset};
-use crate::ability::components::subcast::SubCastOnce;
-use crate::ability::slots::{AbilityKeymap, AbilitySlots, AbilityTargeting, SlottedAbility};
+use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
+use crate::ability::slots::{
+    AbilityKeymap, AbilitySlots, AbilityTargeting, SlotId, SlottedAbility,
+};
+use crate::ability::{CastConfig, DynamicAbility};
 use crate::common::{HealthBundle, Targetable};
 use crate::event::SpawnEvent;
 use crate::init::DespawnOnReset;
@@ -15,9 +18,13 @@ use crate::input::Cursor;
 use crate::modifiers::*;
 use crate::rune::Collector;
 
-use avian3d::prelude::{Collider, LinearVelocity, LockedAxes, RigidBody};
+use avian3d::prelude::{
+    Collider, ColliderConstructor, CollisionEventsEnabled, LinearVelocity, LockedAxes, RigidBody,
+};
 use bevy::input::mouse::AccumulatedMouseScroll;
 use bevy::prelude::*;
+use avian3d::prelude::*;
+
 use std::f32;
 
 use bevy::core_pipeline::bloom::Bloom;
@@ -35,7 +42,6 @@ use crate::fx::stars::StarEffect;
 pub struct Player {
     pub base_speed: f32,
 }
-
 
 #[derive(Component, Debug)]
 pub struct PlayerCamera {
@@ -66,27 +72,33 @@ pub fn spawn_player(
             &mut meshes,
             &mut materials,
             Color::srgb(30.0, 30.0, 30.0),
-            0.5,
-            10,
+            10.0,
+            100,
             0.1,
         ),
         DespawnOnReset,
-    ));
+    ))
+    .with_config(CastConfig {
+        spawn_location: crate::ability::SpawnLocation::Target,
+        ..Default::default()
+    });
 
     let projectile = DynamicAbility::from_components((
         RigidBody::Dynamic,
         Lifetime::fixed(0.5),
         LifetimeFadeout::new(0.1),
         Collider::sphere(0.1),
-        InitialVelocity::forward(50.0),
-        Homing {base_turn_speed: 1.0},
+        InitialVelocity::forward(70.0),
+        Homing {
+            base_turn_speed: 1.0,
+        },
         //LifetimeFromCursor,
         (
             DespawnOnCollision,
             DamageOnCollision { base_damage: 10.0 },
             DynamicTarget::new(),
             SelectNearestTargetOnSpawn::new(3.0),
-            RadialSubCastOffset::from_degrees_per_cast(0.0, 10.0),
+            RadialSubCastOffset::from_degrees_per_cast(1.5, 10.0),
             RandomSpawnOffset::new(0.0, 0.01),
         ),
         Mesh3d(meshes.add(Sphere::new(0.1))),
@@ -96,6 +108,15 @@ pub fn spawn_player(
 
     let projectile_ability = DynamicAbility::from_components((
         SubCastOnce::new(projectile, 1).modified_by(PROJECTILE_COUNT_MODIFIER),
+    ));
+
+    let dash_ability = DynamicAbility::from_components((
+        RigidBody::Dynamic,
+        Lifetime::dynamic(),
+        LifetimeFromCursor::new().with_max_distance(10.0),
+        TransportCaster,
+        InitialVelocity::forward(100.0),
+        CastOnDespawn::new(mortar_blast.clone(), 1)
     ));
 
     // Create abilities for the slots
@@ -110,10 +131,19 @@ pub fn spawn_player(
             AbilityTargeting::Cursor,
             2.0, // 2 second cooldown
         ),
+        SlottedAbility::new(
+            dash_ability,
+            AbilityTargeting::Cursor,
+            2.0
+        )
     ];
 
     // Create custom keymap
-    let keymap = AbilityKeymap::new();
+    let mut keymap = AbilityKeymap::new();
+    keymap
+        .bind_mouse(MouseButton::Left, SlotId(0))
+        .bind_mouse(MouseButton::Right, SlotId(1))
+        .bind_key(KeyCode::Space, SlotId(2));
 
     // Player spawn point (invisible, camera will follow this)
     let player = commands
@@ -126,6 +156,8 @@ pub fn spawn_player(
                     base_color: player_color,
                     ..default()
                 })),
+                CollisionEventsEnabled,
+                ColliderConstructor::ConvexHullFromMesh,
                 AbilitySlots::with_abilities(abilities),
                 keymap,
                 HealthBundle::new(50, 1),
@@ -135,14 +167,13 @@ pub fn spawn_player(
                     magnet_radius: 25.0,
                     magnet_force: 2000.0,
                 },
+                ActiveCollisionHooks::FILTER_PAIRS
             ),
             ModifierStack::default(),
             SpawnerTarget,
             Faction::Friendly,
             DespawnOnReset,
-            StarEffect {
-                spawn_rate: 100.0,
-            },
+            StarEffect { spawn_rate: 100.0 },
             Targetable,
             LockedAxes::new().lock_translation_y(),
         ))
@@ -217,12 +248,13 @@ pub fn handle_movement(
         Option<&ModifierStack>,
     )>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
+    cursor_query: Query<(&Cursor, &GlobalTransform)>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
     _scroll_wheel: Res<AccumulatedMouseScroll>,
     _time: Res<Time>,
 ) {
     if let (
-        Ok((player_entity, _player_transform, mut linear_velocity, player, modifier_stack)),
+        Ok((player_entity, mut player_transform, mut linear_velocity, player, modifier_stack)),
         Ok((_camera_transform, _camera)),
     ) = (player_query.single_mut(), camera_query.single_mut())
     {
@@ -256,7 +288,11 @@ pub fn handle_movement(
         let speed =
             apply_modifier_if_present(modifier_stack, PLAYER_SPEED_MODIFIER, player.base_speed);
 
-        linear_velocity.0 = velocity.normalize() * speed;
+        linear_velocity.0 = velocity.normalize_or_zero() * speed;
+
+        if let Ok(cursor) = cursor_query.single() {
+            player_transform.look_at(cursor.1.translation(), Vec3::Y);
+        }
     }
 }
 

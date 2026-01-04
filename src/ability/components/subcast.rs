@@ -55,7 +55,6 @@ pub fn handle_sub_cast_once(
     sub_casts: Query<(Entity, &SubCastOnce, &CastBy)>,
     modifiers: Query<&ModifierStack>,
     transforms: Query<&Transform>,
-    mut cast_events: EventWriter<CastDynamicAbility>,
 ) -> Result {
     for (entity, sub_cast_once, cast_by) in sub_casts.iter() {
         let num_casts = if let Some(modifier_id) = sub_cast_once.modified_by {
@@ -71,7 +70,7 @@ pub fn handle_sub_cast_once(
         let transform = transforms.get(entity)?;
 
         for index in 0..num_casts {
-            cast_events.write(
+            commands.entity(cast_by.entity).trigger(
                 CastDynamicAbility::at_caster(sub_cast_once.ability.clone(), cast_by.entity)
                     .with_target_position(transform.translation)
                     .with_sub_cast(entity, num_casts, index)
@@ -121,14 +120,13 @@ pub fn handle_timed_sub_cast(
     mut commands: Commands,
     time: Res<Time>,
     mut sub_casts: Query<(Entity, &mut TimedSubCast, &CastBy, &Transform)>,
-    mut cast_events: EventWriter<CastDynamicAbility>,
 ) {
     for (entity, mut timed_sub_cast, cast_by, transform) in sub_casts.iter_mut() {
         timed_sub_cast.timer.tick(time.delta());
 
         if timed_sub_cast.timer.finished() {
             for index in 0..timed_sub_cast.num_casts_per_interval {
-                cast_events.write(
+                commands.entity(cast_by.entity).trigger(
                     CastDynamicAbility::at_caster(timed_sub_cast.ability.clone(), cast_by.entity)
                         .with_target_position(transform.translation)
                         .with_sub_cast(entity, timed_sub_cast.num_casts_per_interval, index)
@@ -145,7 +143,7 @@ pub fn handle_timed_sub_cast(
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct CastOnDespawn {
     pub ability: DynamicAbility,
     pub num_casts: i32,
@@ -169,7 +167,7 @@ impl CastOnDespawn {
 
 pub fn handle_cast_on_despawn(
     trigger: Trigger<OnActiveDespawn>,
-    _commands: Commands,
+    mut commands: Commands,
     cast_on_despawn: Query<(Entity, &CastOnDespawn, &CastBy, &Transform)>,
     modifiers: Query<&ModifierStack>,
     transforms: Query<&Transform>,
@@ -189,7 +187,7 @@ pub fn handle_cast_on_despawn(
         let transform = transforms.get(entity)?;
 
         for index in 0..num_casts {
-            cast_events.write(
+            commands.entity(cast_by.entity).trigger(
                 CastDynamicAbility::at_caster(cast_on_despawn.ability.clone(), cast_by.entity)
                     .with_target_position(transform.translation)
                     .with_sub_cast(entity, num_casts, index)

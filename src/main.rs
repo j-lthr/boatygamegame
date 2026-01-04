@@ -28,6 +28,7 @@ mod ui;
 mod utils;
 
 use crate::audio::music::PlayMusicEvent;
+use crate::common::FactionCollisionHook;
 use crate::init::GameInit;
 use crate::state::GameState;
 
@@ -51,7 +52,7 @@ fn main() {
                     ..Default::default()
                 }),
         )
-        .add_plugins(PhysicsPlugins::default().with_length_unit(1.0))
+        .add_plugins(PhysicsPlugins::default().with_length_unit(1.0).with_collision_hooks::<FactionCollisionHook>())
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(ObjPlugin)
         .add_plugins((

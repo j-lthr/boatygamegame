@@ -4,6 +4,8 @@ use bevy::prelude::*;
 use crate::ability::CastBy;
 use crate::ability::components::common::DynamicTarget;
 use crate::ability::components::events::{OnActiveDespawn, OnCollision};
+use crate::ability::components::spawn::handle_radial_sub_cast_offset;
+use crate::common::Faction;
 use crate::event;
 use crate::modifiers::*;
 
@@ -40,7 +42,7 @@ pub struct Homing {
 }
 
 /// System to move entities with MoveForward
-pub fn handle_forward_movement(
+pub fn handle_initial_velocity(
     mut commands: Commands,
     mut movement_query: Query<(Entity, &Transform, &InitialVelocity, &CastBy, &mut LinearVelocity)>,
     modifiers: Query<&ModifierStack>,
@@ -98,26 +100,28 @@ pub fn handle_homing_movement(
 /// Observer system to handle collision damage
 pub fn handle_collision_damage(
     trigger: Trigger<OnCollisionStart>,
-    damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &LinearVelocity)>,
+    damage_on_collision_query: Query<(&DamageOnCollision, &CastBy, &Transform, &LinearVelocity, &Faction)>,
     mut damage_events: EventWriter<event::DamageEvent>,
     modifiers: Query<&ModifierStack>,
-    target_transforms: Query<&Transform, Without<DamageOnCollision>>,
+    target_transforms: Query<(&Transform, &Faction), Without<DamageOnCollision>>,
 ) {
     let damage_source_entity = trigger.target();
     let damaged_entity = trigger.event().collider;
 
-    if let Ok((damage_component, cast_by, collider_transform, movement)) =
+    if let Ok((damage_component, cast_by, collider_transform, movement, source_faction)) =
         damage_on_collision_query.get(damage_source_entity)
-        && let Ok(target_transform) = target_transforms.get(damaged_entity)
+        && let Ok((target_transform, target_faction)) = target_transforms.get(damaged_entity)
     {
 
-        damage_events.write(event::DamageEvent {
-            target: damaged_entity,
-            source: Some(cast_by.entity),
-            damage: apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), DAMAGE_MODIFIER, damage_component.base_damage) as i32,
-            position: target_transform.translation,
-            impact_velocity: Some(movement.0),
-        });
+        if target_faction != source_faction {
+            damage_events.write(event::DamageEvent {
+                target: damaged_entity,
+                source: Some(cast_by.entity),
+                damage: apply_modifier_if_present(modifiers.get(cast_by.entity).ok(), DAMAGE_MODIFIER, damage_component.base_damage) as i32,
+                position: target_transform.translation,
+                impact_velocity: Some(movement.0),
+            });
+        }
     }
 }
 
@@ -136,7 +140,7 @@ pub fn handle_collision_despawn(
 }
 
 pub fn plugin(app: &mut bevy::app::App) {
-    app.add_systems(Update, (handle_forward_movement, handle_homing_movement));
+    app.add_systems(Update, (handle_initial_velocity.after(handle_radial_sub_cast_offset), handle_homing_movement));
     app.add_observer(handle_collision_damage);
     app.add_observer(handle_collision_despawn);
 }
