@@ -58,6 +58,8 @@ pub fn handle_radial_sub_cast_offset(
             / subcast_info.num_casts() as f32)
             * total_angle;
 
+        dbg!(angle);
+
         transform.rotation = Quat::from_rotation_y(angle) * transform.rotation;
         let delta_p = transform.forward() * radial_offset.radius;
         transform.translation += delta_p;

@@ -58,8 +58,6 @@ impl<'w, 's> CollisionHooks for FactionCollisionHook<'w, 's> {
             return true;
         };
 
-        dbg!((group1, group2));
-
         group1 != group2
     }
 }

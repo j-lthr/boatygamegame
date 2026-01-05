@@ -155,6 +155,9 @@ pub fn handle_lifetime(
 }
 
 #[derive(Component, Clone, Copy, Debug)]
+#[require(
+    Lifetime::dynamic()
+)]
 pub struct LifetimeFromCursor {
     max_distance: f32,
 }

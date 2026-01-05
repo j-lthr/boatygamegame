@@ -1,10 +1,11 @@
-use avian3d::prelude::{CollisionStarted, LinearVelocity, OnCollisionStart};
+use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::ability::CastBy;
-use crate::ability::components::common::DynamicTarget;
+use crate::ability::{CastBy, IntendedTarget};
+use crate::ability::components::common::{DynamicTarget, Lifetime};
 use crate::ability::components::events::{OnActiveDespawn, OnCollision};
-use crate::ability::components::spawn::handle_radial_sub_cast_offset;
+use crate::ability::components::spawn::{RadialSubCastOffset, handle_radial_sub_cast_offset};
+use crate::ability::components::visual::LifetimeFadeout;
 use crate::common::Faction;
 use crate::event;
 use crate::modifiers::*;
@@ -25,6 +26,31 @@ impl InitialVelocity {
     }
 }
 
+
+pub fn handle_initial_velocity(
+    mut commands: Commands,
+    mut movement_query: Query<(
+        Entity,
+        &Transform,
+        &InitialVelocity,
+        &CastBy,
+        &mut LinearVelocity,
+    ), Without<RadialSubCastOffset>>,
+    modifiers: Query<&ModifierStack>,
+) {
+    for (entity, transform, movement, cast_by, mut velocity) in &mut movement_query {
+        let speed = apply_modifier_if_present(
+            modifiers.get(cast_by.entity).ok(),
+            PROJECTILE_SPEED_MODIFIER,
+            movement.base_speed,
+        );
+
+        velocity.0 += speed * (transform.rotation * movement.direction);
+
+        commands.entity(entity).remove::<InitialVelocity>();
+    }
+}
+
 // Component for damage on collision
 #[derive(Component, Clone, Debug)]
 pub struct DamageOnCollision {
@@ -41,30 +67,6 @@ pub struct Homing {
     pub base_turn_speed: f32,
 }
 
-/// System to move entities with MoveForward
-pub fn handle_initial_velocity(
-    mut commands: Commands,
-    mut movement_query: Query<(
-        Entity,
-        &Transform,
-        &InitialVelocity,
-        &CastBy,
-        &mut LinearVelocity,
-    )>,
-    modifiers: Query<&ModifierStack>,
-) {
-    for (entity, transform, movement, cast_by, mut velocity) in &mut movement_query {
-        let speed = apply_modifier_if_present(
-            modifiers.get(cast_by.entity).ok(),
-            PROJECTILE_SPEED_MODIFIER,
-            movement.base_speed,
-        );
-
-        velocity.0 += speed * (transform.rotation * movement.direction);
-
-        commands.entity(entity).remove::<InitialVelocity>();
-    }
-}
 
 /// System to rotate entities with HomingMovement toward target_position
 pub fn handle_homing_movement(
@@ -73,14 +75,14 @@ pub fn handle_homing_movement(
         &mut Transform,
         &Homing,
         &CastBy,
-        &DynamicTarget,
+        &IntendedTarget,
         &mut LinearVelocity,
     )>,
     modifiers: Query<&ModifierStack>,
     time: Res<Time>,
 ) {
     for (mut transform, homing, cast_info, target, mut velocity) in &mut homing_query {
-        let turn_speed = apply_modifier_if_present(
+        /*let turn_speed = apply_modifier_if_present(
             modifiers.get(cast_info.entity).ok(),
             HOMING_STRENGTH_MODIFIER,
             homing.base_turn_speed,
@@ -104,7 +106,9 @@ pub fn handle_homing_movement(
                 .normalize()
                 * velocity.0.length();
             transform.look_to(velocity.0, Vec3::Y);
-        }
+        }*/
+
+        // TODO
     }
 }
 
@@ -169,4 +173,51 @@ pub fn plugin(app: &mut bevy::app::App) {
     );
     app.add_observer(handle_collision_damage);
     app.add_observer(handle_collision_despawn);
+}
+
+#[derive(Bundle, Clone, Debug)]
+pub struct BasicProjectileBundle {
+    pub rigidbody: RigidBody,
+    pub lifetime: Lifetime,
+    pub collider: Collider,
+    pub initial_velocity: InitialVelocity,
+    pub damage_on_collision: DamageOnCollision,
+    pub subcast_offset: RadialSubCastOffset,
+    pub mesh: Mesh3d,
+    pub mat: MeshMaterial3d<StandardMaterial>,
+    pub fade: LifetimeFadeout,
+    pub hooks: ActiveCollisionHooks,
+}
+
+impl BasicProjectileBundle {
+    pub fn new(
+        lifetime: f32,
+        radius: f32,
+        base_vel: f32,
+        base_damage: f32,
+        color: Color,
+        meshes: &mut Assets<Mesh>,
+        mats: &mut Assets<StandardMaterial>,
+    ) -> Self {
+        let mat = mats.add(StandardMaterial {
+            base_color: color,
+            emissive: color.into(),
+            ..default()
+        });
+
+        let mesh = meshes.add(Sphere::new(radius));
+
+        Self {
+            rigidbody: RigidBody::Dynamic,
+            lifetime: Lifetime::fixed_with_modifier(lifetime, PROJECTILE_DURATION_MODIFIER),
+            collider: Collider::sphere(radius),
+            initial_velocity: InitialVelocity::forward(base_vel),
+            damage_on_collision: DamageOnCollision { base_damage },
+            subcast_offset: RadialSubCastOffset::from_degrees_per_cast(1.5, 2.0),
+            mesh: Mesh3d(mesh),
+            mat: MeshMaterial3d(mat),
+            fade: LifetimeFadeout::new(0.1),
+            hooks: ActiveCollisionHooks::FILTER_PAIRS
+        }
+    }
 }

@@ -42,7 +42,7 @@ pub fn register_enemies(
 
     {
         let rusher_material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(70.0, 70.0, 1.0),
+            emissive: LinearRgba::rgb(0.0, 70.0, 70.0),
             ..Default::default()
         });
 
@@ -69,7 +69,7 @@ pub fn register_enemies(
 
     {
         let material = materials.add(StandardMaterial {
-            emissive: LinearRgba::rgb(100.0, 1.0, 1.0),
+            emissive: LinearRgba::rgb(10.0, 60.0, 80.0),
             ..Default::default()
         });
 
@@ -96,7 +96,7 @@ pub fn register_enemies(
                 Collider::sphere(1.1),
                 MeshMaterial3d(material),
                 HealthBundle::new(50, 0),
-                FollowTarget::ranged(10.0, 0.0),
+                FollowTarget::ranged(10.0, 5.0),
                 FirstOrderMovement {
                     speed: 10.0,
                     jitter: 0.1,

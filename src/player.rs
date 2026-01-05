@@ -4,10 +4,10 @@ use crate::ability::components::common::{
 };
 use crate::ability::components::dash::TransportCaster;
 use crate::ability::components::projectile::{
-    DamageOnCollision, DespawnOnCollision, Homing, InitialVelocity,
+    BasicProjectileBundle, DamageOnCollision, DespawnOnCollision, Homing, InitialVelocity,
 };
 use crate::ability::components::spawn::{RadialSubCastOffset, RandomSpawnOffset};
-use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce};
+use crate::ability::components::subcast::{CastOnDespawn, SubCastOnce, TimedSubCast};
 use crate::ability::slots::{
     AbilityKeymap, AbilitySlots, AbilityTargeting, SlotId, SlottedAbility,
 };
@@ -61,77 +61,38 @@ pub fn spawn_player(
 ) {
     let player_color = Color::srgb(10.0, 10.0, 10.0);
 
-    let bullet_mat = materials.add(StandardMaterial {
-        base_color: player_color,
-        metallic: 0.5,
-        perceptual_roughness: 0.5,
+    let player_material = MeshMaterial3d(materials.add(StandardMaterial {
         emissive: player_color.into(),
         ..default()
-    });
+    }));
 
-    let mortar_blast = DynamicAbility::from_components((
-        BlastBundle::new(
-            &mut meshes,
-            &mut materials,
-            Color::srgb(30.0, 30.0, 30.0),
-            10.0,
-            100,
-            0.1,
-        ),
-        DespawnOnReset,
-    ))
-    .with_config(CastConfig {
-        spawn_location: crate::ability::SpawnLocation::Target,
-        ..Default::default()
-    });
-
-    let projectile = DynamicAbility::from_components((
-        RigidBody::Dynamic,
-        Lifetime::fixed(0.5),
-        LifetimeFadeout::new(0.1),
-        Collider::sphere(0.1),
-        InitialVelocity::forward(70.0),
-        Homing {
-            base_turn_speed: 1.0,
-        },
-        //LifetimeFromCursor,
-        (
-            DespawnOnCollision,
-            DamageOnCollision { base_damage: 10.0 },
-            DynamicTarget::new(),
-            SelectNearestTargetOnSpawn::new(3.0),
-            RadialSubCastOffset::from_degrees_per_cast(1.5, 10.0),
-            RandomSpawnOffset::new(0.0, 0.01),
-        ),
-        Mesh3d(meshes.add(Sphere::new(0.1))),
-        MeshMaterial3d(bullet_mat.clone()),
-        //CastOnDespawn::new(subcast_ability, 5)
-    ));
+    let projectile = DynamicAbility::from_components((BasicProjectileBundle::new(
+        2.0,
+        0.1,
+        100.0,
+        10.0,
+        player_color,
+        meshes.as_mut(),
+        materials.as_mut(),
+    ),));
 
     let projectile_ability = DynamicAbility::from_components((
-        SubCastOnce::new(projectile, 1).modified_by(PROJECTILE_COUNT_MODIFIER),
+        SubCastOnce::new(projectile, 5).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
 
     let dash_ability = DynamicAbility::from_components((
         RigidBody::Dynamic,
-        Lifetime::dynamic(),
-        LifetimeFromCursor::new().with_max_distance(10.0),
+        LifetimeFromCursor::new().with_max_distance(30.0),
         TransportCaster,
         InitialVelocity::forward(100.0),
-        CastOnDespawn::new(mortar_blast.clone(), 1),
     ));
 
     // Create abilities for the slots
     let abilities = vec![
         SlottedAbility::new(
             projectile_ability,
-            AbilityTargeting::NearestEnemyToCursor { max_range: 20.0 },
-            0.5, // 0.5 second cooldown
-        ),
-        SlottedAbility::new(
-            mortar_blast.clone(),
             AbilityTargeting::Cursor,
-            2.0, // 2 second cooldown
+            1.0, // 0.5 second cooldown
         ),
         SlottedAbility::new(dash_ability, AbilityTargeting::Cursor, 2.0),
     ];
@@ -140,8 +101,8 @@ pub fn spawn_player(
     let mut keymap = AbilityKeymap::new();
     keymap
         .bind_mouse(MouseButton::Left, SlotId(0))
-        .bind_mouse(MouseButton::Right, SlotId(1))
-        .bind_key(KeyCode::Space, SlotId(2));
+        //.bind_mouse(MouseButton::Right, SlotId(1))
+        .bind_key(KeyCode::Space, SlotId(1));
 
     // Player spawn point (invisible, camera will follow this)
     let player = commands
@@ -149,11 +110,8 @@ pub fn spawn_player(
             (
                 Transform::from_xyz(0.0, 0.0, 0.0), // Eye level height
                 Player { base_speed: 15.0 },
-                Mesh3d(meshes.add(Sphere::new(0.5))),
-                MeshMaterial3d(materials.add(StandardMaterial {
-                    base_color: player_color,
-                    ..default()
-                })),
+                Mesh3d(meshes.add(Sphere::new(0.7))),
+                player_material,
                 CollisionEventsEnabled,
                 ColliderConstructor::ConvexHullFromMesh,
                 AbilitySlots::with_abilities(abilities),
@@ -162,7 +120,7 @@ pub fn spawn_player(
                 RigidBody::Kinematic,
                 Collector {
                     collect_radius: 1.0,
-                    magnet_radius: 25.0,
+                    magnet_radius: 50.0,
                     magnet_force: 2000.0,
                 },
                 ActiveCollisionHooks::FILTER_PAIRS,
@@ -181,12 +139,14 @@ pub fn spawn_player(
 }
 
 pub fn spawn_camera(mut commands: Commands) {
+    
+
     commands.spawn((
         Camera3d::default(),
         Camera {
             order: 0,
             hdr: true, // Enable HDR for better lighting
-            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            clear_color: ClearColorConfig::Custom(Color::srgb(0.07,0.04,0.04)),
             ..default()
         },
         Projection::from(PerspectiveProjection {
@@ -197,7 +157,10 @@ pub fn spawn_camera(mut commands: Commands) {
         // FirstPersonCamera::default(),
         SpatialListener::default(), // Spatial audio listener
         Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
-        Bloom::ANAMORPHIC,
+        Bloom {
+            intensity: 0.05,
+            .. Bloom::ANAMORPHIC
+        },
         MotionBlur {
             shutter_angle: 1.0,
             samples: 2,
