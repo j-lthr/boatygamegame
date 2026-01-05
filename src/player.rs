@@ -139,14 +139,12 @@ pub fn spawn_player(
 }
 
 pub fn spawn_camera(mut commands: Commands) {
-    
-
     commands.spawn((
         Camera3d::default(),
         Camera {
             order: 0,
             hdr: true, // Enable HDR for better lighting
-            clear_color: ClearColorConfig::Custom(Color::srgb(0.07,0.04,0.04)),
+            clear_color: ClearColorConfig::Custom(Color::srgb(0.07, 0.04, 0.04)),
             ..default()
         },
         Projection::from(PerspectiveProjection {
@@ -159,7 +157,7 @@ pub fn spawn_camera(mut commands: Commands) {
         Tonemapping::TonyMcMapface, // 2. Using a tonemapper that desaturates to white is recommended
         Bloom {
             intensity: 0.05,
-            .. Bloom::ANAMORPHIC
+            ..Bloom::ANAMORPHIC
         },
         MotionBlur {
             shutter_angle: 1.0,

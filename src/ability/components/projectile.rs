@@ -1,11 +1,11 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
-use crate::ability::{CastBy, IntendedTarget};
 use crate::ability::components::common::{DynamicTarget, Lifetime};
 use crate::ability::components::events::{OnActiveDespawn, OnCollision};
 use crate::ability::components::spawn::{RadialSubCastOffset, handle_radial_sub_cast_offset};
 use crate::ability::components::visual::LifetimeFadeout;
+use crate::ability::{CastBy, IntendedTarget};
 use crate::common::Faction;
 use crate::event;
 use crate::modifiers::*;
@@ -26,16 +26,18 @@ impl InitialVelocity {
     }
 }
 
-
 pub fn handle_initial_velocity(
     mut commands: Commands,
-    mut movement_query: Query<(
-        Entity,
-        &Transform,
-        &InitialVelocity,
-        &CastBy,
-        &mut LinearVelocity,
-    ), Without<RadialSubCastOffset>>,
+    mut movement_query: Query<
+        (
+            Entity,
+            &Transform,
+            &InitialVelocity,
+            &CastBy,
+            &mut LinearVelocity,
+        ),
+        Without<RadialSubCastOffset>,
+    >,
     modifiers: Query<&ModifierStack>,
 ) {
     for (entity, transform, movement, cast_by, mut velocity) in &mut movement_query {
@@ -66,7 +68,6 @@ pub struct DespawnOnCollision;
 pub struct Homing {
     pub base_turn_speed: f32,
 }
-
 
 /// System to rotate entities with HomingMovement toward target_position
 pub fn handle_homing_movement(
@@ -217,7 +218,7 @@ impl BasicProjectileBundle {
             mesh: Mesh3d(mesh),
             mat: MeshMaterial3d(mat),
             fade: LifetimeFadeout::new(0.1),
-            hooks: ActiveCollisionHooks::FILTER_PAIRS
+            hooks: ActiveCollisionHooks::FILTER_PAIRS,
         }
     }
 }
