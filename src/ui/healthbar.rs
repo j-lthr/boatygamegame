@@ -12,7 +12,7 @@ pub(crate) struct HealthBarPlugin;
 
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (spawn, update, clean_up));
+        app.add_systems(FixedUpdate, (spawn, update, clean_up));
     }
 }
 

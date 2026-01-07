@@ -80,11 +80,11 @@ fn main() {
         .init_state::<state::GameState>()
         .init_resource::<state::GameScore>()
         .add_systems(Startup, ui::hud::score::setup_score_ui)
+        .add_systems(FixedUpdate, player::handle_movement)
         .add_systems(
             Update,
             (
                 player::shoot_gun,
-                player::handle_movement,
                 fx::blood::handle_particle_physics,
                 fx::blood::blood_particle_rendering,
                 fx::blood::cleanup_blood_particles,
