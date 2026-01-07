@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::ability::components::projectile::Projectile;
 use crate::event;
 use crate::event::DeathEvent;
 use crate::modifiers::*;
@@ -49,7 +50,7 @@ pub enum Faction {
 
 #[derive(SystemParam)]
 pub struct FactionCollisionHook<'w, 's> {
-    pub faction_query: Query<'w, 's, &'static Faction>,
+    pub faction_query: Query<'w, 's, (&'static Faction, Option<&'static Projectile>)>,
 }
 
 impl<'w, 's> CollisionHooks for FactionCollisionHook<'w, 's> {
@@ -58,7 +59,11 @@ impl<'w, 's> CollisionHooks for FactionCollisionHook<'w, 's> {
             return true;
         };
 
-        group1 != group2
+        if group1.1.is_some() && group2.1.is_some() {
+            return false;
+        }
+
+        group1.0 != group2.0
     }
 }
 

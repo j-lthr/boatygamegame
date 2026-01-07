@@ -58,8 +58,9 @@ pub fn spawn_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut assets: ResMut<AssetServer>,
 ) {
-    let player_color = Color::srgb(10.0, 10.0, 10.0);
+    let player_color = Color::srgb(20.0, 20.0, 20.0);
 
     let player_material = MeshMaterial3d(materials.add(StandardMaterial {
         emissive: player_color.into(),
@@ -68,7 +69,7 @@ pub fn spawn_player(
 
     let projectile = DynamicAbility::from_components((BasicProjectileBundle::new(
         2.0,
-        0.1,
+        0.25,
         100.0,
         10.0,
         player_color,
@@ -77,14 +78,14 @@ pub fn spawn_player(
     ),));
 
     let projectile_ability = DynamicAbility::from_components((
-        SubCastOnce::new(projectile, 5).modified_by(PROJECTILE_COUNT_MODIFIER),
+        SubCastOnce::new(projectile, 1).modified_by(PROJECTILE_COUNT_MODIFIER),
     ));
 
     let dash_ability = DynamicAbility::from_components((
         RigidBody::Dynamic,
-        LifetimeFromCursor::new().with_max_distance(30.0),
+        LifetimeFromCursor::new().with_max_distance(50.0),
         TransportCaster,
-        InitialVelocity::forward(100.0),
+        InitialVelocity::forward(1000.0),
     ));
 
     // Create abilities for the slots
@@ -92,7 +93,7 @@ pub fn spawn_player(
         SlottedAbility::new(
             projectile_ability,
             AbilityTargeting::Cursor,
-            1.0, // 0.5 second cooldown
+            0.2, // 0.5 second cooldown
         ),
         SlottedAbility::new(dash_ability, AbilityTargeting::Cursor, 2.0),
     ];
@@ -107,29 +108,31 @@ pub fn spawn_player(
     // Player spawn point (invisible, camera will follow this)
     let player = commands
         .spawn((
+            RigidBody::Dynamic,
             (
                 Transform::from_xyz(0.0, 0.0, 0.0), // Eye level height
-                Player { base_speed: 15.0 },
+                Player { base_speed: 50.0 },
                 Mesh3d(meshes.add(Sphere::new(0.7))),
                 player_material,
                 CollisionEventsEnabled,
                 ColliderConstructor::ConvexHullFromMesh,
                 AbilitySlots::with_abilities(abilities),
                 keymap,
-                HealthBundle::new(50, 1),
-                RigidBody::Kinematic,
+                HealthBundle::new(50, 5),
                 Collector {
                     collect_radius: 1.0,
-                    magnet_radius: 50.0,
-                    magnet_force: 2000.0,
+                    magnet_radius: 100.0,
+                    magnet_force: 4000.0,
                 },
                 ActiveCollisionHooks::FILTER_PAIRS,
+                LinearDamping(0.7),
             ),
+            ExternalForce::ZERO.with_persistence(false),
             ModifierStack::default(),
             SpawnerTarget,
             Faction::Friendly,
             DespawnOnReset,
-            StarEffect { spawn_rate: 100.0 },
+            StarEffect { spawn_rate: 40.0 },
             Targetable,
             LockedAxes::new().lock_translation_y(),
         ))
@@ -171,20 +174,6 @@ pub fn spawn_camera(mut commands: Commands) {
             pan_ratio: 1.0,
             lerp_factor: 10.0,
         },
-        // PlayerCamera {
-        //     ground_offset: 0.0,
-        //     height_offset: 40.0,
-        //     pan_factor: 1.0,
-        //     pan_ratio: -2.0,
-        //     lerp_factor: 5.0,
-        // }
-
-        // Atmosphere::EARTH,
-        /*AtmosphereSettings {
-            aerial_view_lut_max_distance: 3.2e5,
-            scene_units_to_m: 1e+4,
-            ..Default::default()
-        },*/
     ));
 
     commands.spawn((
@@ -202,9 +191,10 @@ pub fn handle_movement(
     mut player_query: Query<(
         Entity,
         &mut Transform,
-        &mut LinearVelocity,
+        &mut ExternalForce,
         &Player,
         Option<&ModifierStack>,
+        &LinearVelocity
     )>,
     mut camera_query: Query<(&GlobalTransform, &mut PlayerCamera), With<Camera3d>>,
     cursor_query: Query<(&Cursor, &GlobalTransform)>,
@@ -213,7 +203,7 @@ pub fn handle_movement(
     _time: Res<Time>,
 ) {
     if let (
-        Ok((player_entity, mut player_transform, mut linear_velocity, player, modifier_stack)),
+        Ok((player_entity, mut player_transform, mut force, player, modifier_stack, vel)),
         Ok((_camera_transform, _camera)),
     ) = (player_query.single_mut(), camera_query.single_mut())
     {
@@ -247,7 +237,7 @@ pub fn handle_movement(
         let speed =
             apply_modifier_if_present(modifier_stack, PLAYER_SPEED_MODIFIER, player.base_speed);
 
-        linear_velocity.0 = velocity.normalize_or_zero() * speed;
+        force.apply_force(50.0*(velocity.normalize_or_zero() * speed - vel.0));
 
         if let Ok(cursor) = cursor_query.single() {
             player_transform.look_at(cursor.1.translation(), Vec3::Y);

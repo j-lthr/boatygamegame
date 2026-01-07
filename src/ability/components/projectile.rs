@@ -61,6 +61,7 @@ pub struct DamageOnCollision {
 
 // Component for despawning on collision
 #[derive(Component, Clone, Debug)]
+#[require(CollisionEventsEnabled)]
 pub struct DespawnOnCollision;
 
 // Component for homing movement - needs DynamicTarget to work
@@ -152,7 +153,7 @@ pub fn handle_collision_damage(
 
 /// Observer system to handle despawning on collision
 pub fn handle_collision_despawn(
-    trigger: Trigger<OnCollision>,
+    trigger: Trigger<OnCollisionStart>,
     mut commands: Commands,
     despawn_query: Query<&DespawnOnCollision>,
 ) {
@@ -176,6 +177,9 @@ pub fn plugin(app: &mut bevy::app::App) {
     app.add_observer(handle_collision_despawn);
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct Projectile;
+
 #[derive(Bundle, Clone, Debug)]
 pub struct BasicProjectileBundle {
     pub rigidbody: RigidBody,
@@ -183,11 +187,14 @@ pub struct BasicProjectileBundle {
     pub collider: Collider,
     pub initial_velocity: InitialVelocity,
     pub damage_on_collision: DamageOnCollision,
+    pub despawn_on_collision: DespawnOnCollision,
     pub subcast_offset: RadialSubCastOffset,
     pub mesh: Mesh3d,
     pub mat: MeshMaterial3d<StandardMaterial>,
     pub fade: LifetimeFadeout,
     pub hooks: ActiveCollisionHooks,
+    pub projectile: Projectile,
+    pub lock_axes: LockedAxes,
 }
 
 impl BasicProjectileBundle {
@@ -214,11 +221,14 @@ impl BasicProjectileBundle {
             collider: Collider::sphere(radius),
             initial_velocity: InitialVelocity::forward(base_vel),
             damage_on_collision: DamageOnCollision { base_damage },
-            subcast_offset: RadialSubCastOffset::from_degrees_per_cast(1.5, 2.0),
+            despawn_on_collision: DespawnOnCollision,
+            subcast_offset: RadialSubCastOffset::from_degrees_per_cast(1.5, 5.0),
             mesh: Mesh3d(mesh),
             mat: MeshMaterial3d(mat),
             fade: LifetimeFadeout::new(0.1),
             hooks: ActiveCollisionHooks::FILTER_PAIRS,
+            projectile: Projectile,
+            lock_axes: LockedAxes::new().lock_translation_y(),
         }
     }
 }

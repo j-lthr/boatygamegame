@@ -29,7 +29,7 @@ pub struct SpawnerTarget;
 
 impl FromWorld for SpawnerState {
     fn from_world(_world: &mut World) -> Self {
-        let timer = Timer::from_seconds(15.0, TimerMode::Repeating);
+        let timer = Timer::from_seconds(5.0, TimerMode::Repeating);
 
         SpawnerState {
             wave_timer: timer,
@@ -94,7 +94,7 @@ pub fn spawn(
             enemy_slots -= enemy.config().num_slots;
 
             for (target, target_transform) in target_query {
-                let spawn_pos = random_spawn_pos(target_transform.translation, 50.0, 4.0);
+                let spawn_pos = random_spawn_pos(target_transform.translation, 80.0, 4.0);
 
                 spawn_events.write(SpawnEnemyEvent {
                     enemy: (*enemy).clone(),
@@ -130,8 +130,10 @@ pub fn handle_spawn_enemy_events(
             DespawnOnReset,
             Targetable,
             RigidBody::Dynamic,
-            LockedAxes::new().lock_translation_y(),
+            LockedAxes::new().lock_translation_y().lock_rotation_x().lock_rotation_z(),
             ActiveCollisionHooks::FILTER_PAIRS,
+            AngularDamping(0.7),
+            LinearDamping(0.7)
         ));
 
         enemy.add_to_entity(&mut entity);

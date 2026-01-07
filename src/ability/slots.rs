@@ -5,6 +5,7 @@ use std::time::Duration;
 use crate::ability::{CastDynamicAbility, DynamicAbility, IntendedTarget};
 use crate::common::Targetable;
 use crate::input::Cursor;
+use crate::modifiers::{COOLDOWN_RECOVERY_RATE_MODIFIER, ModifierStack, apply_modifier_if_present};
 use crate::player::Player;
 
 /// Targeting behavior for abilities
@@ -196,10 +197,13 @@ impl TriggerAbilitySlot {
 }
 
 /// System to update ability cooldowns
-pub fn update_ability_cooldowns(mut ability_slots: Query<&mut AbilitySlots>, time: Res<Time>) {
-    for mut slots in ability_slots.iter_mut() {
+pub fn update_ability_cooldowns(mut ability_slots: Query<(&mut AbilitySlots, Option<&ModifierStack>)>, time: Res<Time>) {
+    for  (mut slots, modifiers) in ability_slots.iter_mut() {
         for ability in slots.slots.iter_mut().flatten() {
-            ability.update_cooldown(time.delta());
+
+            let delta_secs = apply_modifier_if_present(modifiers, COOLDOWN_RECOVERY_RATE_MODIFIER, time.delta_secs());
+
+            ability.update_cooldown(Duration::from_secs_f32(delta_secs));
         }
     }
 }
