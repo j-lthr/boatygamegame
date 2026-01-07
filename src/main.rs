@@ -55,7 +55,8 @@ fn main() {
         .add_plugins(
             PhysicsPlugins::default()
                 .with_length_unit(1.0)
-                .with_collision_hooks::<FactionCollisionHook>(),
+                .with_collision_hooks::<FactionCollisionHook>().set( PhysicsInterpolationPlugin::interpolate_all())
+           
         )
         .add_plugins(LogDiagnosticsPlugin::default())
         .add_plugins(ObjPlugin)
