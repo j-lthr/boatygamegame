@@ -157,6 +157,7 @@ pub fn register_rune<T: Rune>(app: &mut App) {
 
 pub fn plugin(app: &mut App) {
     register_rune::<ModifierRune>(app);
+    register_rune::<HealRune>(app);
 
     app.add_systems(Update, handle_rune_animation);
 }

@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    modifiers::{Modifier, ModifierStack},
-    rune::{Rune, RuneApplicationEvent},
+    common::HealthPool, modifiers::{Modifier, ModifierStack}, rune::{Rune, RuneApplicationEvent}
 };
 
 #[derive(Clone, Debug)]
@@ -31,3 +30,31 @@ pub fn handle_modifier_rune(
         }
     }
 }
+
+#[derive(Clone, Debug)]
+pub struct HealRune {
+    pub amount: i32,
+    pub color: Color,
+}
+
+impl Rune for HealRune {
+    fn register_systems(app: &mut App) {
+        app.add_systems(Update, handle_heal_rune);
+    }
+
+    fn emissive(&self) -> LinearRgba {
+        self.color.into()
+    }
+}
+
+pub fn handle_heal_rune(
+    mut query: Query<&mut HealthPool>,
+    mut event_reader: EventReader<RuneApplicationEvent<HealRune>>,
+) {
+    for event in event_reader.read() {
+        if let Ok(mut modifier_stack) = query.get_mut(event.entity) {
+            modifier_stack.current_health += event.rune.amount;
+        }
+    }
+}
+

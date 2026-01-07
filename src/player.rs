@@ -118,7 +118,7 @@ pub fn spawn_player(
                 ColliderConstructor::ConvexHullFromMesh,
                 AbilitySlots::with_abilities(abilities),
                 keymap,
-                HealthBundle::new(50, 5),
+                HealthBundle::new(100, 0),
                 Collector {
                     collect_radius: 1.0,
                     magnet_radius: 100.0,
@@ -134,7 +134,8 @@ pub fn spawn_player(
             DespawnOnReset,
             StarEffect { spawn_rate: 40.0 },
             Targetable,
-            LockedAxes::new().lock_translation_y(),
+            LockedAxes::new().lock_translation_y().lock_rotation_x().lock_rotation_y().lock_rotation_z(),
+            LookAtCursor
         ))
         .id();
 
@@ -173,7 +174,7 @@ pub fn spawn_camera(mut commands: Commands) {
             pan_factor: 1.0,
             pan_ratio: 1.0,
             lerp_factor: 10.0,
-        },
+        }
     ));
 
     commands.spawn((
@@ -239,11 +240,19 @@ pub fn handle_movement(
 
         force.apply_force(50.0*(velocity.normalize_or_zero() * speed - vel.0));
 
+
         if let Ok(cursor) = cursor_query.single() {
             player_transform.look_at(cursor.1.translation(), Vec3::Y);
         }
     }
 }
+
+#[derive(Component, Clone, Debug)]
+pub struct LookAtCursor;
+
+
+
+
 
 pub fn handle_camera(
     player_query: Query<(&Transform, &Player)>,
@@ -321,5 +330,4 @@ pub fn shoot_gun(
 pub fn plugin(app: &mut App) {
     app.add_systems(GameInit, spawn_player);
     app.add_systems(Startup, spawn_camera);
-    // app.add_systems(Update, player_vfx);
 }

@@ -30,6 +30,10 @@ pub fn register_enemies(
 ) {
     let normal_drop_table = DropTableBuilder::new()
         .add_rune(2.0, SPEED_RUNE)
+        .add_rune(0.5, HealRune {
+            amount: 100,
+            color: Color::srgb(5.0, 5.0, 5.0)
+        })
         .add_rune(
             0.025,
             ModifierRune {
@@ -39,13 +43,13 @@ pub fn register_enemies(
         )
         .add_rune(0.5, MULTISHOT_RUNE)
         .add_rune(2.0, DAMAGE_RUNE)
-        .add_rune(1.5, AOE_RUNE)
+        //.add_rune(1.5, AOE_RUNE)
         .add_rune(2.5, MAX_HEALTH_RUNE)
         .add_rune(1.2, HEALTH_REGEN_RUNE)
         .add_rune(0.8, COOLDOWN_RECOVERY_RATE_RUNE)
         .add_rune(0.6, PROJECTILE_SPEED_RUNE)
-        .add_rune(0.6, HOMING_RUNE)
-        .with_chance(1.0)
+        //.add_rune(0.6, HOMING_RUNE)
+        .with_chance(0.5)
         .build();
 
     {
